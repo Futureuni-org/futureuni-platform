@@ -164,7 +164,8 @@ export const SystemActorSchema = z.object({
 export const ActorSchema = z.discriminatedUnion("type", [UserActorSchema, SystemActorSchema]);
 export type Actor = z.infer<typeof ActorSchema>;
 
-// ---- Errors (the AppError class lives in src/lib/errors.ts, Phase 1) ----
+// ---- Errors: APP_ERROR_STATUS, AppErrorCode and the AppError class are defined in src/lib/errors.ts (Phase 1).
+//      src/contracts/common.ts re-exports them instead of redefining them. ----
 export const APP_ERROR_STATUS = {
   UNAUTHENTICATED: 401, FORBIDDEN: 403, NOT_FOUND: 404, VALIDATION_FAILED: 422, CONFLICT: 409,
   RATE_LIMITED: 429, INVALID_TRANSITION: 409, CONTACT_BLOCKED: 409, SUPPRESSED: 409,

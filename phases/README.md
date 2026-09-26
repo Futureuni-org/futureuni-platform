@@ -73,10 +73,10 @@ A parallel phase runs in its own worktree, created from the main repository fold
 pnpm phase start <nn> <slug>    # ../futureuni-platform-<nn>-<slug>, branch phase/<nn>-<slug>, DB futureuni_p<nn>, PORT 3000+<nn>
 pnpm phase list
 pnpm phase finish <nn>          # checks SUMMARY.md exists and pnpm check passes; prints the merge steps; never merges
-pnpm phase remove <nn>          # removes the worktree and drops the phase databases, after confirmation
+pnpm phase remove <nn> [--yes] [--force]   # removes the worktree, drops the phase databases, deletes the branch if merged; asks first unless --yes
 ```
 
-Phase databases are cloned with `createdb -T futureuni_dev`. On the build laptop this runs straight against native Postgres on `localhost:5432` (ADR-004). Stop `pnpm dev` and Prisma Studio in the main folder first: Postgres can't copy a template database while another session is connected to it.
+Phase databases are cloned with `CREATE DATABASE … TEMPLATE futureuni_dev` (and `futureuni_test`), the SQL behind `createdb -T`. On the build laptop this runs straight against native Postgres on `localhost:5432` (ADR-004). Stop `pnpm dev` and Prisma Studio in the main folder first: Postgres can't copy a template database while another session is connected to it.
 
 A sequential phase runs on a branch in the main folder: `git checkout main && git pull && git checkout -b phase/<nn>-<slug>`.
 
@@ -84,7 +84,7 @@ A sequential phase runs on a branch in the main folder: `git checkout main && gi
 
 Run this on `main`. The ownership guard allows every edit there.
 
-1. **Merge each branch** into `main`, in the batch's merge order. After each merge, run `pnpm install && pnpm registry:gen && pnpm check`. If a lockfile conflicts, delete `pnpm-lock.yaml` and reinstall.
+1. **Merge each branch** into `main`, in the batch's merge order. After each merge, run `pnpm install && pnpm registry:gen && pnpm check` and `node scripts/ownership/check.mjs`. If a lockfile conflicts, delete `pnpm-lock.yaml` and reinstall.
 2. **Apply every `REQUESTS.md`** from the merged phases:
    - connect each seam and delete its stand-in, then confirm `grep -r "SEAM:" src` returns nothing for the seams connected in this batch
    - schema changes go in as a new Prisma migration
@@ -102,6 +102,7 @@ Then remove the batch's worktrees (`pnpm phase remove <nn>`).
 | Phase | Name | Merged to `main` | Notes |
 |---|---|---|---|
 | 0 | Requirements pack | 2026-09-25 | Committed directly to `main` (the repository was created in this phase). See `phases/00/SUMMARY.md`. |
+| 1 | Scaffold | 2026-09-26 | Merge commit `19ca895` (branch `phase/01-scaffold`); `phases/01/REQUESTS.md` applied, CR-01-11 left open for Phase 21. See `phases/01/SUMMARY.md`. |
 
 ## Where things are
 

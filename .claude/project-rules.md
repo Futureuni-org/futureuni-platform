@@ -66,7 +66,7 @@ Last updated: 2026-09-25 (Phase 0). After Phase 0, this file changes only when a
 | Ownership checks | `node scripts/ownership/check.mjs` (fails on a path claimed by two phases) · `node scripts/ownership/check.mjs --phase-diff` (fails when a phase branch changed a path it doesn't own); CI runs both |
 | Everything CI runs | `pnpm check` (lint, typecheck, test, build) |
 
-Added by later phases (the names are fixed now): `registry:gen` and `db:validate` and `create-module` (Phase 2), `evals` (5), `jobs:run` and `credentials:rotate` (6), `profiles:check` (7), `seed:staging` (19), `bootstrap:admin` (21).
+Added by later phases (the names are fixed now): `registry:gen`, `db:validate`, `create-module` and `db:deploy` (`prisma migrate deploy`, used by CI and `pnpm phase start`) (Phase 2), `evals` (5), `jobs:run` and `credentials:rotate` (6), `profiles:check` (7), `seed:staging` (19), `bootstrap:admin` (21).
 
 - **Known pre-existing failures:** none.
 - **Launch gates:** no real prospect is contacted until every gate in `docs/launch-checklist.md` (Phase 21) is ticked. Until then `acquisition.outreach.globalPause` stays `true` in production.

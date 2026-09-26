@@ -1,5 +1,7 @@
 # FUTUREUNI Internal Platform
 
+Next.js 16 agent rules (read before writing Next.js code): @AGENTS.md
+
 ## What this repository is
 
 The FUTUREUNI Internal Platform is one Next.js application, one Postgres database, one login and one Vercel deployment. It holds every internal tool FUTUREUNI builds as a **module** under `src/modules/<id>/`. The first module is **Client Acquisition** (`src/modules/acquisition/`). It finds businesses that need web development, UI/UX design, graphic design or video editing, audits them, runs compliant outreach and tracks deals to won or lost. The build runs as 22 phases (0–21). Many of them run in parallel worktrees, so the rules below are contracts, not suggestions.
@@ -35,7 +37,7 @@ The FUTUREUNI Internal Platform is one Next.js application, one Postgres databas
 
 ## Ownership map
 
-Each path has exactly one owner phase. `scripts/ownership/ownership.json` (Phase 1) is the machine-readable copy, and the ownership guard hook enforces it on `phase/*` branches. Outside a phase branch (on `main`, or during merge and integration work), every edit is allowed.
+Each path has exactly one owner phase. `scripts/ownership/ownership.json` is the machine-readable source of truth, and the ownership guard hook (`scripts/ownership/guard.mjs`) enforces it on `phase/*` branches. Keep it and this table identical: `node scripts/ownership/check.mjs` fails when a path is claimed by two phases, and warns when the two differ, when a tracked file has no owner, or when an owned folder has no README.md. Shell writes don't reach the hook, so `node scripts/ownership/check.mjs --phase-diff` checks a phase branch's whole diff (`pnpm phase finish` and CI run both). Outside a phase branch (on `main`, or during merge and integration work), every edit is allowed.
 
 **Rules**
 - Patterns are globs. `(`, `)`, `[` and `]` are literal path characters.
@@ -47,8 +49,8 @@ Each path has exactly one owner phase. `scripts/ownership/ownership.json` (Phase
 | Owner | Paths |
 |---|---|
 | 0 | `CLAUDE.md`, `.claude/project-rules.md`, `docs/specs/**`, `docs/contracts/**`, `docs/decisions.md`, `docs/integrations.md`, `docs/prompts/**`, `docs/brand/**`, `docs/background/**`, `docs/legal/**`, `docs/owner-inputs/**`, `phases/README.md`, `phases/SUMMARY_TEMPLATE.md`, `.mcp.json`. After Phase 0 these change only on `main`, when a wave or batch is merged. |
-| 1 | `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.npmrc`, `.nvmrc`, `tsconfig.json`, `next.config.ts`, `vercel.json`, `eslint.config.mjs`, `postcss.config.mjs`, `.prettierrc*`, `.prettierignore`, `.editorconfig`, `.gitattributes`, `.gitignore`, `.env.example`, `vitest.config.ts`, `playwright.config.ts`, `docker-compose.yml`, `docker/**`, `.github/**`, `README.md`, `.claude/settings.json`, `.claude/hooks/**`, `src/env.ts`, `src/lib/**`, `src/app/api/health/**`, `scripts/**`, `tests/setup/**`, `public/**` |
-| 2 | `prisma/**`, `src/generated/**` (generated Prisma client, gitignored), `src/contracts/**`, `src/platform/db/**`, `src/platform/registry/**`, `src/platform/directory/**`, `M/core/**`, `templates/create-module/**`, `tests/factories/**` |
+| 1 | `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.npmrc`, `.nvmrc`, `tsconfig.json`, `next.config.ts`, `vercel.json`, `eslint.config.mjs`, `postcss.config.mjs`, `.prettierrc*`, `.prettierignore`, `.editorconfig`, `.gitattributes`, `.gitignore`, `.env.example`, `vitest.config.ts`, `playwright.config.ts`, `docker-compose.yml`, `docker/**`, `.github/**`, `README.md`, `AGENTS.md`, `.claude/settings.json`, `.claude/hooks/**`, `src/env.ts`, `src/env.test.ts`, `src/lib/**`, `src/app/api/health/**`, `scripts/**`, `tests/setup/**`, `public/**` |
+| 2 | `prisma/**`, `prisma.config.ts`, `src/generated/**` (generated Prisma client, gitignored), `src/contracts/**`, `src/platform/db/**`, `src/platform/registry/**`, `src/platform/directory/**`, `M/core/**`, `templates/create-module/**`, `tests/factories/**` |
 | 3 | `src/platform/auth/**`, `src/platform/team/**`, `src/app/(auth)/**`, `src/app/api/auth/**`, `src/proxy.ts` (or `src/middleware.ts`, whichever the installed Next.js uses) |
 | 4 | `src/styles/**`, `src/components/ui/**`, `src/components/patterns/**`, `src/components/charts/**`, `src/components/shell/**`, `src/lib/motion.ts`, `src/lib/chart-theme.ts`, `src/app/layout.tsx`, `src/app/global-error.tsx`, `src/app/not-found.tsx`, `src/app/(platform)/layout.tsx`, `src/app/(platform)/page.tsx`, `src/app/(platform)/loading.tsx`, `src/app/(platform)/error.tsx`, `src/app/(platform)/dev/**`, `src/app/(platform)/home/**`, `public/brand/**` |
 | 5 | `src/platform/ai/**`, `runtime-skills/_shared/**`, `runtime-skills/platform/**`, `evals/_runner/**`, `evals/platform/**` |
@@ -79,6 +81,8 @@ Each path has exactly one owner phase. `scripts/ownership/ownership.json` (Phase
 | `package.json` **scripts only**, adding the phase's own named scripts (`registry:gen`, `db:validate`, `create-module` for 2; `evals` for 5; `jobs:run`, `credentials:rotate` for 6; `profiles:check` for 7; `seed:staging` for 19; `bootstrap:admin` for 21) | 1 | 1; grants to 2, 5, 6, 7, 19, 21 |
 | The saas-skills marker block at the end of `CLAUDE.md`, and the "Stack and commands" section of `.claude/project-rules.md` (content only; any other change goes through REQUESTS.md) | 0 | 0; grant to 1 |
 | `M/manifest.ts` (initial version) | 2 | 19 |
+| `src/lib/money.ts` and `src/lib/money.test.ts` (`docs/contracts/common.md`) | 2 | 1; grant to 2 |
+| `tests/e2e/phase-01/**` (the scaffold smoke test; Phase 3's sign-in redirect and Phase 4's home page change what it sees) | 1 | 19; grants to 3 and 4 |
 | `src/app/(auth)/**` restyle with shared components (`alsoAllow`, behaviour unchanged) | 3 | 3; 18 restyles |
 | Hardening fixes anywhere (`alsoAllow: **`), each change recorded against a finding ID | — | 20 |
 | Deploy config: `vercel.json`, `.github/workflows/**`, `scripts/bootstrap-*` (`alsoAllow`) | 1 | 1; 21 edits |

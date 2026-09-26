@@ -40,6 +40,7 @@ Every decision that shapes the build, with its reason. ADR-001 to ADR-012 are fi
 | ADR-032 | Invariant 9 covers ACTIVE and PAUSED enrolments | Accepted |
 | ADR-033 | Vercel project config stays in `vercel.json` | Accepted |
 | ADR-034 | Compliance posture pending legal review (Nigeria GAID, EU consent countries) | Accepted |
+| ADR-035 | Toolchain pins | Accepted |
 
 ---
 
@@ -81,6 +82,12 @@ Every decision that shapes the build, with its reason. ADR-001 to ADR-012 are fi
   - **Vercel Cron:** Pro allows 100 cron jobs, a minimum interval of one minute, and **UTC schedules only**. It sends `Authorization: Bearer <CRON_SECRET>`. Delivery is best effort (runs can be missed or duplicated, and failed runs aren't retried), so the tick handler must be idempotent and reconcile due work.
   - **Vercel Blob:** private stores are GA (`@vercel/blob` ≥ 2.3). The access mode is fixed at store creation. OIDC auth is the default, and signed URLs and presigned uploads are available. Function bodies are limited to 4.5 MB, so uploads go direct to Blob.
   - **Vercel Functions:** Fluid Compute on Node.js 24. Default timeout 300 s, and bundles up to 5 GB (which matters for ADR-017). The Edge runtime is deprecated; don't use it.
+  - **Verified in Phase 1** (the `workflow` 4.8.9 package and the Workflow docs, 2026-09-26):
+    - Install `workflow` only. It pins `@workflow/next`; installing `@workflow/next` alone breaks the build (vercel/workflow#3580).
+    - Locally, runs are stored in `.next/workflow-data/`. `pnpm exec workflow inspect runs|steps|events --runId <id>` and `pnpm exec workflow web` show them.
+    - The builder generates `src/app/.well-known/workflow/v1/` (gitignored). `src/proxy.ts` must not intercept `/.well-known/workflow/`.
+    - **On Vercel (Phase 21):** the project must have "Enable access to System Environment Variables" switched on, or every run fails before its first step. Workflow 4.x keeps its backend and run data in `iad1`, so co-locate functions there (`"regions": ["iad1"]` in `vercel.json`, ADR-033) or plan the 5.x upgrade for multi-region. Keep Fluid compute on.
+    - Retries were proven in Phase 1 (`phases/01/SUMMARY.md`): 3 retries by default (`fn.maxRetries` overrides); `RetryableError`, `FatalError` and `getStepMetadata().attempt` come from `workflow`; a completed step is replayed from the event log, never re-run.
   - Sources: https://vercel.com/docs/workflows, https://vercel.com/docs/workflows/pricing, https://workflow-sdk.dev/docs/foundations/errors-and-retries, https://vercel.com/docs/cron-jobs, https://vercel.com/docs/vercel-blob/private-storage, https://vercel.com/changelog/vercel-functions-can-now-be-up-to-5-gb-in-package-size
 
 ### ADR-004: Local development
@@ -99,17 +106,18 @@ Every decision that shapes the build, with its reason. ADR-001 to ADR-012 are fi
     - **Paths in native mode:** `LOCAL_PG_BIN` and `LOCAL_PGDATA` override the default paths above.
   - **`pnpm db:up` in native mode** runs `pg_ctl start`, detached from the terminal.
     - **Detachment matters on Windows.** A server started inside a console dies when that console closes: new backends fail with `0xC0000142`, seen 2026-09-26.
-    - **Starting it:** use a new hidden console (PowerShell `Start-Process -WindowStyle Hidden`) or `Win32_Process.Create`.
+    - **Starting it:** `scripts/db.mjs` spawns `pg_ctl start` with Node's `detached: true` and `windowsHide: true`, which gives it its own hidden console. It survives the terminal closing (verified 2026-09-26: the starting shell exited, then new connections still worked).
     - **Behaviour:** idempotent (`pg_ctl status` first). It waits for `pg_isready`.
   - **`pnpm db:down`** runs `pg_ctl stop -m fast`.
   - **`docker-compose.yml` is still created**, for CI and for machines that have Docker. CI keeps its Postgres service container.
-  - **`pnpm phase start`** clones `futureuni_p<nn>` with `createdb -T futureuni_dev` straight against localhost in native mode (about 0.4 s, measured 2026-09-26), or inside the container in docker mode. It falls back to migrate + seed if cloning fails.
+  - **`pnpm phase start`** clones `futureuni_p<nn>` with `CREATE DATABASE … TEMPLATE futureuni_dev` (the SQL behind `createdb -T`) through `pg`, the same in native and docker mode (about 0.4 s, measured 2026-09-26). It falls back to migrate + seed if cloning fails.
     - **Cloning fails while another session is connected to the template.** So the helper says to stop `pnpm dev` / Prisma Studio in the main folder first.
   - **Seed guard.** The seed's host check (`docs/specs/data-model.md`, seed plan) already accepts `localhost` and `127.0.0.1`.
 
 ### ADR-005: Mock-first integrations
 - **Status:** Accepted (fixed).
 - **Decision:** every external service is reached through an adapter interface with at least two implementations, `mock` (realistic fake data, no network) and the real provider. The implementation is chosen by env (`MOCKS`) or settings. The whole platform must be buildable, testable and usable end to end with mocks only. Real keys are switched on in Phase 21, one provider at a time.
+- **Open question for Phase 21 (CR-01-11):** `src/env.ts` requires every provider key as an env variable in the production deployment (`VERCEL_ENV=production`) when `MOCKS=false`, as the Phase 1 prompt asked. That conflicts with reading keys from the credentials vault first. Recommended: once Phase 6's vault exists, require env keys only for secrets the vault can't hold, and let adapters report "not configured" (`PROVIDER_ERROR`).
 - **Reason:** parallel phases can build and test without accounts or spend, tests never touch the network, and go-live becomes a configuration change.
 
 ### ADR-006: Claude only through the platform AI service
@@ -212,7 +220,7 @@ Every decision that shapes the build, with its reason. ADR-001 to ADR-012 are fi
   - Display and headings: **Bricolage Grotesque** (`next/font/google` `Bricolage_Grotesque`, `axes: ["opsz", "wdth"]`).
   - Body and UI: **Instrument Sans** (`Instrument_Sans`, `axes: ["wdth"]`).
   - Data: **JetBrains Mono** (`JetBrains_Mono`).
-  - They're exposed as CSS variables (`--font-display`, `--font-sans`, `--font-mono`) and mapped in Tailwind with `@theme inline`.
+  - `next/font` exposes them as `--font-bricolage`, `--font-instrument-sans` and `--font-jetbrains-mono` (`src/styles/fonts.ts`). `src/styles/globals.css` maps them in `@theme inline` to Tailwind's `--font-display`, `--font-sans` and `--font-mono` (utilities `font-display`, `font-sans`, `font-mono`). The source names differ on purpose: `--font-sans: var(--font-sans)` would reference itself. `JetBrains_Mono` takes no `axes` option; its only axis is weight.
 - **Reason:** Pairing A is distinctive without being decorative, stays readable in the data-dense screens that dominate this product, keeps every face variable (smaller payloads on slow Nigerian connections), and gives Phase 4 a clear display/UI contrast for the editorial scale.
 - **Verified:** all three families exist in `next/font`'s font data for Next 16.3.6, and all are variable. Instrument Sans and Bricolage Grotesque keep the `tnum` feature in Google-served files; Google strips their stylistic sets, so self-host with `next/font/local` only if those are ever needed. Sources: `next@16.3.6` font-data.json and the `google/fonts` repository (`ofl/bricolagegrotesque`, `ofl/instrumentsans`), checked 2026-09-25.
 
@@ -403,6 +411,7 @@ Every decision that shapes the build, with its reason. ADR-001 to ADR-012 are fi
 - **Status:** Accepted, 2026-09-25.
 - **Decision:** pnpm, pinned through the `packageManager` field, on Node.js 24 LTS, pinned in `.nvmrc` and `engines`. This laptop has Node 24.19.0 and pnpm 11.3.0.
 - **Reason:** pnpm's shared store makes git worktrees cheap (`pnpm phase start` installs quickly). Node 24 is Vercel's current default LTS; Node 20 is deprecated on Vercel from 1 October 2026.
+- **Vercel (Phase 21):** Vercel builds support pnpm up to 10 without Corepack. For pnpm 11 (`packageManager: pnpm@11.3.0`), set the project environment variable `ENABLE_EXPERIMENTAL_COREPACK=1` (https://vercel.com/docs/builds/configure-a-build#corepack), or a build falls back to pnpm 9/10, which ignores `pnpm-workspace.yaml`'s `allowBuilds`. Node 24 still ships Corepack.
 
 ### ADR-025: Execution in batches and the seam rule
 - **Status:** Accepted, 2026-09-25.
@@ -484,3 +493,16 @@ Every decision that shapes the build, with its reason. ADR-001 to ADR-012 are fi
   - **Everything else:** `REVIEW`.
   - **Launch gate (Phase 21):** Nigerian counsel's written view on GAID Art. 18 and 26, plus a legitimate-interest assessment, before any Nigerian outreach. General legal review of the table before any outreach.
 - **Reason:** the defaults are conservative, reversible (settings and typed data, no code change) and visible to reviewers. They let the whole engine be built and tested now without deciding a legal question the build team can't answer.
+
+### ADR-035: Toolchain pins
+- **Status:** Accepted, 2026-09-26 (Phase 1).
+- **Decision:**
+  - **TypeScript 5.9.** typescript-eslint 8.70 supports TypeScript `>=4.8.4 <6.1.0`, and npm `latest` is now the native TypeScript 7.0. Never run a bare `pnpm add -D typescript`.
+  - **ESLint 9.39.** eslint-config-next 16.3.6 depends on eslint-plugin-react, eslint-plugin-import and eslint-plugin-jsx-a11y, whose peer ranges stop at ESLint 9. ESLint 9 is marked deprecated on npm now that 10 is out.
+  - **React 19.2.8**, the version create-next-app 16.3.6 pins with Next 16.3.6.
+  - **Vitest 5.0 and jsdom 30.0.1.** jsdom 30.1.x has an open Blob/FormData bug with Vitest 5 (vitest#11336).
+  - **The jest-dom type shim** in `tests/setup/jest-dom-vitest.d.ts`: jest-dom 7 doesn't type Vitest 5's `Matchers<R, T>` (jest-dom#738). Remove it when jest-dom PR #742 ships.
+  - **`"type": "module"`.** Vite 8 warns on a CommonJS-loaded config, and Prisma 7's upgrade guide recommends it.
+  - **pnpm 11.3** with `allowBuilds` in `pnpm-workspace.yaml`: every dependency with an install script must be listed, or the install fails.
+  - **pnpm's 24-hour release-age guard:** never add `minimumReleaseAgeExclude`; pick the previous version instead.
+- **Reason:** these were the newest versions that work together on 2026-09-26. Upgrade them together when the blockers clear (typescript-eslint for TypeScript 6.1 or 7, Next's lint plugins for ESLint 10, jest-dom for Vitest 5).
