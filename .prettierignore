@@ -1,0 +1,34 @@
+# Build and tool output
+.next/
+out/
+build/
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.playwright-mcp/
+.workflow-data/
+.workflow-vitest/
+.storage/
+.vercel/
+node_modules/
+pnpm-lock.yaml
+next-env.d.ts
+
+# Generated code
+src/generated/
+src/app/.well-known/
+
+# Documents are written by hand (Phase 0 owns most of them): never reformat Markdown.
+*.md
+docs/
+phases/
+
+# Deliberately non-conforming lint fixtures
+scripts/lint-fixtures/
+
+# Claude Code files
+.claude/
+
+# Phase 0 config, formatted by hand
+.mcp.json

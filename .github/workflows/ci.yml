@@ -1,0 +1,153 @@
+# CI (saas-ship): lint → typecheck → test → ownership check → build, plus the @smoke suite.
+# Everything runs with MOCKS=true and throwaway secrets; no real key is ever needed.
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  MOCKS: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+  NEXT_PUBLIC_APP_URL: http://localhost:3000
+  BETTER_AUTH_URL: http://localhost:3000
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/futureuni_test
+  DIRECT_URL: postgresql://postgres:postgres@localhost:5432/futureuni_test
+  DATABASE_URL_TEST: postgresql://postgres:postgres@localhost:5432/futureuni_test
+
+jobs:
+  verify:
+    name: Lint, typecheck, test, build
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        # Postgres 18 matches Neon's default and the local setup (ADR-004).
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: futureuni_test
+          POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale-provider=builtin --builtin-locale=C.UTF-8 --locale=C"
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d futureuni_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history, so a phase branch's diff can be measured from its merge base.
+          fetch-depth: 0
+
+      # Reads the pnpm version from package.json "packageManager".
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate throwaway secrets
+        run: node scripts/ci-env.mjs
+
+      # Phase 2 adds the Prisma schema; until then these steps are skipped.
+      - name: Generate the Prisma client
+        if: hashFiles('prisma/schema/**') != ''
+        run: pnpm db:generate
+
+      - name: Lint
+        run: pnpm lint
+
+      - name: Typecheck
+        run: pnpm typecheck
+
+      - name: Apply migrations to the CI database
+        if: hashFiles('prisma/schema/**') != ''
+        run: pnpm exec prisma migrate deploy
+
+      - name: Test
+        run: pnpm test
+
+      - name: Ownership map check (one owner per path)
+        run: node scripts/ownership/check.mjs
+
+      # A phase branch may change only the paths it owns, however they were written.
+      - name: Ownership of the branch diff (phase branches)
+        if: startsWith(github.head_ref, 'phase/')
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          BASE_REF: ${{ github.base_ref }}
+        run: node scripts/ownership/check.mjs --phase-diff --branch "$HEAD_REF" --base "origin/$BASE_REF"
+
+      - name: Build
+        run: pnpm build
+
+  e2e:
+    name: Smoke tests (Playwright)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: futureuni_test
+          POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale-provider=builtin --builtin-locale=C.UTF-8 --locale=C"
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres -d futureuni_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate throwaway secrets
+        run: node scripts/ci-env.mjs
+
+      - name: Generate the Prisma client
+        if: hashFiles('prisma/schema/**') != ''
+        run: pnpm db:generate
+
+      - name: Apply migrations to the CI database
+        if: hashFiles('prisma/schema/**') != ''
+        run: pnpm exec prisma migrate deploy
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Smoke tests
+        run: pnpm test:e2e --grep @smoke
+
+      - name: Upload the Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

@@ -1,0 +1,335 @@
+{
+  "$comment": "Machine-readable ownership map: the CLAUDE.md table plus its grants. Each path has exactly one owner (`owns`); `alsoAllow` grants never create a second owner. The most specific matching pattern decides the owner. Glob syntax: ** any depth, * within one path segment; ( ) [ ] are literal. {phase} is the current phase number. Check with: node scripts/ownership/check.mjs",
+  "alwaysAllowed": ["phases/{phase}/**", "tests/e2e/phase-{phase}/**"],
+  "phases": {
+    "10": {
+      "name": "Audits",
+      "owns": [
+        "src/modules/acquisition/audits/**",
+        "src/platform/browser/**",
+        "runtime-skills/acquisition/audit-*/**",
+        "evals/acquisition/audit-*/**"
+      ],
+      "alsoAllow": []
+    },
+    "11": {
+      "name": "Scoring and cross-sell",
+      "owns": [
+        "src/modules/acquisition/scoring/**",
+        "src/modules/acquisition/crosssell/**",
+        "runtime-skills/acquisition/score-*/**",
+        "evals/acquisition/score-*/**"
+      ],
+      "alsoAllow": []
+    },
+    "12": {
+      "name": "Outreach",
+      "owns": [
+        "src/modules/acquisition/outreach/**",
+        "runtime-skills/acquisition/outreach-*/**",
+        "evals/acquisition/outreach-*/**",
+        "src/app/(public)/**",
+        "src/app/api/unsubscribe/**",
+        "src/app/api/webhooks/outbound/**"
+      ],
+      "alsoAllow": []
+    },
+    "13": {
+      "name": "Inbox",
+      "owns": [
+        "src/modules/acquisition/inbox/**",
+        "runtime-skills/acquisition/inbox-*/**",
+        "evals/acquisition/inbox-*/**",
+        "src/app/api/webhooks/inbound/**"
+      ],
+      "alsoAllow": []
+    },
+    "14": {
+      "name": "Pipeline, meetings, proposals",
+      "owns": [
+        "src/modules/acquisition/pipeline/**",
+        "runtime-skills/acquisition/pipeline-*/**",
+        "evals/acquisition/pipeline-*/**",
+        "src/app/api/webhooks/calendar/**"
+      ],
+      "alsoAllow": []
+    },
+    "15": {
+      "name": "Module shell, search, review",
+      "owns": [
+        "src/app/(platform)/acquisition/*.tsx",
+        "src/app/(platform)/acquisition/[line]/*.tsx",
+        "src/app/(platform)/acquisition/[line]/search/**",
+        "src/app/(platform)/acquisition/[line]/review/**",
+        "src/modules/acquisition/ui/shell/**",
+        "src/modules/acquisition/ui/search/**",
+        "src/modules/acquisition/ui/review/**"
+      ],
+      "alsoAllow": []
+    },
+    "16": {
+      "name": "Leads, pipeline, inbox screens",
+      "owns": [
+        "src/app/(platform)/acquisition/[line]/leads/**",
+        "src/app/(platform)/acquisition/[line]/pipeline/**",
+        "src/app/(platform)/acquisition/[line]/inbox/**",
+        "src/modules/acquisition/ui/leads/**",
+        "src/modules/acquisition/ui/pipeline/**",
+        "src/modules/acquisition/ui/inbox/**"
+      ],
+      "alsoAllow": []
+    },
+    "17": {
+      "name": "Analytics",
+      "owns": [
+        "src/app/(platform)/acquisition/[line]/analytics/**",
+        "src/app/(platform)/acquisition/overview/**",
+        "src/modules/acquisition/analytics/**",
+        "src/modules/acquisition/ui/analytics/**",
+        "runtime-skills/acquisition/analytics-*/**",
+        "evals/acquisition/analytics-*/**"
+      ],
+      "alsoAllow": []
+    },
+    "18": {
+      "name": "Admin and settings screens",
+      "owns": [
+        "src/app/(platform)/acquisition/[line]/settings/**",
+        "src/app/(platform)/settings/**",
+        "src/app/(platform)/admin/**",
+        "src/modules/acquisition/ui/settings/**",
+        "src/components/admin/**"
+      ],
+      "alsoAllow": ["src/app/(auth)/**"]
+    },
+    "19": {
+      "name": "Integration and orchestration",
+      "owns": [
+        "src/modules/acquisition/manifest.ts",
+        "src/modules/acquisition/README.md",
+        "src/modules/acquisition/workflows/**",
+        "src/modules/acquisition/ui/widgets/**",
+        "tests/e2e/**",
+        "tests/integration/**",
+        "prisma/seed/staging/**",
+        "docs/architecture.md",
+        "docs/schedules.md"
+      ],
+      "alsoAllow": ["package.json"]
+    },
+    "20": {
+      "name": "Hardening",
+      "owns": [
+        "docs/hardening-report.md",
+        "docs/cost-model.md",
+        "evals/_redteam/**",
+        "tests/chaos/**"
+      ],
+      "alsoAllow": ["**"]
+    },
+    "21": {
+      "name": "Deploy and go-live",
+      "owns": [
+        "docs/runbook.md",
+        "docs/onboarding.md",
+        "docs/launch-checklist.md",
+        "docs/go-live-log.md",
+        "docs/handover/**"
+      ],
+      "alsoAllow": ["package.json", "vercel.json", ".github/workflows/**", "scripts/bootstrap-*"]
+    },
+    "00": {
+      "name": "Requirements pack",
+      "owns": [
+        "CLAUDE.md",
+        ".claude/project-rules.md",
+        "docs/specs/**",
+        "docs/contracts/**",
+        "docs/decisions.md",
+        "docs/integrations.md",
+        "docs/prompts/**",
+        "docs/brand/**",
+        "docs/background/**",
+        "docs/legal/**",
+        "docs/owner-inputs/**",
+        "phases/README.md",
+        "phases/SUMMARY_TEMPLATE.md",
+        ".mcp.json"
+      ],
+      "alsoAllow": []
+    },
+    "01": {
+      "name": "Scaffold",
+      "owns": [
+        "package.json",
+        "pnpm-lock.yaml",
+        "pnpm-workspace.yaml",
+        ".npmrc",
+        ".nvmrc",
+        "tsconfig.json",
+        "next.config.ts",
+        "vercel.json",
+        "eslint.config.mjs",
+        "postcss.config.mjs",
+        ".prettierrc*",
+        ".prettierignore",
+        ".editorconfig",
+        ".gitattributes",
+        ".gitignore",
+        ".env.example",
+        "vitest.config.ts",
+        "playwright.config.ts",
+        "docker-compose.yml",
+        "docker/**",
+        ".github/**",
+        "README.md",
+        "AGENTS.md",
+        ".claude/settings.json",
+        ".claude/hooks/**",
+        "src/env.ts",
+        "src/env.test.ts",
+        "src/lib/**",
+        "src/app/api/health/**",
+        "scripts/**",
+        "tests/setup/**",
+        "public/**"
+      ],
+      "alsoAllow": [
+        "src/app/layout.tsx",
+        "src/app/global-error.tsx",
+        "src/app/not-found.tsx",
+        "src/app/(platform)/layout.tsx",
+        "src/app/(platform)/page.tsx",
+        "src/styles/**",
+        "public/brand/**",
+        "CLAUDE.md",
+        ".claude/project-rules.md",
+        "src/**/README.md",
+        "prisma/README.md",
+        "prisma/**/README.md",
+        "runtime-skills/**/README.md",
+        "evals/**/README.md",
+        "templates/**/README.md",
+        "tests/**/README.md"
+      ]
+    },
+    "02": {
+      "name": "Core schema and registry",
+      "owns": [
+        "prisma/**",
+        "prisma.config.ts",
+        "src/generated/**",
+        "src/contracts/**",
+        "src/platform/db/**",
+        "src/platform/registry/**",
+        "src/platform/directory/**",
+        "src/modules/acquisition/core/**",
+        "templates/create-module/**",
+        "tests/factories/**"
+      ],
+      "alsoAllow": [
+        "package.json",
+        "src/modules/acquisition/manifest.ts",
+        "src/lib/money.ts",
+        "src/lib/money.test.ts"
+      ]
+    },
+    "03": {
+      "name": "Auth and team",
+      "owns": [
+        "src/platform/auth/**",
+        "src/platform/team/**",
+        "src/app/(auth)/**",
+        "src/app/api/auth/**",
+        "src/proxy.ts",
+        "src/middleware.ts"
+      ],
+      "alsoAllow": ["tests/e2e/phase-01/**"]
+    },
+    "04": {
+      "name": "Design system and shell",
+      "owns": [
+        "src/styles/**",
+        "src/components/ui/**",
+        "src/components/patterns/**",
+        "src/components/charts/**",
+        "src/components/shell/**",
+        "src/lib/motion.ts",
+        "src/lib/chart-theme.ts",
+        "src/app/layout.tsx",
+        "src/app/global-error.tsx",
+        "src/app/not-found.tsx",
+        "src/app/(platform)/layout.tsx",
+        "src/app/(platform)/page.tsx",
+        "src/app/(platform)/loading.tsx",
+        "src/app/(platform)/error.tsx",
+        "src/app/(platform)/dev/**",
+        "src/app/(platform)/home/**",
+        "public/brand/**"
+      ],
+      "alsoAllow": ["tests/e2e/phase-01/**"]
+    },
+    "05": {
+      "name": "AI service",
+      "owns": [
+        "src/platform/ai/**",
+        "runtime-skills/_shared/**",
+        "runtime-skills/platform/**",
+        "evals/_runner/**",
+        "evals/platform/**"
+      ],
+      "alsoAllow": ["package.json"]
+    },
+    "06": {
+      "name": "Platform services",
+      "owns": [
+        "src/platform/jobs/**",
+        "src/platform/events/**",
+        "src/platform/notifications/**",
+        "src/platform/audit-log/**",
+        "src/platform/settings/**",
+        "src/platform/credentials/**",
+        "src/platform/storage/**",
+        "src/platform/_seams/**",
+        "src/app/api/cron/**",
+        "src/app/api/workflows/**",
+        "src/app/api/notifications/**",
+        "src/app/api/dev/**",
+        "src/workflows/_platform/**",
+        "src/emails/**"
+      ],
+      "alsoAllow": ["package.json"]
+    },
+    "07": {
+      "name": "Profiles and runtime skills",
+      "owns": [
+        "src/modules/acquisition/profiles/**",
+        "runtime-skills/acquisition/_references/**",
+        "runtime-skills/acquisition/profile-*/**",
+        "evals/acquisition/profile-*/**",
+        "evals/acquisition/profiles/**"
+      ],
+      "alsoAllow": ["package.json"]
+    },
+    "08": {
+      "name": "Sourcing",
+      "owns": [
+        "src/modules/acquisition/sourcing/**",
+        "runtime-skills/acquisition/source-*/**",
+        "evals/acquisition/source-*/**"
+      ],
+      "alsoAllow": []
+    },
+    "09": {
+      "name": "Enrichment and compliance",
+      "owns": [
+        "src/modules/acquisition/enrichment/**",
+        "src/modules/acquisition/compliance/**",
+        "src/platform/http/**",
+        "runtime-skills/acquisition/enrich-*/**",
+        "evals/acquisition/enrich-*/**"
+      ],
+      "alsoAllow": []
+    }
+  }
+}

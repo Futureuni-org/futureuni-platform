@@ -1,0 +1,170 @@
+/*
+ * Global styles: Tailwind CSS 4, the FUTUREUNI tokens, and the base layer.
+ * Values live in ./tokens.css; this file only maps them to Tailwind utilities.
+ * Seeded by Phase 1, owned by Phase 4.
+ */
+
+@import "tailwindcss";
+@import "./tokens.css";
+
+/* Dark mode follows data-theme on <html> (set before paint by ThemeScript), not the OS query. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/*
+ * Only the project's own tokens: no default palette (project-rules bans palette classes), no
+ * default shadow sets (elevation is shadow-soft / shadow-lift, and dark mode uses none) and no
+ * serif stack (ADR-014 names the three faces).
+ */
+@theme {
+  --color-*: initial;
+  --shadow-*: initial;
+  --inset-shadow-*: initial;
+  --drop-shadow-*: initial;
+  --text-shadow-*: initial;
+  --font-serif: initial;
+
+  /* 4px base: the saas-ui 4/8pt scale is 1 2 3 4 6 8 12 16 24 32 (4px to 128px). */
+  --spacing: 0.25rem;
+}
+
+@theme inline {
+  /* Surfaces */
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-zone: var(--zone);
+  --color-elevated: var(--elevated);
+
+  /* Text */
+  --color-foreground: var(--foreground);
+  --color-heading: var(--heading);
+  --color-muted: var(--muted);
+  --color-subtle: var(--subtle);
+
+  /* Brand */
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  /* Boundaries and focus (`focus` is an alias of `ring`, for `ring-focus`) */
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-focus: var(--ring);
+  --color-selection: var(--selection);
+
+  /* Status */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  /* Chart series */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-chart-8: var(--chart-8);
+
+  /* Overlay backdrop (`overlay` is an alias of `scrim`) */
+  --color-scrim: var(--scrim);
+  --color-overlay: var(--scrim);
+
+  /* Radius scale: sm inputs and badges, md buttons, lg surfaces, xl sheets */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  /* Elevation */
+  --shadow-soft: var(--elevation-soft);
+  --shadow-lift: var(--elevation-lift);
+
+  /* Type (ADR-014): next/font sets the source variables on <html> */
+  --font-display: var(--font-bricolage);
+  --font-sans: var(--font-instrument-sans);
+  --font-mono: var(--font-jetbrains-mono);
+
+  /* Motion */
+  --ease-standard: var(--motion-ease-standard);
+  --ease-emphasized: var(--motion-ease-emphasized);
+  --ease-exit: var(--motion-ease-exit);
+  --transition-duration-instant: var(--duration-instant);
+  --transition-duration-fast: var(--duration-fast);
+  --transition-duration-base: var(--duration-base);
+  --transition-duration-slow: var(--duration-slow);
+  --transition-duration-deliberate: var(--duration-deliberate);
+  --default-transition-duration: var(--duration-fast);
+  --default-transition-timing-function: var(--motion-ease-standard);
+}
+
+@layer base {
+  html {
+    background-color: var(--background);
+    color: var(--foreground);
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Display face for display text and H1–H2; headings use the heading colour. */
+  h1,
+  h2 {
+    font-family: var(--font-display);
+  }
+
+  h1,
+  h2,
+  h3 {
+    color: var(--heading);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Inputs never below 16px, or iOS zooms on focus. */
+  input,
+  select,
+  textarea {
+    font-size: max(1rem, 1em);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--selection);
+    color: var(--foreground);
+  }
+}
+
+/* Safety net for CSS animations; Motion's JS animations follow MotionConfig (Phase 4). */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

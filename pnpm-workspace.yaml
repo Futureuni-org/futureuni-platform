@@ -1,0 +1,18 @@
+# pnpm 11 settings (it no longer reads the package.json "pnpm" field or non-auth .npmrc keys).
+# pnpm 11 fails an install when a dependency's build script hasn't been reviewed (strictDepBuilds),
+# so every package with an install script is listed here: true runs it, false skips it.
+allowBuilds:
+  # Prisma CLI Node-version check, and the schema engine download used by migrate.
+  prisma: true
+  "@prisma/engines": true
+  # Native binaries used by Vite/Vitest/tsx and by Vercel Workflow's builder.
+  esbuild: true
+  "@swc/core": true
+  # macOS-only file watcher; harmless elsewhere.
+  fsevents: true
+  # Optional native speed-ups; the packages work without their build step.
+  cbor-extract: false
+  sharp: false
+  unrs-resolver: false
+  # MSW's postinstall only copies the browser service worker; tests use msw/node.
+  msw: false

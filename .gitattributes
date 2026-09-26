@@ -1,0 +1,16 @@
+# Normalise text to LF in the repository and in working copies, on every OS,
+# so hooks, scripts and Prettier behave the same on Windows.
+* text=auto eol=lf
+
+# Binary assets
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.docx binary
+*.zip binary
