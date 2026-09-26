@@ -11,7 +11,7 @@
 // remove <nn>        removes the worktree, drops its databases and deletes the branch if merged.
 
 import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { createInterface } from "node:readline/promises";
 
@@ -259,29 +259,87 @@ async function confirm(question) {
   }
 }
 
+/**
+ * What's left of phase <nn>: its registered worktree, or (after an interrupted remove) its
+ * branch and the folder that branch would use. Null when nothing is left.
+ */
+function phaseLeftovers(root, nn) {
+  const registered = phaseWorktrees(root).find(
+    (entry) => entry.branch?.startsWith(`phase/${nn}-`) === true,
+  );
+  if (registered !== undefined) return { ...registered, registered: true };
+  const branch = git(["branch", "--list", "--format=%(refname:short)", `phase/${nn}-*`], root)
+    .split(/\r?\n/)
+    .find(Boolean);
+  if (branch === undefined) return null;
+  const slug = branch.slice(`phase/${nn}-`.length);
+  return { path: worktreePath(root, nn, slug), branch, registered: false };
+}
+
+/** Windows refuses to rename a folder that a process is using: a cheap "is it in use?" check. */
+function assertNotInUse(path) {
+  if (!existsSync(path)) return;
+  const probe = `${path}.removing`;
+  try {
+    renameSync(path, probe);
+    renameSync(probe, path);
+  } catch (error) {
+    fail(
+      `${path} is in use (${error instanceof Error ? error.message : String(error)}).\n` +
+        "Stop pnpm dev, tests, terminals and editors using it, then run this again. Nothing was removed.",
+    );
+  }
+}
+
 async function remove({ nn, yes, force }) {
   const root = mainRoot();
-  const worktree = findWorktree(root, nn);
+  const leftovers = phaseLeftovers(root, nn);
+  if (leftovers === null) fail(`Nothing to remove for phase ${nn}. See: pnpm phase list`);
   const { dev, test } = phaseDatabases(nn);
 
-  if (!yes && !(await confirm(`Remove ${worktree.path} and drop ${dev} and ${test}?`))) {
+  if (
+    !yes &&
+    !(await confirm(
+      `Remove ${leftovers.path} and drop ${dev} and ${test}? Stop pnpm dev and tests running there first.`,
+    ))
+  ) {
     out("Nothing removed.");
     return;
   }
 
-  // Check the database first, so a stopped server doesn't leave a half-removed phase.
+  // Check everything that could stop the removal before changing anything.
   const admin = await localAdminUrl(readEnvFile(join(root, ".env.local")));
-
-  try {
-    git(["worktree", "remove", ...(force ? ["--force"] : []), worktree.path], root);
-  } catch (error) {
-    const detail =
-      error instanceof Error && "stderr" in error ? String(error.stderr).trim() : String(error);
-    fail(
-      `git worktree remove failed: ${detail}\nCommit or discard its changes first, or pass --force to lose them.`,
-    );
+  if (leftovers.registered) {
+    const changes = git(["status", "--porcelain"], leftovers.path);
+    if (changes !== "" && !force) {
+      fail(
+        `${leftovers.path} has uncommitted changes:\n${changes}\nCommit or discard them first, or pass --force to lose them.`,
+      );
+    }
   }
-  out(`ok    removed ${worktree.path}`);
+  assertNotInUse(leftovers.path);
+
+  // Windows: git can't delete paths longer than 260 characters, and pnpm's node_modules has
+  // them. Remove the reinstallable, gitignored build folders with Node first (it handles long
+  // paths), then let git remove the worktree.
+  if (existsSync(leftovers.path)) {
+    for (const folder of ["node_modules", ".next"]) {
+      rmSync(join(leftovers.path, folder), { recursive: true, force: true, maxRetries: 3 });
+    }
+  }
+  if (leftovers.registered) {
+    try {
+      git(["worktree", "remove", ...(force ? ["--force"] : []), leftovers.path], root);
+    } catch (error) {
+      const detail =
+        error instanceof Error && "stderr" in error ? String(error.stderr).trim() : String(error);
+      out(`warn  git worktree remove: ${detail}`);
+    }
+  }
+  // Whatever git couldn't delete (or an earlier, interrupted remove left behind).
+  rmSync(leftovers.path, { recursive: true, force: true, maxRetries: 3 });
+  git(["worktree", "prune"], root);
+  out(`ok    removed ${leftovers.path}`);
 
   await withClient(admin, async (client) => {
     for (const name of [dev, test]) {
@@ -290,15 +348,13 @@ async function remove({ nn, yes, force }) {
     }
   });
 
-  if (worktree.branch !== null) {
-    try {
-      git(["branch", "-d", worktree.branch], root);
-      out(`ok    deleted branch ${worktree.branch}`);
-    } catch {
-      out(
-        `keep  branch ${worktree.branch} has commits that aren't merged into main, so it was kept`,
-      );
-    }
+  try {
+    git(["branch", "-d", leftovers.branch], root);
+    out(`ok    deleted branch ${leftovers.branch}`);
+  } catch {
+    out(
+      `keep  branch ${leftovers.branch} has commits that aren't merged into main, so it was kept`,
+    );
   }
 }
 

@@ -19,7 +19,7 @@ The repository is now a strictly configured Next.js 16.3 app that later phases b
 - **Ownership:** a Claude Code hook blocks edits outside a phase's paths, and `pnpm phase` manages parallel worktrees.
 - **CI:** a workflow runs on pull requests and on pushes to `main`.
 
-Acceptance criteria met: P1-AC1 to P1-AC6. P1-AC4 (`pnpm phase start/remove 99`) is verified after the merge, because a worktree starts from `main` (see "How to test it").
+Acceptance criteria met: P1-AC1 to P1-AC6. P1-AC4 was verified after the merge (a worktree starts from `main`): `pnpm phase start 99 test` created `../futureuni-platform-99-test` on `phase/99-test` with `futureuni_p99` / `futureuni_test_p99` and port 3099 (`/api/health` answered there), the guard blocked another phase's path in it, `pnpm phase remove 99 --yes` refused while its dev server ran and then removed the folder, both databases and the branch.
 
 ## Files and folders created
 
@@ -255,3 +255,8 @@ Two independent reviewers covered the whole diff (security and scripts; app, sty
 | Nits | Nit | `.gitignore` pattern, letter case, `.env.local` mode 0600, the signing key length, a browser-guard test, the spacing scale, `preload`, error copy, `aria-live`, MSW failing the test, more colour fixtures, eyebrow size | Fixed. Not changed: the `#add` false positive and named colours (documented) |
 
 I also found and fixed that `pnpm phase list/remove` treated the main folder as a phase worktree when it was on a phase branch.
+
+**Fixed after the merge (commit on `main`), found by the P1-AC4 run:**
+- On Windows, `git worktree remove` can't delete pnpm's long `node_modules` paths, and a folder a process is still using made git unregister the worktree before failing.
+- `pnpm phase remove` now checks for uncommitted changes and for a folder in use (Windows refuses to rename it), then deletes the build folders with Node, then lets git remove the worktree.
+- It's resumable: an interrupted remove is finished by running it again.
