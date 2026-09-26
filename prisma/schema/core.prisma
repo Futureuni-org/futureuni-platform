@@ -1,0 +1,578 @@
+// Platform core (docs/specs/data-model.md §5.1). Core tables never hold a foreign key to an
+// acq_ table: where core points at module data (AiCall.leadId, Note.targetId) it stores a plain
+// id. Foreign keys default to Restrict; Cascade only for detail rows that mean nothing without
+// their parent; SetNull for optional back-references (§2).
+
+// ---- Team --------------------------------------------------------------------------------
+
+model Invite {
+  id             String        @id @default(cuid())
+  email          String        @db.Citext
+  role           Role
+  serviceLines   ServiceLine[] @default([])
+  /// SHA-256 of the random token. The token itself is never stored.
+  tokenHash      String        @unique
+  expiresAt      DateTime      @db.Timestamptz(3)
+  usedAt         DateTime?     @db.Timestamptz(3)
+  revokedAt      DateTime?     @db.Timestamptz(3)
+  invitedById    String
+  acceptedUserId String?
+  lastSentAt     DateTime      @default(now()) @db.Timestamptz(3)
+  sendCount      Int           @default(1)
+  createdAt      DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime      @updatedAt @db.Timestamptz(3)
+
+  invitedBy    User  @relation("InviteInvitedBy", fields: [invitedById], references: [id], onDelete: Restrict)
+  acceptedUser User? @relation("InviteAcceptedUser", fields: [acceptedUserId], references: [id], onDelete: SetNull)
+
+  @@unique([email], map: "invites_email_pending_key", where: raw("\"usedAt\" IS NULL AND \"revokedAt\" IS NULL"))
+  @@index([email])
+  @@index([invitedById])
+  @@index([acceptedUserId])
+  @@index([expiresAt])
+  @@map("invites")
+}
+
+model TeamProfile {
+  id                String        @id @default(cuid())
+  userId            String        @unique
+  serviceLines      ServiceLine[] @default([])
+  weeklyCapacity    Int           @default(3)
+  /// Maintained by recalculateLoad from active HandoffAssignments; never set by hand.
+  currentLoad       Int           @default(0)
+  timezone          String        @default("Africa/Lagos")
+  canApprove        Boolean       @default(false)
+  /// ISO weekdays (1 = Monday) the person works.
+  workingDays       Int[]         @default([1, 2, 3, 4, 5])
+  workingHoursStart String        @default("09:00")
+  workingHoursEnd   String        @default("17:00")
+  title             String?
+  createdAt         DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime      @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([serviceLines], type: Gin)
+  @@map("team_profiles")
+}
+
+// ---- Shared companies and contacts directory ---------------------------------------------
+
+/// The shared directory (soft-deletable). Written only through @/platform/directory.
+model Company {
+  id                  String           @id @default(cuid())
+  /// Never a Google Places name: Places-only companies hold "Place <last 6 of place_id>".
+  name                String
+  normalizedName      String
+  normalizedDomain    String?          @db.Citext
+  website             String?
+  websiteKind         WebsiteKind      @default(UNKNOWN)
+  phones              String[]         @default([])
+  primaryPhone        String?
+  country             String?
+  city                String?
+  region              String?
+  addressLine         String?
+  postcode            String?
+  market              Market
+  timezone            String?
+  legalForm           LegalForm        @default(UNKNOWN)
+  legalFormSource     String?
+  legalFormConfidence Float?
+  companyNumber       String?
+  industry            String?
+  sizeRange           CompanySizeRange @default(UNKNOWN)
+  /// CompanySocials (docs/contracts/enrichment.md)
+  socials             Json             @default("{}")
+  /// TechHints (docs/contracts/enrichment.md)
+  techHints           Json?
+  copyrightYear       Int?
+  crawlStatus         CrawlStatus      @default(NOT_STARTED)
+  lastCrawledAt       DateTime?        @db.Timestamptz(3)
+  lastEnrichedAt      DateTime?        @db.Timestamptz(3)
+  firstSource         String
+  firstSourceUrl      String?
+  collectedAt         DateTime         @default(now()) @db.Timestamptz(3)
+  lawfulBasis         LawfulBasis      @default(LEGITIMATE_INTEREST_B2B)
+  /// FieldSources (docs/contracts/enrichment.md)
+  fieldSources        Json             @default("{}")
+  isActiveClient      Boolean          @default(false)
+  deletedAt           DateTime?        @db.Timestamptz(3)
+  createdAt           DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime         @updatedAt @db.Timestamptz(3)
+
+  contacts        Contact[]
+  sourceRefs      CompanySourceRef[]
+  notes           Note[]
+  leads           Lead[]
+  signals         Signal[]
+  audits          Audit[]
+  auditFindings   AuditFinding[]
+  crossSellGroups CrossSellGroup[]
+  enrollments     Enrollment[]
+  messages        Message[]
+  replies         Reply[]
+  meetings        Meeting[]
+  deals           Deal[]
+  handoffs        Handoff[]
+
+  @@unique([normalizedDomain], map: "companies_normalizedDomain_live_key", where: raw("\"normalizedDomain\" IS NOT NULL AND \"deletedAt\" IS NULL"))
+  @@index([normalizedName(ops: raw("gin_trgm_ops"))], map: "companies_name_trgm", type: Gin)
+  @@index([phones], type: Gin)
+  @@index([market, country])
+  @@index([city])
+  @@index([legalForm])
+  @@index([isActiveClient])
+  @@index([deletedAt])
+  @@map("companies")
+}
+
+/// External ids a provider lets us keep indefinitely (for example a Google place_id).
+model CompanySourceRef {
+  id              String    @id @default(cuid())
+  companyId       String
+  adapterId       String
+  externalId      String
+  url             String?
+  lastRefreshedAt DateTime? @db.Timestamptz(3)
+  createdAt       DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime  @updatedAt @db.Timestamptz(3)
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  @@unique([adapterId, externalId])
+  @@index([companyId])
+  @@map("company_source_refs")
+}
+
+/// A contact at a company (soft-deletable; anonymised, never deleted, for personal-data removal).
+model Contact {
+  id              String           @id @default(cuid())
+  companyId       String
+  name            String?
+  firstName       String?
+  lastName        String?
+  role            String?
+  seniority       ContactSeniority @default(UNKNOWN)
+  email           String?          @db.Citext
+  emailStatus     EmailStatus      @default(UNVERIFIED)
+  emailType       EmailType?
+  emailVerifiedAt DateTime?        @db.Timestamptz(3)
+  /// VerifierFlags (docs/contracts/enrichment.md)
+  verifierFlags   Json?
+  phone           String?
+  whatsappStatus  WhatsAppStatus   @default(UNKNOWN)
+  linkedinUrl     String?
+  source          String
+  sourceUrl       String?
+  collectedAt     DateTime         @default(now()) @db.Timestamptz(3)
+  lawfulBasis     LawfulBasis      @default(LEGITIMATE_INTEREST_B2B)
+  /// FieldSources (docs/contracts/enrichment.md)
+  fieldSources    Json             @default("{}")
+  isAnonymized    Boolean          @default(false)
+  anonymizedAt    DateTime?        @db.Timestamptz(3)
+  deletedAt       DateTime?        @db.Timestamptz(3)
+  createdAt       DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime         @updatedAt @db.Timestamptz(3)
+
+  company        Company         @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  primaryOfLeads Lead[]          @relation("LeadPrimaryContact")
+  enrollments    Enrollment[]
+  messages       Message[]
+  replies        Reply[]
+  meetings       Meeting[]
+  consentRecords ConsentRecord[]
+
+  @@unique([companyId, email], map: "contacts_companyId_email_live_key", where: raw("email IS NOT NULL AND \"deletedAt\" IS NULL"))
+  @@index([companyId])
+  @@index([email])
+  @@index([phone])
+  @@index([emailStatus])
+  @@map("contacts")
+}
+
+/// A generic note any module can attach to any record (no foreign key to module tables).
+model Note {
+  id         String   @id @default(cuid())
+  authorId   String
+  module     String
+  targetType String
+  targetId   String
+  companyId  String?
+  body       String
+  mentions   String[] @default([])
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  author  User     @relation(fields: [authorId], references: [id], onDelete: Restrict)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  @@index([targetType, targetId, createdAt])
+  @@index([authorId])
+  @@index([companyId])
+  @@map("notes")
+}
+
+// ---- Audit log, notifications, platform email -----------------------------------------------
+
+/// Append-only (INV-20). actorId has no foreign key, so history survives user changes.
+model AuditLog {
+  id         String    @id @default(cuid())
+  actorType  ActorType
+  actorId    String?
+  actorLabel String?
+  action     String
+  targetType String
+  targetId   String
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?
+  requestId  String?
+  createdAt  DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
+  @@index([targetType, targetId, createdAt])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model Notification {
+  id           String                @id @default(cuid())
+  userId       String
+  type         String
+  title        String
+  body         String?
+  link         String?
+  /// NotificationData (docs/contracts/events.md)
+  data         Json?
+  readAt       DateTime?             @db.Timestamptz(3)
+  dedupeKey    String?
+  channelsSent NotificationChannel[] @default([])
+  createdAt    DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime              @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey], map: "notifications_userId_dedupeKey_key", where: raw("\"dedupeKey\" IS NOT NULL"))
+  @@index([userId, readAt, createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model NotificationPreference {
+  id        String              @id @default(cuid())
+  userId    String
+  type      String
+  channel   NotificationChannel
+  enabled   Boolean
+  createdAt DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime            @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, type, channel])
+  @@map("notification_preferences")
+}
+
+/// Platform (transactional) email only. Outreach email lives in Message.
+model EmailDelivery {
+  id                String              @id @default(cuid())
+  to                String              @db.Citext
+  userId            String?
+  template          String
+  subject           String
+  status            EmailDeliveryStatus @default(QUEUED)
+  provider          String
+  providerMessageId String?
+  dedupeKey         String              @unique
+  error             String?
+  jobRunId          String?
+  sentAt            DateTime?           @db.Timestamptz(3)
+  createdAt         DateTime            @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime            @updatedAt @db.Timestamptz(3)
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  jobRun JobRun? @relation(fields: [jobRunId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([to])
+  @@index([userId])
+  @@index([jobRunId])
+  @@map("email_deliveries")
+}
+
+// ---- Settings and credentials ----------------------------------------------------------------
+
+/// Typed settings; secrets never go here (INV-21). One row per (key, scope) for PLATFORM and
+/// MODULE scope, and per (key, scope, userId) for USER scope: two partial unique indexes, plus a
+/// CHECK in the init migration that USER scope has a user and the others don't.
+model Setting {
+  id          String       @id @default(cuid())
+  key         String
+  scope       SettingScope
+  module      String?
+  userId      String?
+  value       Json
+  updatedById String?
+  createdAt   DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime     @updatedAt @db.Timestamptz(3)
+
+  user      User? @relation("SettingUser", fields: [userId], references: [id], onDelete: Cascade)
+  updatedBy User? @relation("SettingUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@unique([key, scope], map: "settings_key_scope_global_key", where: raw("\"userId\" IS NULL"))
+  @@unique([key, scope, userId], map: "settings_key_scope_user_key", where: raw("\"userId\" IS NOT NULL"))
+  @@index([scope, module])
+  @@index([userId])
+  @@index([updatedById])
+  @@map("settings")
+}
+
+/// AES-256-GCM ciphertext only (INV-21). Plaintext never reaches the database.
+model IntegrationCredential {
+  id           String           @id @default(cuid())
+  provider     String           @unique
+  ciphertext   String
+  iv           String
+  authTag      String
+  keyVersion   Int
+  maskedHint   String
+  status       CredentialStatus @default(NOT_TESTED)
+  lastTestedAt DateTime?        @db.Timestamptz(3)
+  lastError    String?
+  createdById  String
+  updatedById  String?
+  createdAt    DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime         @updatedAt @db.Timestamptz(3)
+
+  createdBy User  @relation("CredentialCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy User? @relation("CredentialUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([createdById])
+  @@index([updatedById])
+  @@map("integration_credentials")
+}
+
+// ---- AI usage and prompt versions ---------------------------------------------------------
+
+/// One row per AI call, including blocked and failed ones (INV-13). Cost in micro-USD (ADR-027).
+model AiCall {
+  id               String       @id @default(cuid())
+  task             String
+  promptVersion    Int?
+  model            String
+  provider         String
+  actorType        ActorType
+  actorId          String?
+  module           String?
+  /// No foreign key (cross-module).
+  leadId           String?
+  companyId        String?
+  jobRunId         String?
+  inputTokens      Int          @default(0)
+  outputTokens     Int          @default(0)
+  cacheReadTokens  Int          @default(0)
+  cacheWriteTokens Int          @default(0)
+  costMicros       Int          @default(0)
+  latencyMs        Int          @default(0)
+  outcome          AiOutcome
+  errorCode        String?
+  stopReason       String?
+  logContent       AiLogContent @default(NONE)
+  /// AiContentLog (docs/contracts/ai-service.md); only when logContent isn't NONE.
+  contentRedacted  Json?
+  createdAt        DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime     @updatedAt @db.Timestamptz(3)
+
+  @@index([createdAt, task])
+  @@index([task, createdAt])
+  @@index([module, createdAt])
+  @@index([actorId, createdAt])
+  @@index([leadId])
+  @@index([outcome, createdAt])
+  @@map("ai_calls")
+}
+
+model PromptVersion {
+  id             String    @id @default(cuid())
+  task           String
+  version        Int
+  contentHash    String
+  compiledPrompt String
+  changelog      String
+  authorId       String
+  evalScore      Float?
+  evalReportKey  String?
+  isActive       Boolean   @default(false)
+  publishedAt    DateTime  @default(now()) @db.Timestamptz(3)
+  activatedAt    DateTime? @db.Timestamptz(3)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@unique([task, version])
+  @@unique([task], map: "prompt_versions_task_active_key", where: raw("\"isActive\""))
+  @@index([task, publishedAt])
+  @@index([authorId])
+  @@map("prompt_versions")
+}
+
+// ---- Jobs, events, webhooks, idempotency ---------------------------------------------------
+
+/// Every job run (INV-22): a duplicate idempotency key returns the existing run.
+model JobRun {
+  id             String    @id @default(cuid())
+  name           String
+  idempotencyKey String    @unique
+  status         JobStatus @default(QUEUED)
+  input          Json      @default("{}")
+  actorType      ActorType
+  actorId        String?
+  workflowRunId  String?
+  parentRunId    String?
+  attempt        Int       @default(0)
+  queuedAt       DateTime  @default(now()) @db.Timestamptz(3)
+  runAt          DateTime? @db.Timestamptz(3)
+  startedAt      DateTime? @db.Timestamptz(3)
+  finishedAt     DateTime? @db.Timestamptz(3)
+  errorSummary   String?
+  /// JobCounts (docs/contracts/jobs.md)
+  counts         Json?
+  /// JobProgress (docs/contracts/jobs.md)
+  progress       Json?
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+
+  parentRun       JobRun?         @relation("JobRunRetries", fields: [parentRunId], references: [id], onDelete: SetNull)
+  retries         JobRun[]        @relation("JobRunRetries")
+  emailDeliveries EmailDelivery[]
+  searchRuns      SearchRun[]
+  audits          Audit[]
+
+  @@index([name, startedAt])
+  @@index([status, queuedAt])
+  @@index([parentRunId])
+  @@index([workflowRunId])
+  @@map("job_runs")
+}
+
+/// The domain-event outbox, written inside the business transaction (publishAfterCommit).
+model DomainEvent {
+  id           String    @id @default(cuid())
+  name         String
+  payload      Json
+  actorType    ActorType
+  actorId      String?
+  occurredAt   DateTime  @default(now()) @db.Timestamptz(3)
+  dispatchedAt DateTime? @db.Timestamptz(3)
+  attempts     Int       @default(0)
+  lastError    String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
+
+  @@index([occurredAt], map: "domain_events_undispatched_idx", where: raw("\"dispatchedAt\" IS NULL"))
+  @@index([name, occurredAt])
+  @@map("domain_events")
+}
+
+model WebhookEvent {
+  id          String             @id @default(cuid())
+  provider    String
+  eventId     String
+  status      WebhookEventStatus @default(RECEIVED)
+  /// SHA-256 of the raw body; the body itself isn't stored.
+  payloadHash String
+  receivedAt  DateTime           @default(now()) @db.Timestamptz(3)
+  processedAt DateTime?          @db.Timestamptz(3)
+  error       String?
+  createdAt   DateTime           @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime           @updatedAt @db.Timestamptz(3)
+
+  @@unique([provider, eventId])
+  @@index([status, receivedAt])
+  @@map("webhook_events")
+}
+
+model IdempotencyKey {
+  id          String   @id @default(cuid())
+  scope       String
+  key         String
+  requestHash String
+  response    Json?
+  expiresAt   DateTime @db.Timestamptz(3)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  @@unique([scope, key])
+  @@index([expiresAt])
+  @@map("idempotency_keys")
+}
+
+/// Daily per-provider counters that keep parallel runs under quotas and paid caps.
+model ProviderUsage {
+  id         String   @id @default(cuid())
+  provider   String
+  /// Day in the platform timezone.
+  day        DateTime @db.Date
+  calls      Int      @default(0)
+  costMicros Int      @default(0)
+  capHit     Boolean  @default(false)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  @@unique([provider, day])
+  @@map("provider_usages")
+}
+
+// ---- Files and saved views -----------------------------------------------------------------
+
+/// A stored file (soft-deletable). Content type is verified from magic bytes on upload.
+model FileObject {
+  id               String      @id @default(cuid())
+  key              String      @unique
+  purpose          FilePurpose
+  access           FileAccess  @default(PRIVATE)
+  contentType      String
+  sizeBytes        Int
+  checksum         String?
+  originalFilename String?
+  uploadedById     String?
+  module           String?
+  retentionUntil   DateTime?   @db.Timestamptz(3)
+  deletedAt        DateTime?   @db.Timestamptz(3)
+  createdAt        DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime    @updatedAt @db.Timestamptz(3)
+
+  uploadedBy         User?                @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  csvSearchRuns      SearchRun[]
+  messageAttachments MessageAttachment[]
+  dataSubjectExports DataSubjectRequest[]
+  proposalPdfs       Proposal[]
+  handoffPdfs        Handoff[]
+
+  @@index([purpose, createdAt])
+  @@index([retentionUntil])
+  @@index([uploadedById])
+  @@map("file_objects")
+}
+
+model SavedView {
+  id        String   @id @default(cuid())
+  userId    String
+  scope     String
+  name      String
+  /// URL-state filter object, validated by the owning screen.
+  query     Json
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, scope, name])
+  @@map("saved_views")
+}

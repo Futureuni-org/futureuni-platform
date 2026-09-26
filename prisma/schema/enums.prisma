@@ -1,0 +1,547 @@
+// Every enum in docs/specs/data-model.md §3, in the same order. src/contracts/common.ts
+// re-exports them from the generated client, so this file is the single source of values.
+
+// ---- Platform core -------------------------------------------------------------------
+
+enum Role {
+  ADMIN
+  MANAGER
+  SERVICE_LEAD
+  MEMBER
+}
+
+enum UserStatus {
+  ACTIVE
+  DEACTIVATED
+}
+
+enum ServiceLine {
+  WEB_DEVELOPMENT
+  UI_UX_DESIGN
+  GRAPHIC_DESIGN
+  VIDEO_EDITING
+}
+
+enum Market {
+  NIGERIA
+  INTERNATIONAL
+}
+
+enum Currency {
+  NGN
+  USD
+  GBP
+  EUR
+}
+
+enum ActorType {
+  USER
+  SYSTEM
+}
+
+enum LawfulBasis {
+  LEGITIMATE_INTEREST_B2B
+  CONSENT
+}
+
+enum LegalForm {
+  LIMITED
+  PLC
+  LLP
+  SOLE_TRADER
+  PARTNERSHIP
+  NG_REGISTERED_COMPANY
+  NG_BUSINESS_NAME
+  CORPORATION
+  LLC
+  NON_PROFIT
+  PUBLIC_BODY
+  OTHER
+  UNKNOWN
+}
+
+enum CompanySizeRange {
+  SOLO
+  SIZE_2_10
+  SIZE_11_50
+  SIZE_51_200
+  SIZE_201_1000
+  SIZE_1000_PLUS
+  UNKNOWN
+}
+
+enum EmailStatus {
+  UNVERIFIED
+  VALID
+  RISKY
+  INVALID
+  UNKNOWN
+}
+
+enum EmailType {
+  PERSONAL
+  ROLE
+}
+
+enum ContactSeniority {
+  OWNER
+  EXEC
+  MANAGER
+  STAFF
+  UNKNOWN
+}
+
+enum WhatsAppStatus {
+  CONFIRMED
+  LIKELY
+  NONE
+  UNKNOWN
+}
+
+enum CrawlStatus {
+  NOT_STARTED
+  OK
+  PARTIAL
+  FAILED
+  NO_WEBSITE
+  BLOCKED_ROBOTS
+}
+
+enum WebsiteKind {
+  UNKNOWN
+  NONE
+  OWN_SITE
+  SOCIAL_ONLY
+  MARKETPLACE_ONLY
+}
+
+enum SettingScope {
+  PLATFORM
+  MODULE
+  USER
+}
+
+enum CredentialStatus {
+  NOT_TESTED
+  OK
+  FAILING
+}
+
+enum NotificationChannel {
+  IN_APP
+  EMAIL
+}
+
+enum EmailDeliveryStatus {
+  QUEUED
+  SENT
+  FAILED
+  SUPPRESSED
+}
+
+enum JobStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+enum WebhookEventStatus {
+  RECEIVED
+  PROCESSED
+  FAILED
+  IGNORED
+}
+
+enum AiOutcome {
+  OK
+  REPAIRED
+  INVALID
+  TIMEOUT
+  ERROR
+  QUOTA_BLOCKED
+}
+
+enum AiLogContent {
+  NONE
+  REDACTED
+  FULL
+}
+
+enum FilePurpose {
+  AUDIT_SCREENSHOT
+  PROPOSAL_PDF
+  HANDOFF_PDF
+  CSV_IMPORT
+  PORTFOLIO
+  DSR_EXPORT
+  AVATAR
+  OTHER
+}
+
+enum FileAccess {
+  PRIVATE
+  PUBLIC
+}
+
+// ---- Client Acquisition --------------------------------------------------------------
+
+enum LeadStatus {
+  NEW
+  ENRICHING
+  ENRICHED
+  AUDITING
+  AUDITED
+  SCORED
+  IN_REVIEW
+  APPROVED
+  CONTACTED
+  REPLIED
+  MEETING_BOOKED
+  PROPOSAL_SENT
+  WON
+  LOST
+  NURTURE
+  DISQUALIFIED
+  SUPPRESSED
+}
+
+enum LeadEventKind {
+  STATUS_CHANGE
+  OWNER_CHANGE
+  SCORE_CHANGE
+  SIGNAL_ATTACHED
+  NOTE
+  FLAG
+}
+
+enum NurtureReason {
+  CAPACITY
+  COMPLIANCE
+  NOT_NOW
+  LOW_SCORE
+  REENGAGE
+  MANUAL
+}
+
+enum ScoreBand {
+  QUALIFIED
+  BORDERLINE
+  BELOW
+}
+
+enum ReviewRecommendation {
+  QUALIFY
+  DISQUALIFY
+  NEEDS_HUMAN
+}
+
+enum ReviewDecisionType {
+  ACCEPTED
+  OVERRIDDEN
+}
+
+enum ProfileVersionStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+// Used inside the ServiceLineProfile JSON; kept as an enum for the contract re-export.
+enum ApprovalMode {
+  ALWAYS_REVIEW
+  AUTO_SEND_ABOVE_SCORE
+}
+
+enum SearchRunStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  PARTIAL
+  FAILED
+  CANCELLED
+  SKIPPED
+}
+
+enum SearchRunTrigger {
+  MANUAL
+  SCHEDULED
+  CSV_IMPORT
+  MANUAL_ADD
+}
+
+enum AuditStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  PARTIAL
+  FAILED
+  NOT_APPLICABLE
+}
+
+enum CheckRunStatus {
+  OK
+  NOT_APPLICABLE
+  NOT_ASSESSED
+  CHECK_FAILED
+  SKIPPED_COST_CAP
+}
+
+enum FindingSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum FindingMethod {
+  MEASURED
+  OBSERVED
+  AI_JUDGED
+}
+
+enum CrossSellStatus {
+  ACTIVE
+  SPLIT
+  CLOSED
+}
+
+enum CapacityMode {
+  NORMAL
+  SLOW
+  PAUSED
+}
+
+enum Channel {
+  EMAIL
+  WHATSAPP_ASSISTED
+  LINKEDIN_ASSISTED
+  CALL_TASK
+}
+
+enum MessageKind {
+  SEQUENCE
+  ONE_OFF
+}
+
+enum MessageStatus {
+  DRAFT
+  NEEDS_EDIT
+  APPROVED
+  SCHEDULED
+  SENDING
+  SENT
+  SENT_MOCK
+  PREPARED
+  SENT_ASSISTED
+  REJECTED
+  CANCELLED
+  FAILED
+  BLOCKED
+}
+
+enum RejectReason {
+  WRONG_FACTS
+  TONE
+  NOT_A_FIT
+  WRONG_CONTACT
+  COMPLIANCE
+  DUPLICATE
+  OTHER
+}
+
+enum EnrollmentStatus {
+  ACTIVE
+  PAUSED
+  STOPPED
+  COMPLETED
+}
+
+// Values equal the SEAM-STOP-SEQUENCE reasons.
+enum EnrollmentStopReason {
+  REPLY
+  UNSUBSCRIBE
+  BOUNCE
+  MEETING_BOOKED
+  WON
+  LOST
+  MANUAL
+  SUPPRESSED
+}
+
+enum EnrollmentPauseReason {
+  OUT_OF_OFFICE
+  NOT_NOW
+  MANUAL
+}
+
+enum MailboxStatus {
+  WARMING
+  ACTIVE
+  PAUSED
+  DISABLED
+}
+
+enum DnsCheckStatus {
+  PASS
+  FAIL
+  UNKNOWN
+}
+
+enum TrackingEventType {
+  DELIVERED
+  BOUNCED_HARD
+  BOUNCED_SOFT
+  COMPLAINED
+  CLICKED
+  OPENED
+  UNSUBSCRIBED
+}
+
+enum ReplyChannel {
+  EMAIL
+  WHATSAPP
+  LINKEDIN
+  PHONE
+}
+
+enum ReplyClass {
+  INTERESTED
+  NOT_NOW
+  WRONG_PERSON
+  OBJECTION_PRICE
+  OBJECTION_OTHER
+  QUESTION
+  UNSUBSCRIBE
+  OUT_OF_OFFICE
+  BOUNCE
+  OTHER
+}
+
+enum ReplyMatchMethod {
+  IN_REPLY_TO
+  THREAD_ID
+  SENDER_CONTACT
+  SENDER_DOMAIN
+  MANUAL
+  UNMATCHED
+}
+
+enum ClassificationSource {
+  RULE
+  AI
+  HUMAN
+}
+
+enum SlaStatus {
+  NONE
+  ON_TRACK
+  WARNING
+  BREACHED
+  MET
+}
+
+enum SuppressionType {
+  EMAIL
+  PHONE
+  DOMAIN
+}
+
+enum SuppressionReason {
+  UNSUBSCRIBE
+  BOUNCE
+  COMPLAINT
+  OBJECTION
+  MANUAL
+  DSR_DELETE
+  IMPORT
+}
+
+enum SuppressionSource {
+  ONE_CLICK
+  UNSUBSCRIBE_PAGE
+  REPLY
+  BOUNCE
+  PROVIDER_SIGNAL
+  MANUAL
+  CSV_IMPORT
+  DSR
+}
+
+enum ConsentScope {
+  EMAIL_OUTREACH
+  ALL_CHANNELS
+}
+
+enum ConsentMethod {
+  WRITTEN
+  EMAIL_REPLY
+  FORM
+  VERBAL
+}
+
+enum DsrType {
+  EXPORT
+  DELETE
+}
+
+enum DsrStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  REJECTED
+}
+
+enum MeetingSource {
+  CAL_COM
+  GOOGLE_CALENDAR
+  MANUAL
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  CANCELLED
+  HELD
+  NO_SHOW
+  UNMATCHED
+}
+
+enum ProposalStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SENT
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  SUPERSEDED
+}
+
+enum DiscountType {
+  NONE
+  PERCENT
+  AMOUNT
+}
+
+enum DealOutcome {
+  WON
+  LOST
+}
+
+enum LostReason {
+  PRICE
+  TIMING
+  NO_RESPONSE
+  CHOSE_COMPETITOR
+  IN_HOUSE
+  NOT_A_FIT
+  SCOPE_CHANGED
+  OTHER
+}
+
+enum HandoffStatus {
+  NEW
+  ACKNOWLEDGED
+}

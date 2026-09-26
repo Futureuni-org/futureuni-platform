@@ -1,0 +1,22 @@
+// FUTUREUNI Internal Platform: Prisma schema base (docs/specs/data-model.md §2).
+//
+// The schema is split by area: enums.prisma, auth.prisma (Better Auth's tables), core.prisma
+// (platform core) and acquisition.prisma (Client Acquisition, tables prefixed acq_). A future
+// module adds prisma/schema/<module-id>.prisma with its own table prefix.
+//
+// Conventions: cuid ids; createdAt/updatedAt on every model; every DateTime is timestamptz(3)
+// in UTC, and date-only values are @db.Date; snake_case plural table names via @@map with
+// camelCase columns; money in integer minor units plus a Currency.
+//
+// The database URL lives in prisma.config.ts (Prisma 7). The citext and pg_trgm extensions,
+// and every CHECK constraint, are created in the init migration's SQL (data-model §6).
+
+generator client {
+  provider        = "prisma-client"
+  output          = "../../src/generated/prisma"
+  previewFeatures = ["partialIndexes"]
+}
+
+datasource db {
+  provider = "postgresql"
+}

@@ -1,0 +1,346 @@
+{
+  "schemaVersion": 1,
+  "id": "VIDEO_EDITING",
+  "label": "Video Editing",
+  "description": "Editing, captions and thumbnails for creators, coaches and brands that post video.",
+  "owners": {
+    "roles": ["SERVICE_LEAD"],
+    "userIds": []
+  },
+  "contactRolePriority": ["creator", "channel manager", "founder", "marketing manager"],
+  "signals": [
+    {
+      "id": "no_captions",
+      "label": "Videos without captions",
+      "description": "Most recent uploads have no caption track.",
+      "weight": 20,
+      "markets": ["NIGERIA", "INTERNATIONAL"],
+      "evidenceRequired": "contentDetails.caption=false on ≥ 50% of last 20 videos",
+      "detectingSources": [],
+      "confirmedBy": ["video.captions"],
+      "derivedFrom": "audit",
+      "future": false
+    },
+    {
+      "id": "gone_quiet",
+      "label": "Channel has gone quiet",
+      "description": "Posting gap is growing; last upload > 45 days ago.",
+      "weight": 15,
+      "markets": ["NIGERIA", "INTERNATIONAL"],
+      "evidenceRequired": "Longest gap trend and last upload date",
+      "detectingSources": ["youtube-channels"],
+      "confirmedBy": ["video.cadence"],
+      "future": false
+    }
+  ],
+  "sources": [
+    {
+      "adapterId": "youtube-channels",
+      "markets": ["NIGERIA", "INTERNATIONAL"],
+      "enabled": true,
+      "optional": false,
+      "defaultParams": {
+        "NIGERIA": {
+          "regionCode": "NG",
+          "keywords": ["lagos vlog", "nigerian coach"]
+        },
+        "INTERNATIONAL": {
+          "regionCode": "GB",
+          "keywords": ["business coach", "fitness coach"]
+        }
+      }
+    },
+    {
+      "adapterId": "jobs-serpapi",
+      "markets": ["NIGERIA", "INTERNATIONAL"],
+      "enabled": true,
+      "optional": false,
+      "defaultParams": {
+        "NIGERIA": {
+          "jobTitles": ["video editor"],
+          "location": "Nigeria"
+        },
+        "INTERNATIONAL": {
+          "jobTitles": ["video editor"],
+          "location": "United Kingdom"
+        }
+      }
+    }
+  ],
+  "audits": [
+    {
+      "agentId": "audit.video",
+      "checks": [
+        {
+          "checkId": "video.cadence",
+          "required": true
+        },
+        {
+          "checkId": "video.captions",
+          "required": true
+        },
+        {
+          "checkId": "video.thumbnails",
+          "required": false
+        }
+      ]
+    }
+  ],
+  "scoring": {
+    "rules": [
+      {
+        "id": "has_no_captions",
+        "label": "Most videos have no captions",
+        "condition": {
+          "all": [
+            {
+              "kind": "finding",
+              "checkId": "video.captions",
+              "minSeverity": "MEDIUM",
+              "pitchableOnly": true,
+              "negate": false
+            }
+          ]
+        },
+        "points": 25
+      },
+      {
+        "id": "reachable_owner",
+        "label": "We can reach the creator directly",
+        "condition": {
+          "all": [
+            {
+              "kind": "field",
+              "field": "contact.primary.emailStatus",
+              "op": "eq",
+              "value": "VALID"
+            }
+          ]
+        },
+        "points": 15
+      },
+      {
+        "id": "role_email_only",
+        "label": "Only a generic inbox found",
+        "condition": {
+          "all": [
+            {
+              "kind": "field",
+              "field": "contact.primary.emailType",
+              "op": "eq",
+              "value": "ROLE"
+            }
+          ]
+        },
+        "points": -5
+      }
+    ],
+    "qualifyThreshold": 61,
+    "borderlineBand": {
+      "min": 40,
+      "max": 60
+    },
+    "lowScoreAction": "DISQUALIFY"
+  },
+  "pitchAngles": {
+    "NIGERIA": [
+      {
+        "id": "captions_reach",
+        "hook": "Captions help your videos reach viewers watching on mute.",
+        "whenToUse": {
+          "signals": ["no_captions"],
+          "findingChecks": ["video.captions"]
+        },
+        "proofTags": ["captions"],
+        "avoidPhrases": ["your videos are bad"]
+      },
+      {
+        "id": "consistency",
+        "hook": "A steady posting rhythm without the editing load on you.",
+        "whenToUse": {
+          "signals": ["gone_quiet"],
+          "findingChecks": ["video.cadence"]
+        },
+        "proofTags": ["retainer"],
+        "avoidPhrases": []
+      },
+      {
+        "id": "thumbnails",
+        "hook": "Thumbnails that match your brand and read at a glance.",
+        "whenToUse": {
+          "signals": [],
+          "findingChecks": ["video.thumbnails"]
+        },
+        "proofTags": ["thumbnails"],
+        "avoidPhrases": []
+      }
+    ],
+    "INTERNATIONAL": [
+      {
+        "id": "timezone_overlap",
+        "hook": "An editing team in Lagos that works your UK hours.",
+        "whenToUse": {
+          "signals": [],
+          "findingChecks": []
+        },
+        "proofTags": ["retainer"],
+        "avoidPhrases": ["cheap", "offshore"]
+      },
+      {
+        "id": "captions_reach",
+        "hook": "Captions help your videos reach viewers watching on mute.",
+        "whenToUse": {
+          "signals": ["no_captions"],
+          "findingChecks": ["video.captions"]
+        },
+        "proofTags": ["captions"],
+        "avoidPhrases": []
+      },
+      {
+        "id": "consistency",
+        "hook": "A steady posting rhythm without the editing load on you.",
+        "whenToUse": {
+          "signals": ["gone_quiet"],
+          "findingChecks": ["video.cadence"]
+        },
+        "proofTags": ["retainer"],
+        "avoidPhrases": []
+      }
+    ]
+  },
+  "portfolio": [
+    {
+      "id": "todo_captions_case",
+      "title": "TODO: captions case study",
+      "description": "Placeholder until real FUTUREUNI work is added.",
+      "tags": ["captions"],
+      "markets": ["NIGERIA", "INTERNATIONAL"],
+      "isPlaceholder": true
+    }
+  ],
+  "pricing": {
+    "needsReview": true,
+    "packages": [
+      {
+        "id": "monthly_4_videos",
+        "name": "Creator retainer (4 videos a month)",
+        "includes": ["Editing", "Captions", "Thumbnails"],
+        "timelineWeeks": {
+          "min": 4,
+          "max": 4
+        },
+        "prices": [
+          {
+            "market": "NIGERIA",
+            "currency": "NGN",
+            "minMinor": 15000000,
+            "typicalMinor": 25000000,
+            "maxMinor": 40000000
+          },
+          {
+            "market": "INTERNATIONAL",
+            "currency": "GBP",
+            "minMinor": 60000,
+            "typicalMinor": 90000,
+            "maxMinor": 150000
+          }
+        ]
+      }
+    ]
+  },
+  "sequences": {
+    "NIGERIA": [
+      {
+        "id": "ng_default",
+        "name": "WhatsApp first",
+        "isDefault": true,
+        "steps": [
+          {
+            "index": 0,
+            "channel": "WHATSAPP_ASSISTED",
+            "delayBusinessDays": 0,
+            "purpose": "INTRO_AUDIT_INSIGHT",
+            "pitchAngleId": "captions_reach",
+            "includeBookingLink": false,
+            "stopConditions": ["ANY_REPLY", "BOUNCE", "UNSUBSCRIBE", "MEETING_BOOKED"]
+          },
+          {
+            "index": 1,
+            "channel": "EMAIL",
+            "delayBusinessDays": 3,
+            "purpose": "VALUE_ADD",
+            "pitchAngleId": "consistency",
+            "includeBookingLink": true,
+            "stopConditions": ["ANY_REPLY", "BOUNCE", "UNSUBSCRIBE", "MEETING_BOOKED"]
+          }
+        ]
+      }
+    ],
+    "INTERNATIONAL": [
+      {
+        "id": "intl_default",
+        "name": "Email first",
+        "isDefault": true,
+        "steps": [
+          {
+            "index": 0,
+            "channel": "EMAIL",
+            "delayBusinessDays": 0,
+            "purpose": "INTRO_AUDIT_INSIGHT",
+            "pitchAngleId": "captions_reach",
+            "includeBookingLink": false,
+            "stopConditions": ["ANY_REPLY", "BOUNCE", "UNSUBSCRIBE", "MEETING_BOOKED"]
+          },
+          {
+            "index": 1,
+            "channel": "LINKEDIN_ASSISTED",
+            "delayBusinessDays": 2,
+            "purpose": "FOLLOW_UP",
+            "includeBookingLink": false,
+            "stopConditions": ["ANY_REPLY", "BOUNCE", "UNSUBSCRIBE", "MEETING_BOOKED"]
+          },
+          {
+            "index": 2,
+            "channel": "EMAIL",
+            "delayBusinessDays": 4,
+            "purpose": "SOFT_BREAKUP",
+            "pitchAngleId": "timezone_overlap",
+            "includeBookingLink": true,
+            "stopConditions": ["ANY_REPLY", "BOUNCE", "UNSUBSCRIBE", "MEETING_BOOKED"]
+          }
+        ]
+      }
+    ]
+  },
+  "disqualifiers": [
+    {
+      "id": "competitor_agency",
+      "label": "Competitor agency",
+      "description": "A production or editing agency itself.",
+      "aiReviewHint": "Channel sells video production services."
+    },
+    {
+      "id": "active_client",
+      "label": "Already a client",
+      "description": "Company is an active FUTUREUNI client.",
+      "condition": {
+        "all": [
+          {
+            "kind": "field",
+            "field": "company.isActiveClient",
+            "op": "eq",
+            "value": true
+          }
+        ]
+      }
+    }
+  ],
+  "approvalMode": "ALWAYS_REVIEW",
+  "capacityPolicy": {
+    "slowAtPercent": 70,
+    "pauseAtPercent": 100,
+    "slowFactor": 0.3,
+    "pauseScheduledSearches": true,
+    "newQualifiedLeadsWhenPaused": "NURTURE"
+  }
+}
