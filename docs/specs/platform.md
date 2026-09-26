@@ -528,7 +528,7 @@ The platform is built in phases, not vertical slices (ADR-029). Each milestone b
 | Id | Phase | Goal | Skills | Stories |
 |---|---|---|---|---|
 | P0 | 0 Requirements | Specs, rules, contracts, data model, decisions, integrations, MCP config | saas-plan | — |
-| P1 | 1 Scaffold | Strict Next.js project, tokens, env, Docker Postgres, Workflow proof, ownership guard, worktree helper, CI | saas-setup, saas-ship | US-24 |
+| P1 | 1 Scaffold | Strict Next.js project, tokens, env, local Postgres (native or Docker, ADR-004), Workflow proof, ownership guard, worktree helper, CI | saas-setup, saas-ship | US-24 |
 | P2 | 2 Core schema | Prisma schema, migration, seed, contracts, db/directory/core helpers, registry, create-module | saas-data | US-13, US-21 |
 | P3 | 3 Auth and team | Invite-only auth, 2FA, permission map, team services | saas-auth | US-1–US-7 |
 | P4 | 4 Design system and shell | Tokens, components, patterns, charts, shell, home, `/dev/ui` | saas-ui | US-8–US-10, US-23 |

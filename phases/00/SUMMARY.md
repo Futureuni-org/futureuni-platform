@@ -113,7 +113,7 @@ Notes for the first merge-time sessions:
 
 ## Known limitations
 
-- **Docker isn't installed on the build laptop** (checked 2026-09-25). Phase 1's `docker-compose.yml` and `pnpm phase start` (which clones databases with `createdb -T`) need it. Install Docker Desktop before Phase 1, or accept a Neon development branch per worktree as the fallback (ADR-019).
+- **Docker isn't installed on the build laptop** (checked 2026-09-25). **Resolved 2026-09-26:** native PostgreSQL 18.6 runs on `localhost:5432` with `futureuni_dev` and `futureuni_test` created, and Phase 1 builds a native mode for `db:up`/`db:down` and `pnpm phase start` (ADR-004 amendment).
 - **Logo:** only `docs/brand/futureuni-logo.png` exists: a violet "S" mark, 411×533 PNG, slightly soft, with no wordmark, no SVG and no dark variant. The wordmark is rendered as live text until files arrive.
 - **Placeholders:** every price in the initial profiles is a placeholder (`needsReview: true`, "Prince to confirm"). Portfolio items are placeholders (`isPlaceholder: true`). The postal address is empty in production, which blocks sends (INV-4).
 - **Not legal advice:** the country rules, PECR/NDPA/GAID handling and retention need qualified review before launch (ADR-034, Phase 20/21 gates).
@@ -182,17 +182,17 @@ Documents only. To reproduce the Phase 0 self-checks:
 ## Things Prince must do by hand
 
 **Before Phase 1:**
-1. **Install Docker Desktop** (or decide to use Neon development branches instead). `docker --version` currently fails.
+1. ~~**Install Docker Desktop**~~ Done differently on 2026-09-26: native PostgreSQL 18 instead (ADR-004 amendment).
 
 **Brand and business facts:**
 
-2. Send an **SVG logo**, an official **wordmark** (if one exists) and a **dark-background variant**. Place them in `docs/brand/`.
-3. Supply **FUTUREUNI's postal address** for the outreach footer (`platform.postalAddress`, INV-4). No real outreach is sent until it's set.
-4. Confirm the **pricing** placeholders (Phase 7 lists every figure), provide **real portfolio items**, and decide the sector lists (churches, government bodies).
+2. Send an **SVG logo**, an official **wordmark** (if one exists) and a **dark-background variant**. Place them in `docs/brand/`. *2026-09-26: vector drafts of all three are in `docs/brand/drafts/`; approve or replace them (`docs/owner-inputs/README.md` item 2).*
+3. Supply **FUTUREUNI's postal address** for the outreach footer (`platform.postalAddress`, INV-4). No real outreach is sent until it's set. *Still waiting (item 1).*
+4. Confirm the **pricing** placeholders (Phase 7 lists every figure), provide **real portfolio items**, and decide the sector lists (churches, government bodies). *2026-09-26: fill in `docs/owner-inputs/pricing-and-portfolio.md`.*
 
 **Legal (Phase 20/21 launch gates):**
 
-5. Get **Nigerian counsel's written view on GAID 2025 Art. 18 and 26**: may FUTUREUNI cold-contact Nigerian businesses on legitimate interest, and does GAID reach its non-Nigerian outreach? Also get a general legal review of the country rules and the retention period.
+5. Get **Nigerian counsel's written view on GAID 2025 Art. 18 and 26**: may FUTUREUNI cold-contact Nigerian businesses on legitimate interest, and does GAID reach its non-Nigerian outreach? Also get a general legal review of the country rules and the retention period. *2026-09-26: the pack for counsel is in `docs/legal/` (not legal advice; start with its README).*
 
 **Accounts and tokens.** No keys are needed until Phase 21. Create these accounts as company-owned, not personal:
 
@@ -208,7 +208,7 @@ Documents only. To reproduce the Phase 0 self-checks:
 
 **MCP servers (when you next launch Claude Code in this repo):**
 
-8. Approve the project servers from `.mcp.json`, then run `/mcp` to sign in to **Vercel** and **Neon**.
+8. ~~Approve the project servers from `.mcp.json`~~ (approved 2026-09-26 in `.claude/settings.local.json`), then run `/mcp` to sign in to **Vercel** and **Neon**.
 9. When the repo is on GitHub, create a **fine-grained PAT** for this repository and run `setx GITHUB_MCP_PAT "…"`.
 10. Optionally, get a Context7 key; see `docs/integrations.md` §5.
 

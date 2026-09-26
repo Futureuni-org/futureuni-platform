@@ -76,6 +76,8 @@ pnpm phase finish <nn>          # checks SUMMARY.md exists and pnpm check passes
 pnpm phase remove <nn>          # removes the worktree and drops the phase databases, after confirmation
 ```
 
+Phase databases are cloned with `createdb -T futureuni_dev`. On the build laptop this runs straight against native Postgres on `localhost:5432` (ADR-004). Stop `pnpm dev` and Prisma Studio in the main folder first: Postgres can't copy a template database while another session is connected to it.
+
 A sequential phase runs on a branch in the main folder: `git checkout main && git pull && git checkout -b phase/<nn>-<slug>`.
 
 ## Merge procedure (every batch and wave)

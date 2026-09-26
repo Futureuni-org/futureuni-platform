@@ -84,9 +84,28 @@ Every decision that shapes the build, with its reason. ADR-001 to ADR-012 are fi
   - Sources: https://vercel.com/docs/workflows, https://vercel.com/docs/workflows/pricing, https://workflow-sdk.dev/docs/foundations/errors-and-retries, https://vercel.com/docs/cron-jobs, https://vercel.com/docs/vercel-blob/private-storage, https://vercel.com/changelog/vercel-functions-can-now-be-up-to-5-gb-in-package-size
 
 ### ADR-004: Local development
-- **Status:** Accepted (fixed).
-- **Decision:** Docker Compose Postgres (or a Neon development branch), with `.env.local` validated by the Zod env schema in `src/env.ts`.
+- **Status:** Accepted (fixed). Amended 2026-09-26: native PostgreSQL on the build laptop.
+- **Decision:** local Postgres (native or Docker Compose, see below; a Neon development branch is the fallback), with `.env.local` validated by the Zod env schema in `src/env.ts`.
 - **Reason:** fast, offline-capable development and tests. Parallel worktrees each get their own database (`futureuni_p<nn>`).
+- **Amendment (2026-09-26): native PostgreSQL on the build laptop.** Prince chose a native install over Docker Desktop, because the laptop has 8 GB RAM, WSL isn't installed, and Docker Desktop needs WSL2 plus admin rights. This amendment overrides the Docker wording in `docs/prompts/phase-01-scaffold.md` and `phase-02-core-schema.md`.
+  - **What's installed:**
+    - **Version:** PostgreSQL 18.6, from EDB's portable Windows binaries (`postgresql-18.6-4-windows-x64-binaries.zip`, SHA-256 matched to Scoop's manifest), per-user and with no admin rights needed. Postgres 18 is Neon's default for new projects since 2026-06-05 (https://neon.com/docs/changelog/2026-06-05), so Phase 21 creates the Neon project on 18, and Docker and CI use `postgres:18`. It replaced a 17.11 install on 2026-09-26, at Prince's choice.
+    - **Paths:** binaries in `%LOCALAPPDATA%\Programs\PostgreSQL\18\bin`, which is on the user PATH; data directory `%LOCALAPPDATA%\PostgreSQL\18\data`; log `%LOCALAPPDATA%\PostgreSQL\18\postgres.log`.
+    - **Settings:** listens on `localhost:5432` only; user `postgres`, password `postgres` (local development only); `scram-sha-256` auth.
+    - **Locale:** UTF8 encoding with the builtin `C.UTF-8` locale and time zone `UTC`, matching Neon's defaults (Neon uses `C.UTF-8`: https://neon.com/docs/reference/compatibility).
+    - **Databases:** `futureuni_dev` and `futureuni_test` exist. `citext` and `pg_trgm` are available but not yet created; the Phase 2 init migration creates them.
+  - **Phase 1 builds both modes.** `LOCAL_DB_MODE` in `.env.local` (`native` | `docker`) selects one.
+    - **Default:** `docker` when the `docker` command exists, otherwise `native`.
+    - **Paths in native mode:** `LOCAL_PG_BIN` and `LOCAL_PGDATA` override the default paths above.
+  - **`pnpm db:up` in native mode** runs `pg_ctl start`, detached from the terminal.
+    - **Detachment matters on Windows.** A server started inside a console dies when that console closes: new backends fail with `0xC0000142`, seen 2026-09-26.
+    - **Starting it:** use a new hidden console (PowerShell `Start-Process -WindowStyle Hidden`) or `Win32_Process.Create`.
+    - **Behaviour:** idempotent (`pg_ctl status` first). It waits for `pg_isready`.
+  - **`pnpm db:down`** runs `pg_ctl stop -m fast`.
+  - **`docker-compose.yml` is still created**, for CI and for machines that have Docker. CI keeps its Postgres service container.
+  - **`pnpm phase start`** clones `futureuni_p<nn>` with `createdb -T futureuni_dev` straight against localhost in native mode (about 0.4 s, measured 2026-09-26), or inside the container in docker mode. It falls back to migrate + seed if cloning fails.
+    - **Cloning fails while another session is connected to the template.** So the helper says to stop `pnpm dev` / Prisma Studio in the main folder first.
+  - **Seed guard.** The seed's host check (`docs/specs/data-model.md`, seed plan) already accepts `localhost` and `127.0.0.1`.
 
 ### ADR-005: Mock-first integrations
 - **Status:** Accepted (fixed).
@@ -306,7 +325,7 @@ Every decision that shapes the build, with its reason. ADR-001 to ADR-012 are fi
 - **Decision:**
   - **Prisma 7.** Pin `prisma@^7` and `@prisma/client@^7`. `prisma@latest` is currently `8.0.0-rc.17`, a rewrite that lacks features we rely on (`$extends`, atomic `increment`, `P2002` codes); Better Auth's peer range stops at `^7`.
   - **One code path everywhere:** `@prisma/adapter-pg` over a `pg` `Pool`, registered with `attachDatabasePool(pool)` from `@vercel/functions` so Fluid Compute manages idle connections.
-    - In Vercel, `DATABASE_URL` is Neon's **pooled** URL. Locally and in CI it points at Docker Postgres.
+    - In Vercel, `DATABASE_URL` is Neon's **pooled** URL. Locally it points at the native Postgres on `localhost:5432` (ADR-004); in CI, at the Postgres service container.
     - The client is a hot-reload-safe singleton in `src/platform/db/client.ts`.
   - **Migrations use the direct connection.** In Prisma 7 the CLI's URL lives in `prisma.config.ts` (`datasource.url = env("DIRECT_URL")`); there is no `url` or `directUrl` in the schema file.
     - In Vercel, `DIRECT_URL` is set to the Neon integration's `DATABASE_URL_UNPOOLED`.
@@ -321,7 +340,7 @@ Every decision that shapes the build, with its reason. ADR-001 to ADR-012 are fi
   - Prisma extensions discussion: https://github.com/prisma/prisma/discussions/26136
   - Neon's Prisma guide: https://neon.com/docs/guides/prisma
   - npm dist-tags, checked 2026-09-25.
-- **Open risk:** Docker isn't installed on the build laptop (checked 2026-09-25). Install Docker Desktop before Phase 1: `docker-compose.yml` and `pnpm phase start` (which clones databases with `createdb -T`) depend on it. The fallback is a Neon development branch per worktree.
+- **Resolved risk (2026-09-26):** Docker isn't installed on the build laptop. Native PostgreSQL 18 is used instead, and `createdb -T` runs directly against it (ADR-004 amendment). A Neon development branch per worktree remains the fallback.
 
 ### ADR-020: Email finder and verifier: Hunter
 - **Status:** Accepted, 2026-09-25 (researched).

@@ -46,7 +46,7 @@ Each path has exactly one owner phase. `scripts/ownership/ownership.json` (Phase
 
 | Owner | Paths |
 |---|---|
-| 0 | `CLAUDE.md`, `.claude/project-rules.md`, `docs/specs/**`, `docs/contracts/**`, `docs/decisions.md`, `docs/integrations.md`, `docs/prompts/**`, `docs/brand/**`, `docs/background/**`, `phases/README.md`, `phases/SUMMARY_TEMPLATE.md`, `.mcp.json`. After Phase 0 these change only on `main`, when a wave or batch is merged. |
+| 0 | `CLAUDE.md`, `.claude/project-rules.md`, `docs/specs/**`, `docs/contracts/**`, `docs/decisions.md`, `docs/integrations.md`, `docs/prompts/**`, `docs/brand/**`, `docs/background/**`, `docs/legal/**`, `docs/owner-inputs/**`, `phases/README.md`, `phases/SUMMARY_TEMPLATE.md`, `.mcp.json`. After Phase 0 these change only on `main`, when a wave or batch is merged. |
 | 1 | `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.npmrc`, `.nvmrc`, `tsconfig.json`, `next.config.ts`, `vercel.json`, `eslint.config.mjs`, `postcss.config.mjs`, `.prettierrc*`, `.prettierignore`, `.editorconfig`, `.gitattributes`, `.gitignore`, `.env.example`, `vitest.config.ts`, `playwright.config.ts`, `docker-compose.yml`, `docker/**`, `.github/**`, `README.md`, `.claude/settings.json`, `.claude/hooks/**`, `src/env.ts`, `src/lib/**`, `src/app/api/health/**`, `scripts/**`, `tests/setup/**`, `public/**` |
 | 2 | `prisma/**`, `src/generated/**` (generated Prisma client, gitignored), `src/contracts/**`, `src/platform/db/**`, `src/platform/registry/**`, `src/platform/directory/**`, `M/core/**`, `templates/create-module/**`, `tests/factories/**` |
 | 3 | `src/platform/auth/**`, `src/platform/team/**`, `src/app/(auth)/**`, `src/app/api/auth/**`, `src/proxy.ts` (or `src/middleware.ts`, whichever the installed Next.js uses) |

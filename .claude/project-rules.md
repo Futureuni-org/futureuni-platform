@@ -35,7 +35,7 @@ Last updated: 2026-09-25 (Phase 0). After Phase 0, this file changes only when a
   - The multi-file schema lives in `prisma/schema/`.
   - The `prisma-client` generator outputs to `src/generated/prisma` (gitignored).
   - `@prisma/adapter-pg` with a pooled `pg` connection is used everywhere.
-  - Neon in Vercel environments; Docker Compose Postgres locally (ADR-003, ADR-004, ADR-019).
+  - Neon in Vercel environments. Locally, native PostgreSQL 18 on `localhost:5432` (`LOCAL_DB_MODE=native`); Docker Compose where Docker exists and in CI (ADR-003, ADR-004, ADR-019).
 - **Auth library:** Better Auth (ADR-013).
 - **Background work:** Vercel Workflow for multi-step jobs; one Vercel Cron entry (`/api/cron/tick`, every 5 minutes) drives every schedule (ADR-003).
 - **Hosting and environments:** Vercel Pro. Preview deploys per branch use a Neon branch and `MOCKS=true`. Production deploys from `main` only, with `MOCKS=false`.
@@ -49,7 +49,7 @@ Last updated: 2026-09-25 (Phase 0). After Phase 0, this file changes only when a
 | Typecheck | `pnpm typecheck` |
 | Unit and integration tests | `pnpm test` (`pnpm test:watch` locally) |
 | End-to-end tests | `pnpm test:e2e` |
-| Local database up / down | `pnpm db:up` / `pnpm db:down` |
+| Local database up / down | `pnpm db:up` / `pnpm db:down` (native mode: `pg_ctl start` detached / `pg_ctl stop -m fast`; docker mode: Compose) |
 | DB migrate | `pnpm db:migrate` |
 | DB generate client | `pnpm db:generate` |
 | DB seed | `pnpm db:seed` |
@@ -188,13 +188,15 @@ Chosen in ADR-014. Loaded with `next/font/google` and exposed as CSS variables.
 - **Mechanism:** a `data-theme` attribute on `<html>`, set before paint by an inline script (Phase 1's `ThemeScript`). The source order is the saved choice, then the OS preference, then light.
 
 ### Logo assets
+The mark's own colour is `#6C63E1` (sampled from the supplied PNG). That's a lighter violet than the primary token `#5342CC`, and logo files keep it. It reaches 4.66:1 on white and 3.79:1 on the navy surface. Vector drafts of every asset below are in `docs/brand/drafts/` (see its README), **pending Prince's approval**. Until they're approved, the PNG and live-text wordmark are what's used.
+
 | Asset | Light theme | Dark theme | Minimum size | Rules |
 |---|---|---|---|---|
-| Mark (violet "S" monogram) | `docs/brand/futureuni-logo.png` → `public/brand/futureuni-mark.png` (411×533 PNG, transparent) | Same file on navy. Phase 4 checks it reaches 3:1 against the dark `surface`; if not, it uses a light variant | 24px tall | Keep clear space of half the mark's width. Never recolour, stretch, rotate or add effects |
-| Wordmark | Live text "FUTUREUNI" in the display face beside the mark | Same, in `heading` colour | 96px wide | TODO(confirm): an official wordmark file |
-| Favicon and app icons | Generated from the mark by Phase 4 | n/a | n/a | TODO(confirm): an SVG master for crisp icons |
+| Mark (violet "S" monogram) | `docs/brand/futureuni-logo.png` → `public/brand/futureuni-mark.png` (411×533 PNG, transparent). Vector redraw: `docs/brand/drafts/futureuni-mark.svg` | Draft: `docs/brand/drafts/futureuni-mark-on-dark.svg` (soft violet `#A89DF5`, 7.40:1 on navy). The original colour also passes (3.79:1) | 24px tall | Keep clear space of half the mark's width. Never recolour (beyond the approved variants), stretch, rotate or add effects |
+| Wordmark | Live text "FUTUREUNI" in the display face beside the mark. Draft outlined lockup: `docs/brand/drafts/futureuni-lockup-horizontal.svg` | Same, in `heading` colour. Draft: `…-lockup-horizontal-on-dark.svg` | 96px wide | TODO(confirm): approve the draft or supply the official wordmark |
+| Favicon and app icons | Draft master: `docs/brand/drafts/favicon.svg` (switches colour with the OS theme). Phase 4 generates the PNG and ICO set | n/a | n/a | TODO(confirm): approve the draft |
 
-TODO(confirm) for Prince: supply an SVG version of the mark, an official wordmark (if one exists) and a variant for dark backgrounds. The current PNG is low resolution (411×533) and slightly soft.
+TODO(confirm) for Prince: approve or replace the drafts in `docs/brand/drafts/` (tracked in `docs/owner-inputs/README.md` item 2).
 
 ### Components and effects
 - **Icon set:** `lucide-react` only.
@@ -458,7 +460,7 @@ The full register, with purpose, adapter IDs, mock availability, free tiers, pri
 | Outreach email and replies | Google Workspace mailboxes on dedicated outreach domains, Gmail API (ADR-016) | `smtp` and `imap` fallbacks; `mock` |
 | File storage | Vercel Blob (private by default) | `local` driver writes to `.storage/` in development and tests |
 | AI | Anthropic, through `src/platform/ai` only | Model tiers from env or settings (ADR-018) |
-| Database | Neon Postgres (Vercel Marketplace); Docker locally | ADR-019 |
+| Database | Neon Postgres (Vercel Marketplace); native PostgreSQL 18 locally, Docker in CI | ADR-004, ADR-019 |
 | Background jobs and schedules | Vercel Workflow + one Vercel Cron tick | ADR-003 |
 | Rate limiting store | Better Auth database limiter for auth; Postgres counters (`ProviderUsage`) for providers | No Redis in v1 |
 | Error tracking | Sentry (ADR-030) | PII scrubbing on |
