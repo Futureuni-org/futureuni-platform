@@ -1,0 +1,175 @@
+// Better Auth's tables (ADR-013), matching the installed better-auth 1.7.6 core schema plus the
+// twoFactor and admin plugins and the database rate limiter (rateLimit.storage = "database").
+// Model names are the library's defaults (user, session, account, verification, twoFactor,
+// rateLimit), so Phase 3's Prisma adapter needs no model-name mapping. Prisma generates the ids
+// (cuid). Where the data model adds a field or index the library doesn't define, the addition is
+// compatible: the library ignores it (docs/specs/data-model.md §5.1).
+
+/// A FUTUREUNI staff user. Never hard-deleted: deactivated instead.
+model User {
+  id               String     @id @default(cuid())
+  name             String
+  /// Sign-in identifier (case-insensitive).
+  email            String     @unique @db.Citext
+  emailVerified    Boolean    @default(false)
+  image            String?
+  /// Admin plugin field, typed with our enum (Phase 3: defaultRole "MEMBER", adminRoles ["ADMIN"]).
+  role             Role       @default(MEMBER)
+  status           UserStatus @default(ACTIVE)
+  twoFactorEnabled Boolean    @default(false)
+  /// True for ADMIN until 2FA is set up (Phase 3 forces setup).
+  mustSetUp2fa     Boolean    @default(false)
+  banned           Boolean?   @default(false)
+  banReason        String?
+  banExpires       DateTime?  @db.Timestamptz(3)
+  lastActiveAt     DateTime?  @db.Timestamptz(3)
+  deactivatedAt    DateTime?  @db.Timestamptz(3)
+  createdAt        DateTime   @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime   @updatedAt @db.Timestamptz(3)
+
+  // Auth library
+  sessions  Session[]
+  accounts  Account[]
+  twoFactor TwoFactor[]
+
+  // Platform core
+  teamProfile             TeamProfile?
+  invitesSent             Invite[]                 @relation("InviteInvitedBy")
+  invitesAccepted         Invite[]                 @relation("InviteAcceptedUser")
+  notes                   Note[]
+  notifications           Notification[]
+  notificationPreferences NotificationPreference[]
+  emailDeliveries         EmailDelivery[]
+  settings                Setting[]                @relation("SettingUser")
+  settingsUpdated         Setting[]                @relation("SettingUpdatedBy")
+  credentialsCreated      IntegrationCredential[]  @relation("CredentialCreatedBy")
+  credentialsUpdated      IntegrationCredential[]  @relation("CredentialUpdatedBy")
+  promptVersions          PromptVersion[]
+  filesUploaded           FileObject[]
+  savedViews              SavedView[]
+
+  // Client Acquisition
+  profileVersionsCreated   ServiceLineProfileVersion[] @relation("ProfileVersionCreatedBy")
+  profileVersionsPublished ServiceLineProfileVersion[] @relation("ProfileVersionPublishedBy")
+  savedSearches            SavedSearch[]
+  ownedLeads               Lead[]                      @relation("LeadOwner")
+  findingsDismissed        AuditFinding[]              @relation("FindingDismissedBy")
+  scoreReviewsDecided      ScoreReview[]               @relation("ScoreReviewDecidedBy")
+  crossSellGroupsSplit     CrossSellGroup[]            @relation("CrossSellGroupSplitBy")
+  messagesConfirmed        Message[]                   @relation("MessageHumanConfirmedBy")
+  messagesApproved         Message[]                   @relation("MessageApprovedBy")
+  messagesSent             Message[]                   @relation("MessageSentBy")
+  mailboxesSending         Mailbox[]                   @relation("MailboxSenderUser")
+  repliesLogged            Reply[]                     @relation("ReplyLoggedBy")
+  replyCorrections         ReplyCorrection[]           @relation("ReplyCorrectionActor")
+  inboxThreadsAssigned     InboxThread[]               @relation("InboxThreadAssignee")
+  suppressionsCreated      Suppression[]               @relation("SuppressionCreatedBy")
+  suppressionsRemoved      Suppression[]               @relation("SuppressionRemovedBy")
+  consentsRecorded         ConsentRecord[]             @relation("ConsentRecordedBy")
+  consentsRevoked          ConsentRecord[]             @relation("ConsentRevokedBy")
+  dataRequestsCreated      DataSubjectRequest[]        @relation("DsrCreatedBy")
+  dataRequestsFulfilled    DataSubjectRequest[]        @relation("DsrFulfilledBy")
+  meetingsOwned            Meeting[]                   @relation("MeetingOwner")
+  proposalsApproved        Proposal[]                  @relation("ProposalApprovedBy")
+  proposalsCreated         Proposal[]                  @relation("ProposalCreatedBy")
+  dealsClosed              Deal[]                      @relation("DealClosedBy")
+  handoffsAcknowledged     Handoff[]                   @relation("HandoffAcknowledgedBy")
+  handoffsSuggested        HandoffAssignment[]         @relation("HandoffSuggestedUser")
+  handoffsAssigned         HandoffAssignment[]         @relation("HandoffAssignedUser")
+  handoffsAssignedBy       HandoffAssignment[]         @relation("HandoffAssignedBy")
+
+  @@index([role, status])
+  @@map("users")
+}
+
+model Session {
+  id             String   @id @default(cuid())
+  /// Sliding 30 days (setting auth.sessionDays).
+  expiresAt      DateTime @db.Timestamptz(3)
+  token          String   @unique
+  ipAddress      String?
+  userAgent      String?
+  userId         String
+  /// Admin plugin. Impersonation isn't a feature, so this stays null.
+  impersonatedBy String?
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Account {
+  id                    String    @id @default(cuid())
+  /// The provider's account id (the user id for email and password).
+  accountId             String
+  /// "credential" or "google"
+  providerId            String
+  userId                String
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime? @db.Timestamptz(3)
+  refreshTokenExpiresAt DateTime? @db.Timestamptz(3)
+  scope                 String?
+  /// Password hash for credential accounts. Never selected outside @/platform/auth.
+  password              String?
+  createdAt             DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt             DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+  @@map("accounts")
+}
+
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+
+  @@index([identifier])
+  @@index([expiresAt])
+  @@map("verifications")
+}
+
+/// twoFactor plugin table. The library defines no timestamps; ours have defaults it ignores.
+model TwoFactor {
+  id                      String    @id @default(cuid())
+  /// TOTP secret, encrypted by the plugin. Never returned.
+  secret                  String
+  /// Encrypted or hashed backup codes (plugin format).
+  backupCodes             String
+  userId                  String
+  verified                Boolean?  @default(true)
+  failedVerificationCount Int?      @default(0)
+  lockedUntil             DateTime? @db.Timestamptz(3)
+  createdAt               DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt               DateTime  @default(now()) @updatedAt @db.Timestamptz(3)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([secret])
+  @@map("two_factors")
+}
+
+/// Better Auth's database rate limiter (an in-memory limiter doesn't work on serverless).
+model RateLimit {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  count       Int
+  /// Milliseconds since the epoch (library type).
+  lastRequest BigInt
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @default(now()) @updatedAt @db.Timestamptz(3)
+
+  @@map("rate_limits")
+}

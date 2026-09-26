@@ -1,0 +1,1147 @@
+// Client Acquisition (docs/specs/data-model.md §5.2). Every table is prefixed acq_. Acquisition
+// tables may reference core tables; core never references these. JSON columns name the contract
+// type that validates them on write (§7).
+
+// ---- Profiles, search and signals ---------------------------------------------------------
+
+/// One version of a service line's profile (INV-16): one active and one open draft per line.
+model ServiceLineProfileVersion {
+  id            String               @id @default(cuid())
+  serviceLine   ServiceLine
+  version       Int
+  status        ProfileVersionStatus @default(DRAFT)
+  isActive      Boolean              @default(false)
+  /// ServiceLineProfile (docs/contracts/service-line-profile.md), validated on every write.
+  profile       Json
+  note          String?
+  createdById   String
+  publishedById String?
+  publishedAt   DateTime?            @db.Timestamptz(3)
+  createdAt     DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime             @updatedAt @db.Timestamptz(3)
+
+  createdBy   User       @relation("ProfileVersionCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  publishedBy User?      @relation("ProfileVersionPublishedBy", fields: [publishedById], references: [id], onDelete: SetNull)
+  sequences   Sequence[]
+
+  @@unique([serviceLine, version])
+  @@unique([serviceLine], map: "acq_profile_versions_one_active_key", where: raw("\"isActive\""))
+  @@unique([serviceLine], map: "acq_profile_versions_one_draft_key", where: raw("status = 'DRAFT'"))
+  @@index([serviceLine, status])
+  @@index([createdById])
+  @@index([publishedById])
+  @@map("acq_service_line_profile_versions")
+}
+
+model SavedSearch {
+  id                         String      @id @default(cuid())
+  name                       String
+  serviceLine                ServiceLine
+  /// SearchSpec (docs/contracts/source-adapter.md)
+  spec                       Json
+  cron                       String
+  timezone                   String      @default("Africa/Lagos")
+  enabled                    Boolean     @default(true)
+  ownerId                    String
+  lastRunAt                  DateTime?   @db.Timestamptz(3)
+  lastRunId                  String?
+  nextRunAt                  DateTime?   @db.Timestamptz(3)
+  pausedReason               String?
+  lastCapacitySkipNotifiedAt DateTime?   @db.Timestamptz(3)
+  createdAt                  DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt                  DateTime    @updatedAt @db.Timestamptz(3)
+
+  owner   User        @relation(fields: [ownerId], references: [id], onDelete: Restrict)
+  lastRun SearchRun?  @relation("SavedSearchLastRun", fields: [lastRunId], references: [id], onDelete: SetNull)
+  runs    SearchRun[] @relation("SavedSearchRuns")
+
+  @@index([serviceLine, enabled])
+  @@index([ownerId])
+  @@index([lastRunId])
+  @@map("acq_saved_searches")
+}
+
+model SearchRun {
+  id                  String           @id @default(cuid())
+  serviceLine         ServiceLine
+  markets             Market[]
+  /// SearchSpec (docs/contracts/source-adapter.md)
+  spec                Json
+  trigger             SearchRunTrigger
+  status              SearchRunStatus  @default(QUEUED)
+  skipReason          String?
+  savedSearchId       String?
+  actorType           ActorType
+  actorId             String?
+  jobRunId            String?
+  /// SearchRunCounts (docs/contracts/source-adapter.md)
+  counts              Json             @default("{}")
+  /// SearchRunSourceResult[] (docs/contracts/source-adapter.md)
+  perSource           Json             @default("[]")
+  costMicros          Int              @default(0)
+  estimatedCostMicros Int?
+  /// CsvAttestation (docs/contracts/source-adapter.md); required for CSV_IMPORT.
+  attestation         Json?
+  csvFileId           String?
+  startedAt           DateTime?        @db.Timestamptz(3)
+  finishedAt          DateTime?        @db.Timestamptz(3)
+  durationMs          Int?
+  error               String?
+  createdAt           DateTime         @default(now()) @db.Timestamptz(3)
+  updatedAt           DateTime         @updatedAt @db.Timestamptz(3)
+
+  savedSearch            SavedSearch?  @relation("SavedSearchRuns", fields: [savedSearchId], references: [id], onDelete: SetNull)
+  jobRun                 JobRun?       @relation(fields: [jobRunId], references: [id], onDelete: SetNull)
+  csvFile                FileObject?   @relation(fields: [csvFileId], references: [id], onDelete: SetNull)
+  signals                Signal[]
+  lastRunOfSavedSearches SavedSearch[] @relation("SavedSearchLastRun")
+
+  @@index([serviceLine, createdAt])
+  @@index([status])
+  @@index([savedSearchId])
+  @@index([jobRunId])
+  @@index([actorId])
+  @@index([csvFileId])
+  @@map("acq_search_runs")
+}
+
+/// Evidence that a business may need a service. Only signals with a sourceUrl can be cited (INV-5).
+model Signal {
+  id            String      @id @default(cuid())
+  companyId     String
+  leadId        String?
+  serviceLine   ServiceLine
+  signalType    String
+  evidenceText  String
+  evidence      Json?
+  sourceUrl     String?
+  observedAt    DateTime    @db.Timestamptz(3)
+  adapterId     String
+  detectedBy    String?
+  searchRunId   String?
+  externalRef   String?
+  /// Only what the provider's terms allow storing (INV-14); always null for google-places.
+  rawPayload    Json?
+  /// CrossLineHint (docs/contracts/source-adapter.md)
+  crossLineHint Json?
+  createdAt     DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime    @updatedAt @db.Timestamptz(3)
+
+  company   Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  lead      Lead?             @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  searchRun SearchRun?        @relation(fields: [searchRunId], references: [id], onDelete: SetNull)
+  citations MessageCitation[]
+
+  @@unique([companyId, serviceLine, signalType, adapterId, externalRef], map: "acq_signals_external_dedupe_key", where: raw("\"externalRef\" IS NOT NULL"))
+  @@index([companyId])
+  @@index([leadId])
+  @@index([serviceLine, signalType])
+  @@index([searchRunId])
+  @@index([adapterId, createdAt])
+  @@map("acq_signals")
+}
+
+// ---- Leads --------------------------------------------------------------------------------
+
+/// A company × service line × market prospect. Status changes only through transitionLead
+/// (INV-1, INV-15); one open lead per company × line × market.
+model Lead {
+  id                        String         @id @default(cuid())
+  companyId                 String
+  serviceLine               ServiceLine
+  market                    Market
+  country                   String?
+  status                    LeadStatus     @default(NEW)
+  ownerId                   String?
+  primaryContactId          String?
+  score                     Int?
+  scoreBand                 ScoreBand?
+  /// ScoreReason[] (docs/contracts/service-line-profile.md)
+  scoreReasons              Json           @default("[]")
+  scoredAt                  DateTime?      @db.Timestamptz(3)
+  brief                     String?
+  keyFindingIds             String[]       @default([])
+  suggestedAngleId          String?
+  talkingPoints             String[]       @default([])
+  briefGeneratedAt          DateTime?      @db.Timestamptz(3)
+  needsHumanReview          Boolean        @default(false)
+  complianceReview          Boolean        @default(false)
+  /// Contactability (docs/contracts/enrichment.md)
+  contactability            Json?
+  contactabilityEvaluatedAt DateTime?      @db.Timestamptz(3)
+  crossSellGroupId          String?
+  heldByCrossSell           Boolean        @default(false)
+  nurtureReason             NurtureReason?
+  disqualifyReason          String?
+  nextActionAt              DateTime?      @db.Timestamptz(3)
+  nextActionNote            String?
+  snoozedUntil              DateTime?      @db.Timestamptz(3)
+  firstContactedAt          DateTime?      @db.Timestamptz(3)
+  lastActivityAt            DateTime       @default(now()) @db.Timestamptz(3)
+  closedAt                  DateTime?      @db.Timestamptz(3)
+  advanceVersion            Int            @default(0)
+  advanceRestarts           Int            @default(0)
+  needsAttentionAt          DateTime?      @db.Timestamptz(3)
+  auditFailureCount         Int            @default(0)
+  staleFlaggedAt            DateTime?      @db.Timestamptz(3)
+  createdAt                 DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt                 DateTime       @updatedAt @db.Timestamptz(3)
+
+  company                Company          @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  owner                  User?            @relation("LeadOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  primaryContact         Contact?         @relation("LeadPrimaryContact", fields: [primaryContactId], references: [id], onDelete: SetNull)
+  crossSellGroup         CrossSellGroup?  @relation("CrossSellGroupLeads", fields: [crossSellGroupId], references: [id], onDelete: SetNull)
+  events                 LeadEvent[]
+  signals                Signal[]
+  audits                 Audit[]
+  auditFindings          AuditFinding[]
+  scoreReviews           ScoreReview[]
+  leadingCrossSellGroups CrossSellGroup[] @relation("CrossSellGroupLeadingLead")
+  enrollments            Enrollment[]
+  messages               Message[]
+  replies                Reply[]
+  inboxThread            InboxThread?
+  meetings               Meeting[]
+  proposals              Proposal[]
+  deal                   Deal?
+
+  // One open lead per company × line × market (§6 #3). The predicate is written the way
+  // PostgreSQL stores it (NOT IN becomes <> ALL): Prisma compares predicate text, and any
+  // other spelling shows up as drift in every later migration.
+  @@unique([companyId, serviceLine, market], map: "acq_leads_one_open", where: raw("status <> ALL (ARRAY['WON'::\"LeadStatus\", 'LOST'::\"LeadStatus\", 'DISQUALIFIED'::\"LeadStatus\", 'SUPPRESSED'::\"LeadStatus\"])"))
+  @@index([serviceLine, status])
+  @@index([market])
+  @@index([ownerId])
+  @@index([score])
+  @@index([companyId])
+  @@index([serviceLine, market, status])
+  @@index([status, updatedAt])
+  @@index([nextActionAt])
+  @@index([crossSellGroupId])
+  @@index([primaryContactId])
+  @@index([lastActivityAt])
+  @@map("acq_leads")
+}
+
+/// Append-only lead history. STATUS_CHANGE rows are written by transitionLead in the same
+/// transaction (INV-1). actorLabel names the job for SYSTEM actors (Phase 2 addition).
+model LeadEvent {
+  id         String        @id @default(cuid())
+  leadId     String
+  kind       LeadEventKind
+  fromStatus LeadStatus?
+  toStatus   LeadStatus?
+  actorType  ActorType
+  actorId    String?
+  actorLabel String?
+  reason     String?
+  meta       Json?
+  createdAt  DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime      @updatedAt @db.Timestamptz(3)
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, createdAt])
+  @@index([toStatus, createdAt])
+  @@index([kind])
+  @@map("acq_lead_events")
+}
+
+// ---- Audits and findings --------------------------------------------------------------------
+
+/// One audit agent run for a lead.
+model Audit {
+  id          String      @id @default(cuid())
+  leadId      String
+  companyId   String
+  agentId     String
+  serviceLine ServiceLine
+  status      AuditStatus @default(QUEUED)
+  attempt     Int         @default(0)
+  startedAt   DateTime?   @db.Timestamptz(3)
+  finishedAt  DateTime?   @db.Timestamptz(3)
+  costMicros  Int         @default(0)
+  error       String?
+  cacheHit    Boolean     @default(false)
+  jobRunId    String?
+  createdAt   DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime    @updatedAt @db.Timestamptz(3)
+
+  lead      Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  company   Company         @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  jobRun    JobRun?         @relation(fields: [jobRunId], references: [id], onDelete: SetNull)
+  checkRuns AuditCheckRun[]
+  findings  AuditFinding[]
+
+  @@index([leadId, agentId, createdAt])
+  @@index([companyId])
+  @@index([status])
+  @@index([jobRunId])
+  @@map("acq_audits")
+}
+
+model AuditCheckRun {
+  id         String         @id @default(cuid())
+  auditId    String
+  checkId    String
+  status     CheckRunStatus
+  reason     String?
+  durationMs Int?
+  costMicros Int            @default(0)
+  createdAt  DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime       @updatedAt @db.Timestamptz(3)
+
+  audit Audit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+
+  @@unique([auditId, checkId])
+  @@index([checkId, status])
+  @@map("acq_audit_check_runs")
+}
+
+/// A precise claim with its evidence (INV-5, INV-18). A dismissed finding can never be cited.
+model AuditFinding {
+  id            String          @id @default(cuid())
+  auditId       String
+  leadId        String
+  companyId     String
+  checkId       String
+  severity      FindingSeverity
+  claim         String
+  /// FindingEvidence (docs/contracts/audit-agent.md)
+  evidence      Json
+  sourceUrl     String?
+  artifactKey   String?
+  capturedAt    DateTime        @db.Timestamptz(3)
+  method        FindingMethod
+  confidence    Float           @default(1)
+  pitchable     Boolean         @default(false)
+  dismissedAt   DateTime?       @db.Timestamptz(3)
+  dismissedById String?
+  dismissReason String?
+  createdAt     DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime        @updatedAt @db.Timestamptz(3)
+
+  audit       Audit             @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  lead        Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  dismissedBy User?             @relation("FindingDismissedBy", fields: [dismissedById], references: [id], onDelete: SetNull)
+  citations   MessageCitation[]
+
+  @@index([leadId, pitchable, severity])
+  @@index([auditId])
+  @@index([companyId])
+  @@index([checkId])
+  @@index([dismissedAt])
+  @@index([dismissedById])
+  @@map("acq_audit_findings")
+}
+
+model AuditCacheEntry {
+  id         String   @id @default(cuid())
+  /// "<normalizedDomain>:<checkId>" (or a channel or app id for non-web checks)
+  cacheKey   String   @unique
+  domain     String
+  checkId    String
+  result     Json
+  capturedAt DateTime @db.Timestamptz(3)
+  expiresAt  DateTime @db.Timestamptz(3)
+  createdAt  DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt  DateTime @updatedAt @db.Timestamptz(3)
+
+  @@index([domain])
+  @@index([expiresAt])
+  @@map("acq_audit_cache_entries")
+}
+
+// ---- Scoring, cross-sell and capacity ------------------------------------------------------
+
+model ScoreReview {
+  id              String                @id @default(cuid())
+  leadId          String
+  recommendation  ReviewRecommendation
+  confidence      Float
+  reasons         String[]              @default([])
+  citedFindingIds String[]              @default([])
+  riskFlags       String[]              @default([])
+  /// AiCall id (no foreign key)
+  aiCallId        String?
+  humanDecision   ReviewRecommendation?
+  decisionType    ReviewDecisionType?
+  decidedById     String?
+  decidedAt       DateTime?             @db.Timestamptz(3)
+  overrideNote    String?
+  createdAt       DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime              @updatedAt @db.Timestamptz(3)
+
+  lead      Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  decidedBy User? @relation("ScoreReviewDecidedBy", fields: [decidedById], references: [id], onDelete: SetNull)
+
+  @@index([leadId, createdAt])
+  @@index([decisionType])
+  @@index([decidedById])
+  @@map("acq_score_reviews")
+}
+
+model CrossSellGroup {
+  id            String          @id @default(cuid())
+  companyId     String
+  status        CrossSellStatus @default(ACTIVE)
+  leadingLeadId String?
+  detectedAt    DateTime        @default(now()) @db.Timestamptz(3)
+  splitAt       DateTime?       @db.Timestamptz(3)
+  splitById     String?
+  createdAt     DateTime        @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime        @updatedAt @db.Timestamptz(3)
+
+  company     Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  leadingLead Lead?   @relation("CrossSellGroupLeadingLead", fields: [leadingLeadId], references: [id], onDelete: SetNull)
+  splitBy     User?   @relation("CrossSellGroupSplitBy", fields: [splitById], references: [id], onDelete: SetNull)
+  leads       Lead[]  @relation("CrossSellGroupLeads")
+
+  @@unique([companyId], map: "acq_cross_sell_groups_one_active_key", where: raw("status = 'ACTIVE'"))
+  @@index([status])
+  @@index([companyId])
+  @@index([leadingLeadId])
+  @@index([splitById])
+  @@map("acq_cross_sell_groups")
+}
+
+model LineCapacityState {
+  id             String       @id @default(cuid())
+  serviceLine    ServiceLine  @unique
+  mode           CapacityMode @default(NORMAL)
+  since          DateTime     @default(now()) @db.Timestamptz(3)
+  lastNotifiedAt DateTime?    @db.Timestamptz(3)
+  createdAt      DateTime     @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime     @updatedAt @db.Timestamptz(3)
+
+  @@map("acq_line_capacity_states")
+}
+
+// ---- Outreach -------------------------------------------------------------------------------
+
+/// A profile's sequence snapshot for one market, so enrolments stay stable when a profile changes.
+model Sequence {
+  id               String      @id @default(cuid())
+  serviceLine      ServiceLine
+  market           Market
+  profileVersionId String
+  sequenceKey      String
+  name             String
+  createdAt        DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime    @updatedAt @db.Timestamptz(3)
+
+  profileVersion ServiceLineProfileVersion @relation(fields: [profileVersionId], references: [id], onDelete: Restrict)
+  steps          SequenceStep[]
+  enrollments    Enrollment[]
+
+  @@unique([profileVersionId, market, sequenceKey])
+  @@index([serviceLine, market])
+  @@map("acq_sequences")
+}
+
+model SequenceStep {
+  id                String   @id @default(cuid())
+  sequenceId        String
+  stepIndex         Int
+  channel           Channel
+  delayBusinessDays Int      @default(0)
+  /// Contract enum value (INTRO_AUDIT_INSIGHT, VALUE_ADD, …; docs/contracts/service-line-profile.md)
+  purpose           String
+  pitchAngleId      String?
+  /// Contract enum values (ANY_REPLY, BOUNCE, …)
+  stopConditions    String[] @default([])
+  createdAt         DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime @updatedAt @db.Timestamptz(3)
+
+  sequence Sequence @relation(fields: [sequenceId], references: [id], onDelete: Cascade)
+
+  @@unique([sequenceId, stepIndex])
+  @@map("acq_sequence_steps")
+}
+
+/// A contact enrolled in a sequence (INV-3, INV-9). companyId is denormalised so the database
+/// enforces one ACTIVE or PAUSED thread per company (ADR-032).
+model Enrollment {
+  id               String                 @id @default(cuid())
+  leadId           String
+  contactId        String
+  companyId        String
+  sequenceId       String
+  status           EnrollmentStatus       @default(ACTIVE)
+  currentStepIndex Int                    @default(0)
+  nextRunAt        DateTime?              @db.Timestamptz(3)
+  pausedUntil      DateTime?              @db.Timestamptz(3)
+  pauseReason      EnrollmentPauseReason?
+  stoppedReason    EnrollmentStopReason?
+  stoppedAt        DateTime?              @db.Timestamptz(3)
+  completedAt      DateTime?              @db.Timestamptz(3)
+  mailboxId        String?
+  createdAt        DateTime               @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime               @updatedAt @db.Timestamptz(3)
+
+  lead     Lead      @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  contact  Contact   @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  sequence Sequence  @relation(fields: [sequenceId], references: [id], onDelete: Restrict)
+  mailbox  Mailbox?  @relation(fields: [mailboxId], references: [id], onDelete: SetNull)
+  messages Message[]
+
+  // INV-9 and ADR-032: one ACTIVE or PAUSED enrolment per company (§6 #2). Written in
+  // PostgreSQL's stored form (IN becomes = ANY) so Prisma Migrate sees no drift.
+  @@unique([companyId], map: "acq_enrollments_one_open_thread", where: raw("status = ANY (ARRAY['ACTIVE'::\"EnrollmentStatus\", 'PAUSED'::\"EnrollmentStatus\"])"))
+  @@index([status, nextRunAt])
+  @@index([leadId])
+  @@index([contactId])
+  @@index([companyId])
+  @@index([mailboxId])
+  @@index([sequenceId])
+  @@map("acq_enrollments")
+}
+
+/// Every outbound message on every channel. id is also the send idempotency key (INV-22).
+model Message {
+  id                   String        @id @default(cuid())
+  leadId               String
+  companyId            String
+  contactId            String?
+  enrollmentId         String?
+  stepIndex            Int?
+  kind                 MessageKind
+  channel              Channel
+  status               MessageStatus @default(DRAFT)
+  subject              String?
+  /// Body without the system footer; citation markers kept for review.
+  body                 String
+  /// The exact footer that was sent (INV-4).
+  footerSnapshot       String?
+  angleId              String?
+  portfolioIds         String[]      @default([])
+  personalizationNotes String?
+  aiCallId             String?
+  humanEdited          Boolean       @default(false)
+  humanConfirmedClaims Boolean       @default(false)
+  humanConfirmedById   String?
+  humanConfirmedAt     DateTime?     @db.Timestamptz(3)
+  approvedById         String?
+  approvedAt           DateTime?     @db.Timestamptz(3)
+  autoApproved         Boolean       @default(false)
+  rejectReason         RejectReason?
+  rejectNote           String?
+  scheduledFor         DateTime?     @db.Timestamptz(3)
+  sentAt               DateTime?     @db.Timestamptz(3)
+  sentById             String?
+  mailboxId            String?
+  providerMessageId    String?       @unique
+  providerThreadId     String?
+  rfcMessageId         String?
+  inReplyToMessageId   String?
+  inReplyToReplyId     String?
+  unsubscribeTokenId   String?       @unique
+  unsubscribeRevokedAt DateTime?     @db.Timestamptz(3)
+  blockedReason        String?
+  /// AssistedOutcome (docs/contracts/outreach-channel.md)
+  assistedOutcome      Json?
+  needsPricingApproval Boolean       @default(false)
+  createdAt            DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime      @updatedAt @db.Timestamptz(3)
+
+  lead             Lead                @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  company          Company             @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  contact          Contact?            @relation(fields: [contactId], references: [id], onDelete: Restrict)
+  enrollment       Enrollment?         @relation(fields: [enrollmentId], references: [id], onDelete: SetNull)
+  humanConfirmedBy User?               @relation("MessageHumanConfirmedBy", fields: [humanConfirmedById], references: [id], onDelete: SetNull)
+  approvedBy       User?               @relation("MessageApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  sentBy           User?               @relation("MessageSentBy", fields: [sentById], references: [id], onDelete: SetNull)
+  mailbox          Mailbox?            @relation(fields: [mailboxId], references: [id], onDelete: Restrict)
+  inReplyToMessage Message?            @relation("MessageInReplyTo", fields: [inReplyToMessageId], references: [id], onDelete: SetNull)
+  followUps        Message[]           @relation("MessageInReplyTo")
+  inReplyToReply   Reply?              @relation("MessageAnswersReply", fields: [inReplyToReplyId], references: [id], onDelete: SetNull)
+  citations        MessageCitation[]
+  attachments      MessageAttachment[]
+  trackingEvents   TrackingEvent[]
+  replies          Reply[]             @relation("ReplyMatchedMessage")
+  sentProposals    Proposal[]
+
+  @@index([status, scheduledFor])
+  @@index([leadId, createdAt])
+  @@index([enrollmentId])
+  @@index([mailboxId, sentAt])
+  @@index([sentAt])
+  @@index([channel, status])
+  @@index([companyId])
+  @@index([contactId])
+  @@index([providerThreadId])
+  @@index([humanConfirmedById])
+  @@index([approvedById])
+  @@index([sentById])
+  @@index([inReplyToMessageId])
+  @@index([inReplyToReplyId])
+  @@map("acq_messages")
+}
+
+/// A message's citation of exactly one finding or signal (INV-5).
+model MessageCitation {
+  id        String   @id @default(cuid())
+  messageId String
+  findingId String?
+  signalId  String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  message Message       @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  finding AuditFinding? @relation(fields: [findingId], references: [id], onDelete: Restrict)
+  signal  Signal?       @relation(fields: [signalId], references: [id], onDelete: Restrict)
+
+  @@unique([messageId, findingId], map: "acq_message_citations_finding_key", where: raw("\"findingId\" IS NOT NULL"))
+  @@unique([messageId, signalId], map: "acq_message_citations_signal_key", where: raw("\"signalId\" IS NOT NULL"))
+  @@index([findingId])
+  @@index([signalId])
+  @@map("acq_message_citations")
+}
+
+model MessageAttachment {
+  id           String   @id @default(cuid())
+  messageId    String
+  fileObjectId String
+  filename     String
+  createdAt    DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime @updatedAt @db.Timestamptz(3)
+
+  message    Message    @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  fileObject FileObject @relation(fields: [fileObjectId], references: [id], onDelete: Restrict)
+
+  @@unique([messageId, fileObjectId])
+  @@index([fileObjectId])
+  @@map("acq_message_attachments")
+}
+
+model SendingDomain {
+  id            String         @id @default(cuid())
+  domain        String         @unique @db.Citext
+  provider      String
+  dkimSelector  String         @default("google")
+  spfStatus     DnsCheckStatus @default(UNKNOWN)
+  dkimStatus    DnsCheckStatus @default(UNKNOWN)
+  dmarcStatus   DnsCheckStatus @default(UNKNOWN)
+  mxStatus      DnsCheckStatus @default(UNKNOWN)
+  dnsDetails    Json?
+  lastCheckedAt DateTime?      @db.Timestamptz(3)
+  redirectUrl   String?
+  createdAt     DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime       @updatedAt @db.Timestamptz(3)
+
+  mailboxes Mailbox[]
+
+  @@map("acq_sending_domains")
+}
+
+/// A dedicated outreach mailbox with its warm-up ramp and send window (INV-8).
+model Mailbox {
+  id                 String        @id @default(cuid())
+  address            String        @unique @db.Citext
+  displayName        String
+  senderUserId       String?
+  sendingDomainId    String
+  provider           String
+  /// IntegrationCredential.provider key: always "outreach-mailbox:<mailboxId>".
+  credentialProvider String
+  status             MailboxStatus @default(WARMING)
+  pausedReason       String?
+  warmupStartDate    DateTime      @db.Date
+  warmupStartCap     Int           @default(5)
+  dailyCapTarget     Int           @default(35)
+  warmupRampDays     Int           @default(24)
+  sendWindowStart    String        @default("09:00")
+  sendWindowEnd      String        @default("17:00")
+  healthScore        Float?
+  lastHealthCheckAt  DateTime?     @db.Timestamptz(3)
+  createdAt          DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime      @updatedAt @db.Timestamptz(3)
+
+  senderUser     User?              @relation("MailboxSenderUser", fields: [senderUserId], references: [id], onDelete: SetNull)
+  sendingDomain  SendingDomain      @relation(fields: [sendingDomainId], references: [id], onDelete: Restrict)
+  enrollments    Enrollment[]
+  messages       Message[]
+  dailyStats     MailboxDailyStat[]
+  syncState      MailboxSyncState?
+  trackingEvents TrackingEvent[]
+  replies        Reply[]
+
+  @@index([status])
+  @@index([sendingDomainId])
+  @@index([senderUserId])
+  @@map("acq_mailboxes")
+}
+
+model MailboxDailyStat {
+  id          String   @id @default(cuid())
+  mailboxId   String
+  /// Day in the platform timezone.
+  day         DateTime @db.Date
+  sent        Int      @default(0)
+  bouncesHard Int      @default(0)
+  bouncesSoft Int      @default(0)
+  complaints  Int      @default(0)
+  replies     Int      @default(0)
+  createdAt   DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(3)
+
+  mailbox Mailbox @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+
+  @@unique([mailboxId, day])
+  @@map("acq_mailbox_daily_stats")
+}
+
+model MailboxSyncState {
+  id           String    @id @default(cuid())
+  mailboxId    String    @unique
+  /// Gmail historyId or IMAP UID
+  cursor       String?
+  lastPolledAt DateTime? @db.Timestamptz(3)
+  lastError    String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime  @updatedAt @db.Timestamptz(3)
+
+  mailbox Mailbox @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
+
+  @@map("acq_mailbox_sync_states")
+}
+
+/// Provider delivery events. No OPENED or CLICKED events by default (ADR-031).
+model TrackingEvent {
+  id              String            @id @default(cuid())
+  messageId       String?
+  mailboxId       String?
+  type            TrackingEventType
+  provider        String
+  providerEventId String?
+  occurredAt      DateTime          @db.Timestamptz(3)
+  payload         Json?
+  createdAt       DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime          @updatedAt @db.Timestamptz(3)
+
+  message Message? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+  mailbox Mailbox? @relation(fields: [mailboxId], references: [id], onDelete: SetNull)
+
+  @@unique([provider, providerEventId], map: "acq_tracking_events_provider_event_key", where: raw("\"providerEventId\" IS NOT NULL"))
+  @@index([messageId, type])
+  @@index([type, occurredAt])
+  @@index([mailboxId])
+  @@map("acq_tracking_events")
+}
+
+// ---- Inbox ------------------------------------------------------------------------------------
+
+model Reply {
+  id                   String                @id @default(cuid())
+  mailboxId            String?
+  leadId               String?
+  contactId            String?
+  companyId            String?
+  messageId            String?
+  channel              ReplyChannel
+  providerMessageId    String?
+  providerThreadId     String?
+  rfcMessageId         String?
+  inReplyTo            String?
+  references           String[]              @default([])
+  fromAddress          String?               @db.Citext
+  toAddress            String?               @db.Citext
+  subject              String?
+  receivedAt           DateTime              @db.Timestamptz(3)
+  headers              Json?
+  rawBodySanitized     String?
+  latestText           String
+  attachmentsMeta      Json?
+  matchMethod          ReplyMatchMethod
+  classification       ReplyClass?
+  classificationSource ClassificationSource?
+  confidence           Float?
+  followUpDate         DateTime?             @db.Date
+  /// ReplyReferral (docs/contracts/acquisition-records.md)
+  referral             Json?
+  objectionSummary     String?
+  questions            String[]              @default([])
+  sentiment            String?
+  language             String?
+  summary              String?
+  needsHumanReview     Boolean               @default(false)
+  readAt               DateTime?             @db.Timestamptz(3)
+  slaStatus            SlaStatus             @default(NONE)
+  slaDueAt             DateTime?             @db.Timestamptz(3)
+  slaWarnedAt          DateTime?             @db.Timestamptz(3)
+  slaBreachedAt        DateTime?             @db.Timestamptz(3)
+  firstResponseAt      DateTime?             @db.Timestamptz(3)
+  processedAt          DateTime?             @db.Timestamptz(3)
+  /// ReplyActionsTaken (docs/contracts/acquisition-records.md)
+  actionsTaken         Json?
+  loggedById           String?
+  aiCallId             String?
+  createdAt            DateTime              @default(now()) @db.Timestamptz(3)
+  updatedAt            DateTime              @updatedAt @db.Timestamptz(3)
+
+  mailbox     Mailbox?          @relation(fields: [mailboxId], references: [id], onDelete: SetNull)
+  lead        Lead?             @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  contact     Contact?          @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  company     Company?          @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  message     Message?          @relation("ReplyMatchedMessage", fields: [messageId], references: [id], onDelete: SetNull)
+  loggedBy    User?             @relation("ReplyLoggedBy", fields: [loggedById], references: [id], onDelete: SetNull)
+  corrections ReplyCorrection[]
+  answeredBy  Message[]         @relation("MessageAnswersReply")
+
+  @@unique([mailboxId, providerMessageId], map: "acq_replies_mailbox_message_key", where: raw("\"mailboxId\" IS NOT NULL AND \"providerMessageId\" IS NOT NULL"))
+  @@index([classification])
+  @@index([leadId, receivedAt])
+  @@index([slaStatus, slaDueAt])
+  @@index([receivedAt], map: "acq_replies_unmatched_idx", where: raw("\"matchMethod\" = 'UNMATCHED'"))
+  @@index([receivedAt])
+  @@index([readAt])
+  @@index([messageId])
+  @@index([providerThreadId])
+  @@index([mailboxId])
+  @@index([contactId])
+  @@index([companyId])
+  @@index([loggedById])
+  @@map("acq_replies")
+}
+
+model ReplyCorrection {
+  id        String      @id @default(cuid())
+  replyId   String
+  fromClass ReplyClass?
+  toClass   ReplyClass
+  note      String?
+  actorId   String
+  createdAt DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime    @updatedAt @db.Timestamptz(3)
+
+  reply Reply @relation(fields: [replyId], references: [id], onDelete: Cascade)
+  actor User  @relation("ReplyCorrectionActor", fields: [actorId], references: [id], onDelete: Restrict)
+
+  @@index([replyId])
+  @@index([toClass, createdAt])
+  @@index([actorId])
+  @@map("acq_reply_corrections")
+}
+
+/// Per-lead inbox state: assignment, snooze and unread count.
+model InboxThread {
+  id             String    @id @default(cuid())
+  leadId         String    @unique
+  assigneeId     String?
+  snoozedUntil   DateTime? @db.Timestamptz(3)
+  lastInboundAt  DateTime? @db.Timestamptz(3)
+  lastOutboundAt DateTime? @db.Timestamptz(3)
+  unreadCount    Int       @default(0)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime  @updatedAt @db.Timestamptz(3)
+
+  lead     Lead  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  assignee User? @relation("InboxThreadAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
+
+  @@index([assigneeId])
+  @@index([lastInboundAt])
+  @@map("acq_inbox_threads")
+}
+
+// ---- Compliance ------------------------------------------------------------------------------
+
+/// Do-not-contact list (INV-2, INV-23). value is normalised, or its keyed hash when isHashed.
+/// Removal is ADMIN-only and keeps the row for history.
+model Suppression {
+  id            String            @id @default(cuid())
+  type          SuppressionType
+  value         String
+  isHashed      Boolean           @default(false)
+  reason        SuppressionReason
+  source        SuppressionSource
+  note          String?
+  createdById   String?
+  removedAt     DateTime?         @db.Timestamptz(3)
+  removedById   String?
+  removedReason String?
+  createdAt     DateTime          @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime          @updatedAt @db.Timestamptz(3)
+
+  createdBy User? @relation("SuppressionCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  removedBy User? @relation("SuppressionRemovedBy", fields: [removedById], references: [id], onDelete: SetNull)
+
+  @@unique([type, value], map: "acq_suppressions_live_key", where: raw("\"removedAt\" IS NULL"))
+  @@index([reason])
+  @@index([createdAt])
+  @@index([createdById])
+  @@index([removedById])
+  @@map("acq_suppressions")
+}
+
+model ConsentRecord {
+  id           String        @id @default(cuid())
+  contactId    String?
+  email        String?       @db.Citext
+  scope        ConsentScope
+  method       ConsentMethod
+  evidence     String
+  recordedById String
+  recordedAt   DateTime      @default(now()) @db.Timestamptz(3)
+  revokedAt    DateTime?     @db.Timestamptz(3)
+  revokedById  String?
+  createdAt    DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt    DateTime      @updatedAt @db.Timestamptz(3)
+
+  contact    Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  recordedBy User     @relation("ConsentRecordedBy", fields: [recordedById], references: [id], onDelete: Restrict)
+  revokedBy  User?    @relation("ConsentRevokedBy", fields: [revokedById], references: [id], onDelete: SetNull)
+
+  @@index([contactId])
+  @@index([email])
+  @@index([recordedById])
+  @@index([revokedById])
+  @@map("acq_consent_records")
+}
+
+model DataSubjectRequest {
+  id            String    @id @default(cuid())
+  type          DsrType
+  status        DsrStatus @default(OPEN)
+  subjectEmail  String?   @db.Citext
+  subjectPhone  String?
+  requestedBy   String
+  notes         String?
+  createdById   String
+  fulfilledById String?
+  fulfilledAt   DateTime? @db.Timestamptz(3)
+  exportFileId  String?
+  resultSummary Json?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(3)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(3)
+
+  createdBy   User        @relation("DsrCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  fulfilledBy User?       @relation("DsrFulfilledBy", fields: [fulfilledById], references: [id], onDelete: SetNull)
+  exportFile  FileObject? @relation(fields: [exportFileId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([subjectEmail])
+  @@index([subjectPhone])
+  @@index([createdById])
+  @@index([fulfilledById])
+  @@index([exportFileId])
+  @@map("acq_data_subject_requests")
+}
+
+// ---- Pipeline: meetings, proposals, deals and handoff ------------------------------------------
+
+model Meeting {
+  id                 String        @id @default(cuid())
+  leadId             String?
+  companyId          String?
+  contactId          String?
+  ownerId            String?
+  source             MeetingSource
+  externalId         String?
+  status             MeetingStatus @default(SCHEDULED)
+  startsAt           DateTime      @db.Timestamptz(3)
+  endsAt             DateTime      @db.Timestamptz(3)
+  timezone           String
+  location           String?
+  videoUrl           String?
+  attendeeEmail      String?       @db.Citext
+  attendeeName       String?
+  notes              String?
+  transcript         String?
+  outcomeNotes       String?
+  /// MeetingSummary (docs/contracts/acquisition-records.md)
+  summary            Json?
+  summaryAiCallId    String?
+  /// PrecallBrief (docs/contracts/acquisition-records.md)
+  precallBrief       Json?
+  precallGeneratedAt DateTime?     @db.Timestamptz(3)
+  precallAiCallId    String?
+  reminder24hSentAt  DateTime?     @db.Timestamptz(3)
+  reminder1hSentAt   DateTime?     @db.Timestamptz(3)
+  cancelledAt        DateTime?     @db.Timestamptz(3)
+  createdAt          DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt          DateTime      @updatedAt @db.Timestamptz(3)
+
+  lead    Lead?    @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  company Company? @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  owner   User?    @relation("MeetingOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+
+  @@unique([source, externalId], map: "acq_meetings_source_external_key", where: raw("\"externalId\" IS NOT NULL"))
+  @@index([startsAt])
+  @@index([leadId, startsAt])
+  @@index([ownerId, startsAt])
+  @@index([status])
+  @@index([companyId])
+  @@index([contactId])
+  @@map("acq_meetings")
+}
+
+/// A priced proposal (INV-11, INV-17). Amounts are integer minor units in `currency`.
+model Proposal {
+  id               String         @id @default(cuid())
+  leadId           String
+  /// The first version's id (self-reference by value).
+  proposalGroupId  String
+  version          Int            @default(1)
+  status           ProposalStatus @default(DRAFT)
+  currency         Currency
+  /// ProposalPackageSelection[] (docs/contracts/acquisition-records.md)
+  packages         Json           @default("[]")
+  discountType     DiscountType   @default(NONE)
+  /// Basis points for PERCENT, minor units for AMOUNT.
+  discountValue    Int            @default(0)
+  subtotalMinor    Int
+  discountMinor    Int            @default(0)
+  taxRateBps       Int            @default(0)
+  taxMinor         Int            @default(0)
+  totalMinor       Int
+  validUntil       DateTime       @db.Date
+  /// ProposalSections (docs/contracts/acquisition-records.md)
+  sections         Json?
+  notes            String?
+  pdfFileId        String?
+  requiresApproval Boolean        @default(false)
+  approvalReason   String?
+  approvedById     String?
+  approvedAt       DateTime?      @db.Timestamptz(3)
+  sentAt           DateTime?      @db.Timestamptz(3)
+  sentMessageId    String?
+  acceptedAt       DateTime?      @db.Timestamptz(3)
+  declinedAt       DateTime?      @db.Timestamptz(3)
+  declineReason    String?
+  aiCallId         String?
+  createdById      String
+  createdAt        DateTime       @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime       @updatedAt @db.Timestamptz(3)
+
+  lead        Lead               @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  pdfFile     FileObject?        @relation(fields: [pdfFileId], references: [id], onDelete: SetNull)
+  approvedBy  User?              @relation("ProposalApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  sentMessage Message?           @relation(fields: [sentMessageId], references: [id], onDelete: SetNull)
+  createdBy   User               @relation("ProposalCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  lineItems   ProposalLineItem[]
+  deals       Deal[]
+
+  @@unique([proposalGroupId, version])
+  @@index([leadId, createdAt])
+  @@index([status])
+  @@index([validUntil])
+  @@index([pdfFileId])
+  @@index([approvedById])
+  @@index([sentMessageId])
+  @@index([createdById])
+  @@map("acq_proposals")
+}
+
+model ProposalLineItem {
+  id             String   @id @default(cuid())
+  proposalId     String
+  packageId      String?
+  description    String
+  quantity       Int      @default(1)
+  unitPriceMinor Int
+  totalMinor     Int
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt      DateTime @updatedAt @db.Timestamptz(3)
+
+  proposal Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  @@index([proposalId, sortOrder])
+  @@map("acq_proposal_line_items")
+}
+
+/// A closed lead, won or lost. valueMinor and currency are required when WON (CHECK).
+model Deal {
+  id          String        @id @default(cuid())
+  leadId      String        @unique
+  companyId   String
+  serviceLine ServiceLine
+  market      Market
+  outcome     DealOutcome
+  valueMinor  Int?
+  currency    Currency?
+  services    ServiceLine[] @default([])
+  packageIds  String[]      @default([])
+  proposalId  String?
+  startDate   DateTime?     @db.Date
+  notes       String?
+  lostReason  LostReason?
+  competitor  String?
+  lostNote    String?
+  reengageAt  DateTime?     @db.Date
+  closedAt    DateTime      @default(now()) @db.Timestamptz(3)
+  closedById  String
+  createdAt   DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime      @updatedAt @db.Timestamptz(3)
+
+  lead     Lead      @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  company  Company   @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  proposal Proposal? @relation(fields: [proposalId], references: [id], onDelete: SetNull)
+  closedBy User      @relation("DealClosedBy", fields: [closedById], references: [id], onDelete: Restrict)
+  handoff  Handoff?
+
+  @@index([outcome, closedAt])
+  @@index([serviceLine, closedAt])
+  @@index([market])
+  @@index([reengageAt])
+  @@index([companyId])
+  @@index([proposalId])
+  @@index([closedById])
+  @@map("acq_deals")
+}
+
+model Handoff {
+  id               String        @id @default(cuid())
+  dealId           String        @unique
+  companyId        String
+  status           HandoffStatus @default(NEW)
+  /// HandoffContent (docs/contracts/acquisition-records.md): an immutable snapshot.
+  content          Json
+  pdfFileId        String?
+  markdown         String?
+  acknowledgedAt   DateTime?     @db.Timestamptz(3)
+  acknowledgedById String?
+  createdAt        DateTime      @default(now()) @db.Timestamptz(3)
+  updatedAt        DateTime      @updatedAt @db.Timestamptz(3)
+
+  deal           Deal                @relation(fields: [dealId], references: [id], onDelete: Restrict)
+  company        Company             @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  pdfFile        FileObject?         @relation(fields: [pdfFileId], references: [id], onDelete: SetNull)
+  acknowledgedBy User?               @relation("HandoffAcknowledgedBy", fields: [acknowledgedById], references: [id], onDelete: SetNull)
+  assignments    HandoffAssignment[]
+
+  @@index([status])
+  @@index([companyId])
+  @@index([pdfFileId])
+  @@index([acknowledgedById])
+  @@map("acq_handoffs")
+}
+
+/// A delivery owner per service line. Active rows count towards TeamProfile.currentLoad.
+model HandoffAssignment {
+  id              String      @id @default(cuid())
+  handoffId       String
+  serviceLine     ServiceLine
+  suggestedUserId String?
+  assignedUserId  String?
+  assignedById    String?
+  assignedAt      DateTime?   @db.Timestamptz(3)
+  acknowledgedAt  DateTime?   @db.Timestamptz(3)
+  active          Boolean     @default(true)
+  createdAt       DateTime    @default(now()) @db.Timestamptz(3)
+  updatedAt       DateTime    @updatedAt @db.Timestamptz(3)
+
+  handoff       Handoff @relation(fields: [handoffId], references: [id], onDelete: Cascade)
+  suggestedUser User?   @relation("HandoffSuggestedUser", fields: [suggestedUserId], references: [id], onDelete: SetNull)
+  assignedUser  User?   @relation("HandoffAssignedUser", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  assignedBy    User?   @relation("HandoffAssignedBy", fields: [assignedById], references: [id], onDelete: SetNull)
+
+  @@unique([handoffId, serviceLine])
+  @@index([assignedUserId, active])
+  @@index([suggestedUserId])
+  @@index([assignedById])
+  @@map("acq_handoff_assignments")
+}
