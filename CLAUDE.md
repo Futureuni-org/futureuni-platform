@@ -129,4 +129,10 @@ A future module (for example `src/modules/marketing/`) gets its own rows when it
 - **saas-billing:** not used; this product has no billing.
 
 <!-- saas-skills:start -->
+## SaaS skills
+
+- Read `.claude/project-rules.md` before any work.
+- Plan non-trivial features with saas-plan first.
+- After any code change, run saas-review on the diff and fix all Critical and Major findings before reporting the task done.
+- Never commit unless asked.
 <!-- saas-skills:end -->

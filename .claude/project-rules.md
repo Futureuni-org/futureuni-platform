@@ -22,14 +22,19 @@ Last updated: 2026-09-25 (Phase 0). After Phase 0, this file changes only when a
 
 ## Stack and commands
 
-<!-- Phase 1 completes this section with the verified versions and the actual scripts. The script names below are fixed. -->
+<!-- Completed by Phase 1 (2026-09-26) with the installed versions and the actual scripts. The script names are fixed. -->
 
-- **Package manager:** pnpm (ADR-024), with the `packageManager` field set. Node.js 24 LTS, pinned in `.nvmrc` and `engines`.
-- **Framework and major versions:** verified 2026-09-25; Phase 1 records the installed versions.
-  - Next.js 16 App Router with `src/`. Request middleware is `src/proxy.ts`, and `next lint` no longer exists.
-  - React 19, TypeScript strict, Tailwind CSS 4 (CSS-first `@theme`), Zod 4, React Hook Form.
-  - Motion 13 (`motion/react`, `LazyMotion` + `m`), Lucide icons (ADR-001).
-  - Vercel Workflow: the `workflow` package, v4 GA, via `withWorkflow` from `workflow/next`.
+- **Package manager:** pnpm 11.3 (ADR-024), pinned by `packageManager`; `"type": "module"`. Node.js 24 LTS, pinned in `.nvmrc` (`24`) and `engines` (`24.x`).
+  - pnpm 11 settings live in `pnpm-workspace.yaml`, not `.npmrc`. Its `allowBuilds` list must name every dependency with an install script, or `pnpm install` fails.
+  - pnpm 11 won't install a release younger than 24 hours. Don't bypass that with `minimumReleaseAgeExclude`; pick the previous version instead.
+- **Installed versions (2026-09-26):**
+  - Next.js 16.3.6 (App Router, `src/`, Turbopack), React 19.2.8 (the version Next pins), TypeScript 5.9.3, Tailwind CSS 4.3.3, Zod 4.6.5, React Hook Form 7.88, Motion 13.4, Lucide 1.48.
+  - Request middleware is `src/proxy.ts`. `next lint` no longer exists, and `next build` doesn't lint (it does type-check).
+  - Vercel Workflow 4.8.9: the `workflow` package only, wired with `withWorkflow` from `workflow/next` in `next.config.ts`.
+  - Better Auth 1.7.6 (installed, configured in Phase 3), Prisma 7.10.0 with `@prisma/adapter-pg`, `pg` 8.23, `@vercel/functions` 3.9, `@vercel/blob` 2.8, `@anthropic-ai/sdk` 0.128.
+  - Tests: Vitest 5.0, Testing Library (React 16.3, jest-dom 7.0 with the Vitest 5 type shim in `tests/setup/`), jsdom 30.0.1 (30.1.x has an open Vitest Blob/FormData bug), MSW 2.15, Playwright 1.63.
+  - Lint: ESLint 9.39 (Next's plugins don't support ESLint 10 yet), typescript-eslint 8.70 (needs TypeScript below 6.1, so TypeScript 7 is not an option yet), eslint-plugin-boundaries 7.2, Prettier 3.9.
+- **Environment:** `src/env.ts` validates every variable in `.env.example` at start-up (`next.config.ts` imports it); `SKIP_ENV_VALIDATION=1` relaxes it for tooling steps. Create `.env.local` with `node scripts/env-init.mjs`.
 - **Database and ORM:** PostgreSQL through **Prisma 7**. Pin `prisma@^7` and `@prisma/client@^7`, because `prisma@latest` is currently the 8.0 release candidate.
   - `prisma.config.ts` holds the migration datasource URL.
   - The multi-file schema lives in `prisma/schema/`.
@@ -43,20 +48,22 @@ Last updated: 2026-09-25 (Phase 0). After Phase 0, this file changes only when a
 | Task | Command |
 |---|---|
 | Install | `pnpm install` |
-| Dev server | `pnpm dev` |
+| First-time environment | `node scripts/env-init.mjs` (creates `.env.local` with fresh secrets; never overwrites) |
+| Dev server | `pnpm dev` (`next dev` on `PORT` from `.env.local`, through `scripts/next.mjs`) |
 | Build / start | `pnpm build` / `pnpm start` |
-| Lint / fix / format | `pnpm lint` / `pnpm lint:fix` / `pnpm format` |
-| Typecheck | `pnpm typecheck` |
-| Unit and integration tests | `pnpm test` (`pnpm test:watch` locally) |
-| End-to-end tests | `pnpm test:e2e` |
-| Local database up / down | `pnpm db:up` / `pnpm db:down` (native mode: `pg_ctl start` detached / `pg_ctl stop -m fast`; docker mode: Compose) |
-| DB migrate | `pnpm db:migrate` |
-| DB generate client | `pnpm db:generate` |
-| DB seed | `pnpm db:seed` |
-| DB studio | `pnpm db:studio` |
-| DB reset (development only) | `pnpm db:reset` |
-| Mock providers on / off | `pnpm mocks:on` / `pnpm mocks:off` |
-| Parallel phase worktrees | `pnpm phase start <nn> <slug>` · `list` · `finish <nn>` · `remove <nn>` |
+| Lint / fix / format | `pnpm lint` / `pnpm lint:fix` / `pnpm format` (`eslint .`, `prettier --write .`) |
+| Typecheck | `pnpm typecheck` (`next typegen && tsc --noEmit`; needs a valid environment) |
+| Unit and integration tests | `pnpm test` (`vitest run`; `pnpm test:watch` locally) |
+| End-to-end tests | `pnpm test:e2e` (Playwright on a production build at `PORT + 1000`; `--grep @smoke` for the smoke suite) |
+| Local database up / down | `pnpm db:up` / `pnpm db:down` (`scripts/db.mjs`; native mode: `pg_ctl start` detached / `pg_ctl stop -m fast`; docker mode: Compose). `db:up` also creates any missing `futureuni_dev` / `futureuni_test` |
+| DB migrate | `pnpm db:migrate` (`prisma migrate dev`) |
+| DB generate client | `pnpm db:generate` (`prisma generate`) |
+| DB seed | `pnpm db:seed` (`prisma db seed`) |
+| DB studio | `pnpm db:studio` (`prisma studio`) |
+| DB reset (development only) | `pnpm db:reset` (`prisma migrate reset`) |
+| Mock providers on / off | `pnpm mocks:on` / `pnpm mocks:off` (sets `MOCKS` in `.env.local`) |
+| Parallel phase worktrees | `pnpm phase start <nn> <slug>` · `list` · `finish <nn>` · `remove <nn> [--yes]` |
+| Ownership checks | `node scripts/ownership/check.mjs` (fails on a path claimed by two phases) · `node scripts/ownership/check.mjs --phase-diff` (fails when a phase branch changed a path it doesn't own); CI runs both |
 | Everything CI runs | `pnpm check` (lint, typecheck, test, build) |
 
 Added by later phases (the names are fixed now): `registry:gen` and `db:validate` and `create-module` (Phase 2), `evals` (5), `jobs:run` and `credentials:rotate` (6), `profiles:check` (7), `seed:staging` (19), `bootstrap:admin` (21).

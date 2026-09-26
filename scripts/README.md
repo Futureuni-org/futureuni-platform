@@ -1,0 +1,3 @@
+# scripts/
+
+**Owner: Phase 01 (Scaffold).** Repository tooling, plain Node ES modules run without a build step (Phase 1). `next.mjs` runs `next dev`/`next start` on the worktree's port, `db.mjs` starts and stops local PostgreSQL (ADR-004), `phase.mjs` manages parallel phase worktrees, `env-init.mjs` and `mocks.mjs` create and edit `.env.local`, and `ci-env.mjs` generates throwaway secrets in CI. `ownership/` holds the ownership map, the guard hook and the duplicate check; `lib/` holds shared helpers (with `.d.mts` types), and `lint-fixtures/` holds the deliberately broken files that `lint-rules.test.ts` lints.
