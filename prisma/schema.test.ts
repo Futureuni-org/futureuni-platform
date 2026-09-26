@@ -16,10 +16,8 @@ const schema = readdirSync(join(ROOT, "prisma/schema"))
   .map((file) => readFileSync(join(ROOT, "prisma/schema", file), "utf8"))
   .join("\n");
 
-/** Fields Phase 2 added beyond the data model, each recorded in phases/02/REQUESTS.md. */
-const ADDED_FIELDS: Readonly<Record<string, readonly string[]>> = {
-  LeadEvent: ["actorLabel"],
-};
+/** Fields added beyond the data model. Record each in the phase's REQUESTS.md (empty after merge). */
+const ADDED_FIELDS: Readonly<Record<string, readonly string[]>> = {};
 
 interface SchemaField {
   name: string;
@@ -187,8 +185,6 @@ describe("the Prisma schema matches docs/specs/data-model.md", () => {
         if (columns.length === 0) continue;
         const unique = /unique/i.test(part);
         const partial = /partial|WHERE/.test(part);
-        // Settings: the COALESCE expression index is two partial uniques (REQUESTS.md).
-        if (modelName === "Setting" && unique) continue;
         const match = declared.find(
           (index) =>
             index.columns.join() === columns.join() &&

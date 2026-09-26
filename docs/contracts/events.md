@@ -174,7 +174,8 @@ export type DomainEvent = z.infer<typeof DomainEventSchema>;
 export type DomainEventName = DomainEvent["name"];
 export type EventOf<N extends DomainEventName> = Extract<DomainEvent, { name: N }>;
 /** What publishers pass: the platform fills id and occurredAt. */
-export type NewEvent<N extends DomainEventName = DomainEventName> = Omit<EventOf<N>, "id" | "occurredAt">;
+// Distributive, so a name can only carry its own payload (Omit over the whole union would accept any mix).
+export type NewEvent<N extends DomainEventName = DomainEventName> = N extends DomainEventName ? Omit<EventOf<N>, "id" | "occurredAt"> : never;
 
 // ---- Publishing (Phase 6) ----
 /** Publish now (outside a transaction). Inline subscribers run before it resolves; job subscribers are enqueued. */
@@ -190,6 +191,9 @@ export interface SubscriberDefinition<N extends DomainEventName = DomainEventNam
   handler: (event: EventOf<N>, ctx: { clock: { now(): Date } }) => Promise<void>;
   systemActions?: readonly string[];           // PermissionActions its services perform as the SYSTEM actor (permissions.md rule 10)
 }
+/** Type-erased subscriber, as manifests list them. Produced by defineSubscriber() (Phase 2 registry), which checks the event's name before calling the typed handler. */
+export type AnySubscriberDefinition = SubscriberDefinition;
+export type DefineSubscriber = <N extends DomainEventName>(def: SubscriberDefinition<N>) => AnySubscriberDefinition;
 
 // ---- Notification payload data (stored in Notification.data) ----
 export const NotificationDataSchema = z.object({

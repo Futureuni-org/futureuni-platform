@@ -108,7 +108,7 @@ export type ProviderId = z.infer<typeof ProviderIdSchema>;   // "anthropic" | â€
 export const SEVERITY_ORDER = ["INFO", "LOW", "MEDIUM", "HIGH", "CRITICAL"] as const satisfies readonly E.FindingSeverity[];
 
 // ---- Identifiers and time ----
-export const IdSchema = z.cuid();                        // Prisma @default(cuid())
+export const IdSchema = z.string().regex(/^[cC][0-9a-z]{6,}$/, { error: "Invalid id" }); // Prisma @default(cuid()); Zod 4's z.cuid() is deprecated
 export type Id = z.infer<typeof IdSchema>;
 export const Iso8601Schema = z.iso.datetime();           // UTC, "Z" suffix, no offsets (Zod 4 default)
 export type Iso8601 = z.infer<typeof Iso8601Schema>;

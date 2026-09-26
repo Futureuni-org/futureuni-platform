@@ -21,7 +21,7 @@ import { KebabIdSchema, ServiceLineSchema, SettingScopeSchema, NotificationChann
 import { PermissionActionSchema, PermissionDefinitionSchema } from "./permissions";
 import { CronScheduleSchema, JobDefinitionMetaSchema, type AnyJobDefinition, type DynamicScheduleProvider } from "./jobs";
 import type { AnyTaskDefinition } from "./ai-service";
-import type { SubscriberDefinition } from "./events";
+import type { AnySubscriberDefinition } from "./events";
 
 /** Lucide icon component name, e.g. "Globe", "PenTool". The shell maps names to components; unknown names fail codegen. */
 export const IconNameSchema = z.string().regex(/^[A-Z][A-Za-z0-9]+$/);
@@ -147,7 +147,7 @@ export interface ModuleManifest extends Omit<ModuleManifestMeta, "jobs" | "setti
   settings: SettingDefinition<unknown>[];     // every entry built with defineSetting()
   dynamicSchedules?: DynamicScheduleProvider;
   aiTasks?: AnyTaskDefinition[];              // built with defineTask(); registered with @/platform/ai at startup (or via tasks.ts codegen; Phase 5 decides)
-  subscribers?: SubscriberDefinition[];
+  subscribers?: AnySubscriberDefinition[];                 // every entry built with defineSubscriber()
   badgeResolvers?: Record<string, (ctx: { userId: string; clock: Clock }) => Promise<number>>;
 }
 
@@ -174,7 +174,7 @@ export type RegistryApi = {
   getNotificationTypes(): NotificationTypeDefinition[];
   getCommands(): Array<z.infer<typeof CommandDefinitionSchema> & { module: string }>;
   getAllAiTasks(): AnyTaskDefinition[];
-  getAllSubscribers(): SubscriberDefinition[];
+  getAllSubscribers(): AnySubscriberDefinition[];
 };
 ```
 
@@ -211,6 +211,8 @@ export type RegistryApi = {
 8. **Settings** are declared once, in the manifest that owns them. Platform keys (`platform.*`, `auth.*`, `ai.*`, `module.*`, `jobs.*`, `notifications.*`, `user.*`) belong to the core manifest.
 9. **Home widgets** render inside the Phase 4 widget frame. A widget ID maps to a component through a widget registry that Phase 4 creates. Phase 4 renders the acquisition placeholders from its own folders. The real acquisition widget components live in `src/modules/acquisition/ui/widgets/` (owned by Phase 19), which registers them.
 10. **`create-module`** generates a manifest that already passes this schema (Phase 2, `templates/create-module/`).
+11. **Module ids.** A module id is 2–32 lower-case letters (for example `marketing`), and isn't `platform` or a reserved route segment (`home`, `settings`, `admin`, `dev`, `login`, `invite`, `reset`, `setup-2fa`, `signed-out`, `u`, `api`). It becomes the first segment of the module's permissions, jobs, AI tasks and events. `pnpm create-module` enforces it.
+12. **Navigation for line-scoped and own-record sections.** An item with a line-scoped permission and no `resource` shows when the action is allowed for at least one service line; the page then filters by the user's lines (platform.md AC-8.1). An item whose action is scoped to the user's own records (OWN, OWN+A) shows too; the page lists only what they own. `getNavigation` and `mayOpen` implement both.
 
 ## 5. Worked example (acquisition manifest excerpt)
 

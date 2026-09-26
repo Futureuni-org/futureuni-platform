@@ -218,6 +218,7 @@ export type CrossLineHint = z.infer<typeof CrossLineHintSchema>;
 2. **Each adapter** has `index.ts` (real), `mock.ts` (realistic fixtures for both markets), and a README. The README records the verified docs, terms, fields used, cost and limits. The real or mock implementation is chosen by `MOCKS` or settings (ADR-005).
 3. **Evidence.** Every `RawSignal` carries a factual `evidenceText`, an `observedAt`, and a `sourceUrl`, except `manual` and `csv-import`, where `sourceUrl` is optional: a manual entry's source is recorded as `manual:<userId>`, and a CSV row's source is its import `SearchRun` with the `CsvAttestation` (a row may still supply a `sourceUrl`). `Signal.sourceUrl` is nullable only for those two adapters (a database CHECK), and only signals with a `sourceUrl` can be cited in outreach (INV-5). Examples of `sourceUrl`: the Google Maps URL of the place, the job posting URL, the YouTube channel URL, the App Store app URL.
 4. **Dedupe order** (the runner, through `@/platform/directory`):
+   A Google Places candidate carries `searchLocation: { city, region }` (from the SearchSpec location, the search that found it). The listing's own address, city and region are passed for matching only and never stored (INV-14); `upsertCompany` keeps only `searchLocation` for a transient source.
    1. the normalised domain (social and marketplace URLs don't count as a domain)
    2. the normalised E.164 phone
    3. the normalised name plus city (trigram similarity above the threshold)

@@ -34,7 +34,7 @@ If a library's required schema disagrees with this document (for example the aut
 | IDs | `String @id @default(cuid())` on every model. Better Auth is configured (Phase 3) to let Prisma generate IDs, so auth tables use the same default. IDs never auto-increment. |
 | Timestamps | Every model has `createdAt DateTime @default(now())` and `updatedAt DateTime @updatedAt`. Every `DateTime` column is `@db.Timestamptz(3)` and stored in UTC (INV-12). Columns typed **Date** below are date-only values (`DateTime @db.Date`), never midnight timestamps. |
 | Table names | Every model gets an explicit `@@map` to a snake_case plural table name: core tables are unprefixed (`users`, `companies`), acquisition tables are prefixed `acq_` (`acq_leads`, `acq_messages`). Columns keep Prisma's default camelCase names (no `@map` on fields). This is decided once for the whole project. |
-| Money | `Int` minor units (kobo, cents, pence) plus a `Currency` column, never floats (INV-11). Columns are named `…Minor`. Amounts in different currencies are never summed in SQL or code. |
+| Money | `Int` minor units (kobo, cents, pence) plus a `Currency` column, never floats (INV-11). Columns are named `…Minor`. Amounts in different currencies are never summed in SQL or code. `Int` is PostgreSQL int4: at most 2,147,483,647 per stored amount (₦21,474,836.47, $21,474,836.47 or £21,474,836.47). A larger amount can't be stored, so Phase 14 validates proposal and deal amounts against this ceiling before saving (`toMinor` only guarantees a safe integer). If a single naira amount could exceed it, change the money columns to `BigInt` in one migration. |
 | Internal cost | AI calls, provider calls, captures and audits record cost as `costMicros Int`: integer micro-USD (1 USD = 1,000,000), because per-call costs are below one cent (ADR-027). Money shown to clients never uses micro-units. |
 | Rates and ratios | Percentages for money maths are basis points (`…Bps Int`, 10000 = 100%). `Float` is used only for model confidence, similarity and scores that aren't money. |
 | Enums | Every finite state is a Prisma enum (§3). Open vocabularies defined by configuration (signal types, adapter IDs, task IDs, notification types, setting keys, permission actions) are `String`, validated by the contract schemas. |
@@ -404,6 +404,13 @@ Present because Phase 3 sets Better Auth's `rateLimit.storage = "database"` (an 
 - **Indexes:** unique(`key`).
 - **Owned by:** Phase 3. Other rate limits (saas-api) may reuse this table only through Phase 3's limiter interface.
 
+**Better Auth tables, checked against the installed better-auth 1.7.6** (`@better-auth/core` get-tables, and the twoFactor and admin plugin schemas) on 2026-09-26. Model names are the library defaults, so the Prisma adapter needs no mapping.
+
+- `account` has no unique on (`providerId`, `accountId`) in the library; ours is compatible (the library never writes a duplicate pair) and stays.
+- `rateLimit` has no timestamps in the library, and `session.updatedAt` has no default there. Our `createdAt` defaults and `@updatedAt` fields are filled by Prisma, which the library ignores.
+- `user.role` is our `Role` enum. Configure the admin plugin with `defaultRole: "MEMBER"` and `adminRoles: ["ADMIN"]`.
+- Phase 3 re-checks these when better-auth is upgraded (for example if `account` gains an `issuer` column).
+
 #### Invite → `invites`
 
 | Field | Type | Null | Default | Notes |
@@ -421,7 +428,7 @@ Present because Phase 3 sets Better Auth's `rateLimit.storage = "database"` (an 
 | lastSentAt | DateTime | no | now() | Updated by `resendInvite` |
 | sendCount | Int | no | 1 | |
 
-- **Indexes:** unique(`tokenHash`); (`email`); (`invitedById`); (`expiresAt`); partial unique (`email`) WHERE `usedAt IS NULL AND revokedAt IS NULL` (one pending invite per address, §6).
+- **Indexes:** unique(`tokenHash`); (`email`); (`invitedById`); (`expiresAt`); partial unique (`email`) WHERE `usedAt IS NULL AND revokedAt IS NULL` (one pending invite per address, §6); (`acceptedUserId`).
 - **Owned by:** Phase 3. **Used by:** Phase 18 (users screen), `docs/specs/platform.md` (authentication and invites).
 
 #### TeamProfile → `team_profiles`
@@ -639,7 +646,8 @@ A log of platform (transactional) emails: invites, resets, digests. Outreach ema
 | value | Json | no | — | Validated by the key's registered Zod schema |
 | updatedById | String | yes | — | FK → User, **SetNull** |
 
-- **Indexes:** unique on (`key`, `scope`, COALESCE(`userId`, '')) (raw SQL, §6); (`scope`, `module`); (`userId`).
+- **Indexes:** unique on (`key`, `scope`) WHERE `userId` IS NULL; unique on (`key`, `scope`, `userId`) WHERE `userId` IS NOT NULL (both partial, declared in the schema); (`scope`, `module`); (`userId`); (`updatedById`).
+- **CHECKs:** `("scope" = 'USER') = ("userId" IS NOT NULL)`.
 - **Rules:** secrets never go here (INV-21). They belong in IntegrationCredential.
 - **Owned by:** Phase 6 (`@/platform/settings`). **Used by:** every phase; Phase 18 (settings screens).
 
@@ -660,7 +668,7 @@ A log of platform (transactional) emails: invites, resets, digests. Outreach ema
 | createdById | String | no | — | FK → User, **Restrict** |
 | updatedById | String | yes | — | FK → User, **SetNull** |
 
-- **Indexes:** unique(`provider`); (`status`).
+- **Indexes:** unique(`provider`); (`status`); (`createdById`); (`updatedById`).
 - **Owned by:** Phase 6 (`@/platform/credentials`). **Used by:** every adapter through `resolveProviderKey`; Phase 18 (integrations screen).
 
 #### AiCall → `ai_calls` (INV-13)
@@ -710,7 +718,7 @@ A log of platform (transactional) emails: invites, resets, digests. Outreach ema
 | publishedAt | DateTime | no | now() | |
 | activatedAt | DateTime | yes | — | |
 
-- **Indexes:** unique(`task`, `version`); partial unique (`task`) WHERE `isActive` (§6); (`task`, `publishedAt`).
+- **Indexes:** unique(`task`, `version`); partial unique (`task`) WHERE `isActive` (§6); (`task`, `publishedAt`); (`authorId`).
 - **Owned by:** Phase 5. **Used by:** Phase 18 (prompts screen).
 
 #### JobRun → `job_runs` (INV-22)
@@ -854,7 +862,7 @@ Daily counters that stop parallel runs from exceeding provider quotas and paid c
 | publishedById | String | yes | — | FK → User, **SetNull** |
 | publishedAt | DateTime | yes | — | |
 
-- **Indexes:** unique(`serviceLine`, `version`); partial unique (`serviceLine`) WHERE `isActive`; partial unique (`serviceLine`) WHERE `status = 'DRAFT'` (one open draft per line); (`serviceLine`, `status`).
+- **Indexes:** unique(`serviceLine`, `version`); partial unique (`serviceLine`) WHERE `isActive`; partial unique (`serviceLine`) WHERE `status = 'DRAFT'` (one open draft per line); (`serviceLine`, `status`); (`createdById`); (`publishedById`).
 - **Owned by:** Phase 7 (`@/modules/acquisition/profiles`); Phase 2 seeds placeholders (§10). **Used by:** every acquisition phase through SEAM-PROFILE; Phase 18 (profile editor).
 
 #### SavedSearch → `acq_saved_searches`
@@ -875,7 +883,7 @@ Daily counters that stop parallel runs from exceeding provider quotas and paid c
 | pausedReason | String | yes | — | |
 | lastCapacitySkipNotifiedAt | DateTime | yes | — | Notify line owners at most once a day |
 
-- **Indexes:** (`serviceLine`, `enabled`); (`ownerId`).
+- **Indexes:** (`serviceLine`, `enabled`); (`ownerId`); (`lastRunId`).
 - **Owned by:** Phase 8. **Used by:** Phase 6 dispatcher (dynamic schedules), Phase 15 (saved searches screen).
 
 #### SearchRun → `acq_search_runs`
@@ -904,7 +912,7 @@ Daily counters that stop parallel runs from exceeding provider quotas and paid c
 | durationMs | Int | yes | — | |
 | error | String | yes | — | |
 
-- **Indexes:** (`serviceLine`, `createdAt`); (`status`); (`savedSearchId`); (`jobRunId`); (`actorId`).
+- **Indexes:** (`serviceLine`, `createdAt`); (`status`); (`savedSearchId`); (`jobRunId`); (`actorId`); (`csvFileId`).
 - **Rules:** a CSV_IMPORT run without `attestation` is rejected (no purchased lists, see project-rules §Bans).
 - **Owned by:** Phase 8. **Used by:** Phase 15 (live run, history), Phase 17 (source stats).
 
@@ -990,6 +998,7 @@ A company × service line × market prospect.
 | toStatus | LeadStatus | yes | — | Required when kind = STATUS_CHANGE (CHECK) |
 | actorType | ActorType | no | — | |
 | actorId | String | yes | — | |
+| actorLabel | String | yes | — | The job name for SYSTEM actors (for example "acquisition.scoring.lead"), mirroring AuditLog.actorLabel |
 | reason | String | yes | — | |
 | meta | Json | yes | — | Step summaries (enrichment verdict, score history, audit summary) |
 
@@ -1057,7 +1066,7 @@ One row per audit agent run for a lead.
 | dismissedById | String | yes | — | FK → User, **SetNull** |
 | dismissReason | String | yes | — | |
 
-- **Indexes:** (`leadId`, `pitchable`, `severity`); (`auditId`); (`companyId`); (`checkId`); (`dismissedAt`).
+- **Indexes:** (`leadId`, `pitchable`, `severity`); (`auditId`); (`companyId`); (`checkId`); (`dismissedAt`); (`dismissedById`).
 - **CHECKs:** `sourceUrl IS NOT NULL OR artifactKey IS NOT NULL`; `confidence BETWEEN 0 AND 1`.
 - **Relations:** referenced by MessageCitation (**Restrict**: a cited finding can't be deleted).
 - **Owned by:** Phase 10. **Used by:** Phases 11, 12, 13, 14 (briefs, drafts, proposals), Phase 16.
@@ -1095,7 +1104,7 @@ One row per audit agent run for a lead.
 | decidedAt | DateTime | yes | — | |
 | overrideNote | String | yes | — | Required when OVERRIDDEN (CHECK) |
 
-- **Indexes:** (`leadId`, `createdAt`); (`decisionType`).
+- **Indexes:** (`leadId`, `createdAt`); (`decisionType`); (`decidedById`).
 - **Owned by:** Phase 11. **Used by:** Phase 15 (borderline accept/override), Phase 17 (calibration).
 
 #### CrossSellGroup → `acq_cross_sell_groups`
@@ -1110,7 +1119,7 @@ One row per audit agent run for a lead.
 | splitAt | DateTime | yes | — | |
 | splitById | String | yes | — | FK → User, **SetNull** |
 
-- **Indexes:** partial unique (`companyId`) WHERE `status = 'ACTIVE'`; (`status`).
+- **Indexes:** partial unique (`companyId`) WHERE `status = 'ACTIVE'`; (`status`); (`leadingLeadId`); (`splitById`).
 - **Owned by:** Phase 11 (`crosssell`). **Used by:** Phase 12 (SEAM-CROSSSELL), Phase 17 (overview opportunities).
 
 #### LineCapacityState → `acq_line_capacity_states`
@@ -1177,7 +1186,7 @@ A snapshot of a profile's sequence definition for one market. It's materialised 
 | completedAt | DateTime | yes | — | |
 | mailboxId | String | yes | — | FK → Mailbox, **SetNull**. Thread affinity |
 
-- **Indexes:** (`status`, `nextRunAt`); (`leadId`); (`contactId`); (`companyId`); (`mailboxId`); partial unique (`companyId`) WHERE `status IN ('ACTIVE','PAUSED')` (INV-9, ADR-032).
+- **Indexes:** (`status`, `nextRunAt`); (`leadId`); (`contactId`); (`companyId`); (`mailboxId`); partial unique (`companyId`) WHERE `status IN ('ACTIVE','PAUSED')` (INV-9, ADR-032); (`sequenceId`).
 - **Owned by:** Phase 12 (`outreach/sequences`). Phase 9 may set STOPPED (reason SUPPRESSED) inside `addSuppression`. **Used by:** Phases 13 and 14 (SEAM-STOP-SEQUENCE, SEAM-PAUSE-SEQUENCE), Phase 16 (side rail).
 
 #### Message → `acq_messages`
@@ -1226,7 +1235,7 @@ Every outbound message: sequence steps, one-offs, reply responses and proposal e
 | assistedOutcome | Json | yes | — | `AssistedOutcome` (call outcome, note) |
 | needsPricingApproval | Boolean | no | false | Set on reply drafts from `acquisition.inbox-draft-reply` when the answer needs pricing outside the profile ranges; the composer shows it (Phase 13, 16) |
 
-- **Indexes:** (`status`, `scheduledFor`); (`leadId`, `createdAt`); (`enrollmentId`); (`mailboxId`, `sentAt`); (`sentAt`); (`channel`, `status`); (`companyId`); (`providerThreadId`); unique(`providerMessageId`); unique(`unsubscribeTokenId`).
+- **Indexes:** (`status`, `scheduledFor`); (`leadId`, `createdAt`); (`enrollmentId`); (`mailboxId`, `sentAt`); (`sentAt`); (`channel`, `status`); (`companyId`); (`providerThreadId`); unique(`providerMessageId`); unique(`unsubscribeTokenId`); (`contactId`); (`humanConfirmedById`); (`approvedById`); (`sentById`); (`inReplyToMessageId`); (`inReplyToReplyId`).
 - **Owned by:** Phase 12 (`outreach`). Phases 13 and 14 write only through SEAM-SEND-ONEOFF. **Used by:** Phase 15 (review queue), Phase 16 (conversation), Phase 17 (sent, approval rate).
 
 #### MessageCitation → `acq_message_citations` (INV-5)
@@ -1295,7 +1304,7 @@ Every outbound message: sequence steps, one-offs, reply responses and proposal e
 | healthScore | Float | yes | — | 0–1 |
 | lastHealthCheckAt | DateTime | yes | — | |
 
-- **Indexes:** unique(`address`); (`status`); (`sendingDomainId`).
+- **Indexes:** unique(`address`); (`status`); (`sendingDomainId`); (`senderUserId`).
 - **Owned by:** Phase 12. **Used by:** Phase 13 (SEAM-MAILBOXES), Phase 18.
 
 #### MailboxDailyStat → `acq_mailbox_daily_stats`
@@ -1341,7 +1350,7 @@ Every outbound message: sequence steps, one-offs, reply responses and proposal e
 | occurredAt | DateTime | no | — | |
 | payload | Json | yes | — | Minimal. No message bodies |
 
-- **Indexes:** partial unique (`provider`, `providerEventId`) WHERE `providerEventId IS NOT NULL`; (`messageId`, `type`); (`type`, `occurredAt`).
+- **Indexes:** partial unique (`provider`, `providerEventId`) WHERE `providerEventId IS NOT NULL`; (`messageId`, `type`); (`type`, `occurredAt`); (`mailboxId`).
 - **Owned by:** Phase 12 (outbound webhook, bounce handling).
 
 #### Reply → `acq_replies`
@@ -1391,7 +1400,7 @@ Every outbound message: sequence steps, one-offs, reply responses and proposal e
 | loggedById | String | yes | — | FK → User, **SetNull**. For pasted WhatsApp, LinkedIn or phone replies |
 | aiCallId | String | yes | — | AiCall ID (no FK) |
 
-- **Indexes:** partial unique (`mailboxId`, `providerMessageId`) WHERE both are NOT NULL (re-polling never duplicates); (`classification`); (`leadId`, `receivedAt`); (`slaStatus`, `slaDueAt`); partial (`receivedAt`) WHERE `matchMethod = 'UNMATCHED'`; (`receivedAt`); (`readAt`); (`messageId`); (`providerThreadId`).
+- **Indexes:** partial unique (`mailboxId`, `providerMessageId`) WHERE both are NOT NULL (re-polling never duplicates); (`classification`); (`leadId`, `receivedAt`); (`slaStatus`, `slaDueAt`); partial (`receivedAt`) WHERE `matchMethod = 'UNMATCHED'`; (`receivedAt`); (`readAt`); (`messageId`); (`providerThreadId`); (`mailboxId`); (`contactId`); (`companyId`); (`loggedById`).
 - **Owned by:** Phase 13 (`inbox`). **Used by:** Phase 16 (inbox screens), Phase 17 (reply rate, heatmap, SLA).
 
 #### ReplyCorrection → `acq_reply_corrections`
@@ -1405,7 +1414,7 @@ Every outbound message: sequence steps, one-offs, reply responses and proposal e
 | note | String | yes | — | |
 | actorId | String | no | — | FK → User, **Restrict** |
 
-- **Indexes:** (`replyId`); (`toClass`, `createdAt`).
+- **Indexes:** (`replyId`); (`toClass`, `createdAt`); (`actorId`).
 - **Owned by:** Phase 13 (`reclassify`); used as feedback for evals.
 
 #### InboxThread → `acq_inbox_threads`
@@ -1441,7 +1450,7 @@ Per-lead inbox state: assignment, snooze and unread count.
 | removedById | String | yes | — | FK → User, **SetNull** |
 | removedReason | String | yes | — | Required when removed (CHECK) |
 
-- **Indexes:** partial unique (`type`, `value`) WHERE `removedAt IS NULL`; (`reason`); (`createdAt`).
+- **Indexes:** partial unique (`type`, `value`) WHERE `removedAt IS NULL`; (`reason`); (`createdAt`); (`createdById`); (`removedById`).
 - **Owned by:** Phase 9 (`compliance`); Phase 2's `isSuppressed` reads it. **Used by:** every send path (INV-2), Phase 8 (early suppression check), Phase 18 (suppression screen).
 
 #### ConsentRecord → `acq_consent_records` (INV-6)
@@ -1459,7 +1468,7 @@ Per-lead inbox state: assignment, snooze and unread count.
 | revokedAt | DateTime | yes | — | |
 | revokedById | String | yes | — | FK → User, **SetNull** |
 
-- **Indexes:** (`contactId`); (`email`).
+- **Indexes:** (`contactId`); (`email`); (`recordedById`); (`revokedById`).
 - **CHECKs:** `contactId IS NOT NULL OR email IS NOT NULL`.
 - **Owned by:** Phase 9. **Used by:** contactability (a consent record overrides CONSENT_REQUIRED).
 
@@ -1480,7 +1489,7 @@ Per-lead inbox state: assignment, snooze and unread count.
 | exportFileId | String | yes | — | FK → FileObject, **SetNull** (DSR_EXPORT, private, expires in 30 days) |
 | resultSummary | Json | yes | — | Counts of rows exported or anonymised |
 
-- **Indexes:** (`status`, `createdAt`); (`subjectEmail`); (`subjectPhone`).
+- **Indexes:** (`status`, `createdAt`); (`subjectEmail`); (`subjectPhone`); (`createdById`); (`fulfilledById`); (`exportFileId`).
 - **CHECKs:** `subjectEmail IS NOT NULL OR subjectPhone IS NOT NULL`.
 - **Owned by:** Phase 9. **Used by:** Phase 18 (data requests screen).
 
@@ -1515,7 +1524,7 @@ Per-lead inbox state: assignment, snooze and unread count.
 | reminder1hSentAt | DateTime | yes | — | |
 | cancelledAt | DateTime | yes | — | |
 
-- **Indexes:** partial unique (`source`, `externalId`) WHERE `externalId IS NOT NULL`; (`startsAt`); (`leadId`, `startsAt`); (`ownerId`, `startsAt`); (`status`).
+- **Indexes:** partial unique (`source`, `externalId`) WHERE `externalId IS NOT NULL`; (`startsAt`); (`leadId`, `startsAt`); (`ownerId`, `startsAt`); (`status`); (`companyId`); (`contactId`).
 - **Outcomes:** `recordMeetingOutcome` sets `HELD` or `NO_SHOW` as the status. A `RESCHEDULED` outcome isn't a status: the meeting returns to `SCHEDULED` with the new `startsAt`/`endsAt`, the reminder timestamps are cleared, and `outcomeNotes` plus a `LeadEvent` (kind `FLAG`, meta `{ rescheduledFrom }`) record it.
 - **Owned by:** Phase 14 (`pipeline/meetings`). **Used by:** Phase 16 (meetings tab), Phase 17 (meeting stats), home ("meetings today").
 
@@ -1553,7 +1562,7 @@ Per-lead inbox state: assignment, snooze and unread count.
 | aiCallId | String | yes | — | |
 | createdById | String | no | — | FK → User, **Restrict** |
 
-- **Indexes:** unique(`proposalGroupId`, `version`); (`leadId`, `createdAt`); (`status`); (`validUntil`).
+- **Indexes:** unique(`proposalGroupId`, `version`); (`leadId`, `createdAt`); (`status`); (`validUntil`); (`pdfFileId`); (`approvedById`); (`sentMessageId`); (`createdById`).
 - **Owned by:** Phase 14 (`pipeline/proposals`). **Used by:** Phase 16 (quote builder), Phase 17 (acceptance rate).
 
 #### ProposalLineItem → `acq_proposal_line_items`
@@ -1596,7 +1605,7 @@ Per-lead inbox state: assignment, snooze and unread count.
 | closedAt | DateTime | no | now() | |
 | closedById | String | no | — | FK → User, **Restrict** |
 
-- **Indexes:** unique(`leadId`); (`outcome`, `closedAt`); (`serviceLine`, `closedAt`); (`market`); (`reengageAt`).
+- **Indexes:** unique(`leadId`); (`outcome`, `closedAt`); (`serviceLine`, `closedAt`); (`market`); (`reengageAt`); (`companyId`); (`proposalId`); (`closedById`).
 - **CHECKs:** `outcome <> 'WON' OR (valueMinor IS NOT NULL AND currency IS NOT NULL)`; `outcome <> 'LOST' OR lostReason IS NOT NULL`; `valueMinor >= 0`.
 - **Owned by:** Phase 14 (`pipeline/deals`). **Used by:** Phase 17 (revenue), Phase 19 (home widgets).
 
@@ -1614,7 +1623,7 @@ Per-lead inbox state: assignment, snooze and unread count.
 | acknowledgedAt | DateTime | yes | — | |
 | acknowledgedById | String | yes | — | FK → User, **SetNull** |
 
-- **Indexes:** unique(`dealId`); (`status`); (`companyId`).
+- **Indexes:** unique(`dealId`); (`status`); (`companyId`); (`pdfFileId`); (`acknowledgedById`).
 - **Owned by:** Phase 14. **Used by:** Phase 16 (won dialog), future Projects module (via `deal.won`).
 
 #### HandoffAssignment → `acq_handoff_assignments`
@@ -1631,7 +1640,7 @@ Per-lead inbox state: assignment, snooze and unread count.
 | acknowledgedAt | DateTime | yes | — | |
 | active | Boolean | no | true | Counts towards `TeamProfile.currentLoad` while true |
 
-- **Indexes:** unique(`handoffId`, `serviceLine`); (`assignedUserId`, `active`).
+- **Indexes:** unique(`handoffId`, `serviceLine`); (`assignedUserId`, `active`); (`suggestedUserId`); (`assignedById`).
 - **Owned by:** Phase 14. **Used by:** Phase 3's `recalculateLoad`, Phase 11 (throttle), Phase 18 (team capacity).
 
 ---
@@ -1658,7 +1667,7 @@ Phase 2 adds these to `prisma/migrations/<ts>_init/migration.sql` after the gene
 | 14 | Company name trigram | `CREATE INDEX companies_name_trgm ON companies USING gin ("normalizedName" gin_trgm_ops);` | Directory matching (name + city) |
 | 15 | Country code shape | `CHECK (country IS NULL OR country ~ '^[A-Z]{2}$')` on `companies` and `acq_leads` | ADR-009 |
 | 16 | One pending invite per email | `CREATE UNIQUE INDEX … ON invites (email) WHERE "usedAt" IS NULL AND "revokedAt" IS NULL;` | Auth spec |
-| 17 | Settings uniqueness incl. null user | `CREATE UNIQUE INDEX settings_key_scope_user ON settings (key, scope, COALESCE("userId", ''));` | Settings contract |
+| 17 | Settings uniqueness incl. null user | Two partial unique indexes, `settings_key_scope_global_key` (key, scope) WHERE "userId" IS NULL and `settings_key_scope_user_key` (key, scope, "userId") WHERE "userId" IS NOT NULL, plus CHECK `settings_user_scope_check` (("scope" = 'USER') = ("userId" IS NOT NULL)) | Settings contract |
 | 18 | Notification dedupe | `CREATE UNIQUE INDEX … ON notifications ("userId","dedupeKey") WHERE "dedupeKey" IS NOT NULL;` | saas-notify dedupe |
 | 19 | One active cross-sell group per company | `CREATE UNIQUE INDEX … ON acq_cross_sell_groups ("companyId") WHERE status = 'ACTIVE';` | INV-9 (one voice) |
 | 20 | Deal completeness | `CHECK (outcome <> 'WON' OR ("valueMinor" IS NOT NULL AND currency IS NOT NULL))`, `CHECK (outcome <> 'LOST' OR "lostReason" IS NOT NULL)` | Won/lost spec |
@@ -1821,7 +1830,7 @@ Every entity maps to at least one spec section and to the phase that writes it. 
 
 ## 10. Seed plan
 
-The development seed makes every screen useful on day one. It is Phase 2's modular runner (`prisma/seed/index.ts`), which discovers `prisma/seed/seeders/*.ts` and `src/**/seed.ts`. Later phases add their own seeders (Phase 3 credentials, Phase 7 profiles).
+The development seed makes every screen useful on day one. It is Phase 2's modular runner (`prisma/seed/index.ts`), which discovers `prisma/seed/seeders/*.ts` and `src/**/seed.ts`. Later phases add their own seeders (Phase 3 credentials, Phase 7 profiles). Phase 2's seeders use orders 10–90 (users 10, platform rows 15, profiles 20, directory 30, leads and search 40, audits 50, outreach 60, inbox 70, compliance 80, pipeline 90). Platform rows come second because search runs and audits point at job runs.
 
 ### 10.1 Safety and idempotency
 
@@ -1863,9 +1872,10 @@ Emails use `@futureuni.local`. No passwords (Phase 3 seeds credentials from `SEE
 | INTERNATIONAL | GB 14, US 9, IE 4, CA 3 | 30 | GB: LIMITED 7, LLP 1, PLC 1, **SOLE_TRADER 3**, PARTNERSHIP 1, UNKNOWN 1 (exercises INV-6). US: LLC and CORPORATION, including a SaaS app with poor reviews. IE and CA: LIMITED/CORPORATION. **2 with no website** |
 
 - **Cross-sell company:** "Adunni Bakes & Events Ltd" in Lagos has two open qualified leads, WEB_DEVELOPMENT (IN_REVIEW, score 78, leading) and GRAPHIC_DESIGN (SCORED, score 64, `heldByCrossSell`), with an ACTIVE `CrossSellGroup`.
-- 10 more companies each have a second lead where one of the two is early (NEW to AUDITED) or closed, so no other cross-sell group forms.
+- 11 more companies each have a second lead where one of the two is early (NEW to AUDITED) or closed, so no other cross-sell group forms. (64 companies hold 76 leads, so 12 companies have two.)
 - One company has `isActiveClient = true` (WON on video editing).
 - Each company has 1–3 contacts: mixed `emailStatus` (VALID, RISKY, INVALID, UNVERIFIED), role and personal emails, `whatsappStatus` CONFIRMED and LIKELY for Nigerian mobiles, and `CompanySourceRef` rows for Places and YouTube.
+- The Places-only company (named "Place <last 6>") has no contact yet: Places data can't be stored (INV-14) and it hasn't been enriched.
 
 ### 10.5 Leads (76): every status in every line, and both markets
 
@@ -1903,7 +1913,7 @@ Every lead has a `LeadEvent` STATUS_CHANGE trail from NEW to its current status,
   - a web `no_website` company where the speed checks are NOT_APPLICABLE
   - Instagram checks NOT_ASSESSED with the reason "no compliant data source"
   - one CHECK_FAILED check
-- **Findings (~120):** realistic claims with `example.com` sources and screenshot artifacts, for example:
+- **Findings (about 130):** realistic claims with `example.com` sources and screenshot artifacts, for example:
   - "Your homepage took 7.2s to show its main content on mobile in our test on 12 Sep 2026."
   - "The site has no SSL certificate, so browsers mark it 'Not secure'."
   - "3 of your last 20 videos have captions."
@@ -1923,7 +1933,7 @@ Every lead has a `LeadEvent` STATUS_CHANGE trail from NEW to its current status,
 - **Messages:**
   - IN_REVIEW leads: DRAFT drafts, one NEEDS_EDIT, one REJECTED (reason TONE)
   - APPROVED leads: SCHEDULED email and PREPARED WhatsApp
-  - CONTACTED and later: SENT emails with `providerMessageId`/`rfcMessageId`, and SENT_ASSISTED WhatsApp first touches for Nigeria
+  - CONTACTED and later: SENT emails with `providerMessageId`/`rfcMessageId` for international leads, and SENT_ASSISTED WhatsApp touches for Nigeria. While `acquisition.compliance.ngDirectMarketingBasis` is pending (the seed's default), Nigerian leads get no cold email and carry `complianceReview` (INV-25). The UK sole trader's consent is recorded before its first email (INV-6)
   - one BLOCKED message (suppressed after approval)
   - Every message has `MessageCitation` rows pointing at non-dismissed findings or signals. Footers carry the dev postal address.
 - **Enrolments:**
@@ -1936,10 +1946,10 @@ Every lead has a `LeadEvent` STATUS_CHANGE trail from NEW to its current status,
 
 ### 10.8 Meetings, proposals, deals and handoffs
 
-- **Meetings (about 12):** SCHEDULED (Cal.com in 90 minutes; tomorrow with a `precallBrief`; manual), HELD with `summary`, NO_SHOW, CANCELLED, and 1 UNMATCHED booking (`leadId` null).
+- **Meetings (15):** SCHEDULED (Cal.com in 90 minutes; tomorrow with a `precallBrief`; manual), HELD with `summary`, NO_SHOW, CANCELLED, and 1 UNMATCHED booking (`leadId` null).
 - **Proposals (12):** SENT (including a v2 whose v1 is SUPERSEDED), PENDING_APPROVAL (15% discount, `requiresApproval`), ACCEPTED on three WON leads, DECLINED on a LOST lead, EXPIRED, and a DRAFT. Each has `ProposalLineItem` rows and a PDF FileObject (fixture). Amounts are exact minor units, in NGN (₦), USD ($) and GBP (£).
 - **Deals (8):** 4 WON (₦1,850,000; $6,800; £2,100; ₦650,000) and 4 LOST (PRICE, CHOSE_COMPETITOR, NO_RESPONSE, TIMING with `reengageAt`).
-- **Handoffs (4):** one per WON deal (2 NEW, 2 ACKNOWLEDGED), with active `HandoffAssignment` rows that account for the team loads in §10.2.
+- **Handoffs (4):** one per WON deal (2 NEW, 2 ACKNOWLEDGED), with active `HandoffAssignment` rows that account for the team loads in §10.2. Those loads add up to 16 active assignments, and an assignment is unique per (handoff, line), so each of the four handoffs assigns all four lines and each won deal lists all four `services`.
 
 ### 10.9 Platform rows
 

@@ -124,7 +124,7 @@ const approve: PermissionDefinition = PermissionDefinitionSchema.parse({
   resourceFields: ["serviceLine", "ownerId"],
 });
 
-const lead = { serviceLine: "VIDEO_EDITING", ownerId: "cm1memberA0000000000000001", market: "NIGERIA" } as const;
+const lead = { serviceLine: "VIDEO_EDITING", ownerId: "cm1membera0000000000000001", market: "NIGERIA" } as const;
 
 // SERVICE_LEAD of VIDEO_EDITING → allowed (LINES)
 can({ id: "cm1lead00000000000000000001", role: "SERVICE_LEAD", serviceLines: ["VIDEO_EDITING"], canApprove: false, status: "ACTIVE" },
@@ -133,7 +133,7 @@ can({ id: "cm1lead00000000000000000001", role: "SERVICE_LEAD", serviceLines: ["V
 can({ id: "cm1lead00000000000000000002", role: "SERVICE_LEAD", serviceLines: ["WEB_DEVELOPMENT"], canApprove: false, status: "ACTIVE" },
     "acquisition.message.approve", lead);                                   // false
 // MEMBER who owns the lead but has canApprove=false → denied (NEEDS_APPROVER_FLAG)
-can({ id: "cm1memberA0000000000000001", role: "MEMBER", serviceLines: ["VIDEO_EDITING"], canApprove: false, status: "ACTIVE" },
+can({ id: "cm1membera0000000000000001", role: "MEMBER", serviceLines: ["VIDEO_EDITING"], canApprove: false, status: "ACTIVE" },
     "acquisition.message.approve", lead);                                   // false
 // Same MEMBER with canApprove=true → allowed (OWN+A)
 ```

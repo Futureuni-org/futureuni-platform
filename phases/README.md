@@ -103,6 +103,7 @@ Then remove the batch's worktrees (`pnpm phase remove <nn>`).
 |---|---|---|---|
 | 0 | Requirements pack | 2026-09-25 | Committed directly to `main` (the repository was created in this phase). See `phases/00/SUMMARY.md`. |
 | 1 | Scaffold | 2026-09-26 | Merge commit `19ca895` (branch `phase/01-scaffold`); `phases/01/REQUESTS.md` applied, CR-01-11 left open for Phase 21. See `phases/01/SUMMARY.md`. |
+| 2 | Core schema, contracts and registry | 2026-09-26 | Merge commit `1debae8` (branch `phase/02-core-schema`); `phases/02/REQUESTS.md` applied (CR-02-07 with its recommended option; CR-02-21 is notes for later phases). `futureuni_dev` needs one `pnpm db:reset` (run by the owner: Prisma asks for consent). See `phases/02/SUMMARY.md`. |
 
 ## Where things are
 

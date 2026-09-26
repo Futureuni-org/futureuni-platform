@@ -69,6 +69,10 @@ jobs:
         if: hashFiles('prisma/schema/**') != ''
         run: pnpm db:generate
 
+      # Before typecheck, whose pre-script regenerates the file.
+      - name: Registry is up to date
+        run: pnpm registry:gen --check
+
       - name: Lint
         run: pnpm lint
 
@@ -77,7 +81,11 @@ jobs:
 
       - name: Apply migrations to the CI database
         if: hashFiles('prisma/schema/**') != ''
-        run: pnpm exec prisma migrate deploy
+        run: pnpm db:deploy
+
+      - name: Schema and migrations agree
+        if: hashFiles('prisma/schema/**') != ''
+        run: pnpm db:validate
 
       - name: Test
         run: pnpm test
@@ -136,7 +144,7 @@ jobs:
 
       - name: Apply migrations to the CI database
         if: hashFiles('prisma/schema/**') != ''
-        run: pnpm exec prisma migrate deploy
+        run: pnpm db:deploy
 
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium

@@ -25,7 +25,8 @@
       "@/contracts/*": ["./src/contracts/*"],
       "@/components/*": ["./src/components/*"],
       "@/lib/*": ["./src/lib/*"],
-      "@/styles/*": ["./src/styles/*"]
+      "@/styles/*": ["./src/styles/*"],
+      "@/tests/*": ["./tests/*"]
     }
   },
   "include": [

@@ -178,11 +178,13 @@ export const PricingSchema = z.object({
 /** Every step also stops on these regardless of the list (INV-2, INV-3); listing them keeps the profile explicit. */
 export const SEQUENCE_STOP_CONDITIONS = ["ANY_REPLY", "BOUNCE", "UNSUBSCRIBE", "MEETING_BOOKED", "SUPPRESSED", "LEAD_INACTIVE"] as const;
 export const SequenceStopConditionSchema = z.enum(SEQUENCE_STOP_CONDITIONS);
+/** Every step purpose (SequenceStep.purpose stores one of these). */
+export const SequenceStepPurposeSchema = z.enum(["INTRO_AUDIT_INSIGHT", "VALUE_ADD", "PORTFOLIO_PROOF", "SOFT_BREAKUP", "CALL", "FOLLOW_UP"]);
 export const SequenceStepDefinitionSchema = z.object({
   index: z.int().min(0),
   channel: ChannelSchema,                            // EMAIL is the only automatic channel (INV-7)
   delayBusinessDays: z.int().min(0).max(30),         // from the previous step; step 0 = 0
-  purpose: z.enum(["INTRO_AUDIT_INSIGHT", "VALUE_ADD", "PORTFOLIO_PROOF", "SOFT_BREAKUP", "CALL", "FOLLOW_UP"]),
+  purpose: SequenceStepPurposeSchema,
   pitchAngleId: SlugIdSchema.optional(),
   includeBookingLink: z.boolean().default(false),
   stopConditions: z.array(SequenceStopConditionSchema).default([...SEQUENCE_STOP_CONDITIONS]),

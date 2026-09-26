@@ -83,7 +83,13 @@ export type JobResult = { counts?: JobCounts; summary?: string };
  */
 export type JobHandler<TInput> =
   | { kind: "single"; run: (input: TInput, ctx: JobContext) => Promise<JobResult> }
-  | { kind: "workflow"; entry: (input: TInput, ctx: JobContext) => Promise<JobResult>; steps: readonly string[] };
+  | {
+      kind: "workflow";
+      // The "use workflow" function itself: defineJob keeps it as is (the Workflow build tags it, and start() needs
+      // that reference); its input is parsed at enqueue (rule 10). Method syntax, so a typed entry widens without a cast.
+      entry(input: TInput, ctx: JobContext): Promise<JobResult>;
+      steps: readonly string[];
+    };
 
 export interface JobDefinition<TInput = unknown> {
   name: JobName;
@@ -149,7 +155,9 @@ export const EnqueueOptionsSchema = z.object({
   runAt: Iso8601Schema.optional(),                          // delayed start
   parentRunId: IdSchema.optional(),                         // retries link to the original
 });
-export type EnqueueJob = <TInput>(name: JobName, input: TInput, opts: z.infer<typeof EnqueueOptionsSchema>) =>
+// `input` is `unknown` (a single-use type parameter would be `unknown` in disguise): it's validated with the job's
+// own input schema at enqueue time (rule 10).
+export type EnqueueJob = (name: JobName, input: unknown, opts: z.infer<typeof EnqueueOptionsSchema>) =>
   Promise<{ jobRunId: string; deduplicated: boolean }>;
 export type CancelJob = (actor: Actor, jobRunId: string) => Promise<void>;
 export type RetryJob = (actor: Actor, jobRunId: string) => Promise<{ jobRunId: string }>;
@@ -163,7 +171,7 @@ export const ListJobRunsInputSchema = z.object({
 });
 
 /** Test and local tooling: same interface, no Workflow infrastructure. */
-export type RunJobInline = <TInput>(name: JobName, input: TInput, opts?: { actor?: Actor; clock?: Clock }) =>
+export type RunJobInline = (name: JobName, input: unknown, opts?: { actor?: Actor; clock?: Clock }) =>
   Promise<{ jobRunId: string; result: JobResult; status: "SUCCEEDED" | "FAILED" }>;
 ```
 
@@ -183,6 +191,7 @@ export type RunJobInline = <TInput>(name: JobName, input: TInput, opts?: { actor
 12. **Failure.** A run that exhausts its retries ends `FAILED`, emits `job.failed`, and stays visible in `/admin/jobs` with a Retry action (`platform.job.retry`). A retry is a new run with `parentRunId`.
 13. **Control** (`cancelJob`, `retryJob`, `listJobRuns`, `getJobRun`) checks permissions: `platform.job.read`, `platform.job.retry`, `platform.job.cancel`, `platform.job.runNow`.
 14. **Exports.** Areas export jobs as `AnyJobDefinition[]` built with `defineJob<T>()` (wave guides, Part B3: `export const <area>Jobs: AnyJobDefinition[]`). A plain `JobDefinition<T>[]` array with a typed input doesn't type-check against the manifest, by design.
+   `defineJob` wraps a single handler's `run` and the `idempotencyKey` so they parse input with the job's schema first. A workflow handler's `entry` is kept as the exact function, so the platform parses workflow input at enqueue (rule 10) before `start()`.
 
 ## 5. Worked example
 

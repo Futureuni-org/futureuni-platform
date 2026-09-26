@@ -18,6 +18,17 @@ import {
 /** The id of the platform's own manifest (core-manifest.ts); no module may use it. */
 export const CORE_MODULE_ID = "platform";
 
+/** Setting keys that belong to the core manifest (module-manifest.md rule 8). */
+export const CORE_SETTING_PREFIXES: readonly string[] = [
+  "platform.",
+  "auth.",
+  "ai.",
+  "module.",
+  "jobs.",
+  "notifications.",
+  "user.",
+];
+
 /** Paths the platform core owns; a module prefix can't be one of them or sit under one. */
 export const RESERVED_ROUTE_PREFIXES = [
   "/",
@@ -243,8 +254,7 @@ export function validateManifests(
 
     // Names carry their owner: a module's actions, jobs and settings start with its id; the core's
     // actions with "platform.", and its settings with "platform." or "module." (permissions.md rule 8).
-    const prefixes =
-      manifest.id === CORE_MODULE_ID ? ["platform.", "module."] : [`${manifest.id}.`];
+    const prefixes = manifest.id === CORE_MODULE_ID ? CORE_SETTING_PREFIXES : [`${manifest.id}.`];
     const owned = (name: string, allowed: readonly string[]) =>
       allowed.some((prefix) => name.startsWith(prefix));
     for (const permission of manifest.permissions) {

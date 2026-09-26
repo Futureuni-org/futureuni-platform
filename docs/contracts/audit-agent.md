@@ -114,7 +114,7 @@ export interface AuditContext {
   runTask: RunTask;                                   // @/platform/ai
   storage: { putFile(input: { key: string; body: Uint8Array; contentType: string; access: "private"; purpose: "AUDIT_SCREENSHOT" }): Promise<{ key: string }> };
   costMeter: { tryCharge(micros: number, label: string): boolean; spentMicros(): number };   // per-lead cap from settings
-  cache: { get(key: string): Promise<unknown | null>; set(key: string, value: unknown, ttlSeconds: number): Promise<void> };
+  cache: { get(key: string): Promise<unknown>; set(key: string, value: unknown, ttlSeconds: number): Promise<void> }; // a miss is null
   clock: Clock;
   signal: AbortSignal;
   force: boolean;                                     // bypass the domain cache

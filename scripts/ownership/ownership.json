@@ -1,6 +1,6 @@
 {
   "$comment": "Machine-readable ownership map: the CLAUDE.md table plus its grants. Each path has exactly one owner (`owns`); `alsoAllow` grants never create a second owner. The most specific matching pattern decides the owner. Glob syntax: ** any depth, * within one path segment; ( ) [ ] are literal. {phase} is the current phase number. Check with: node scripts/ownership/check.mjs",
-  "alwaysAllowed": ["phases/{phase}/**", "tests/e2e/phase-{phase}/**"],
+  "alwaysAllowed": ["phases/{phase}/**", "tests/e2e/phase-{phase}/**", "pnpm-lock.yaml"],
   "phases": {
     "10": {
       "name": "Audits",

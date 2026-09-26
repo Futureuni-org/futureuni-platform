@@ -42,7 +42,7 @@ Each path has exactly one owner phase. `scripts/ownership/ownership.json` is the
 **Rules**
 - Patterns are globs. `(`, `)`, `[` and `]` are literal path characters.
 - Where patterns nest, the **most specific pattern wins**. For example, `src/lib/motion.ts` belongs to 4 and the rest of `src/lib/` to 1.
-- Always allowed for phase `nn`: `phases/<nn>/**` and `tests/e2e/phase-<nn>/**`.
+- Always allowed for phase `nn`: `phases/<nn>/**`, `tests/e2e/phase-<nn>/**` and `pnpm-lock.yaml` (dependencies added with `pnpm add`).
 - `FU_ALLOW_ALL=1` turns the guard off. Use it only on `main` for merge and integration work, and in Phase 19 while applying change requests (its prompt allows this). List every file changed that way in the summary.
 - `A` = `src/app/(platform)/acquisition`. `M` = `src/modules/acquisition`.
 
@@ -78,7 +78,7 @@ Each path has exactly one owner phase. `scripts/ownership/ownership.json` is the
 | `src/app/layout.tsx`, `global-error.tsx`, `not-found.tsx`, `src/app/(platform)/layout.tsx` and `page.tsx` (placeholders), `src/styles/**` (seed tokens), `public/brand/**` (logo copy) | 1 | 4 |
 | `.gitignore`, `.env.example` (new variables from later phases arrive through `REQUESTS.md`) | 0 | 1 |
 | A one-paragraph `README.md` in every folder above (skeleton) | 1 | That folder's owner |
-| `package.json` **scripts only**, adding the phase's own named scripts (`registry:gen`, `db:validate`, `create-module` for 2; `evals` for 5; `jobs:run`, `credentials:rotate` for 6; `profiles:check` for 7; `seed:staging` for 19; `bootstrap:admin` for 21) | 1 | 1; grants to 2, 5, 6, 7, 19, 21 |
+| `package.json` **scripts only**, adding the phase's own named scripts (`registry:gen`, `db:validate`, `create-module`, `db:deploy`, `db:reset`, `postinstall` and the `pre*` generation hooks for 2; `evals` for 5; `jobs:run`, `credentials:rotate` for 6; `profiles:check` for 7; `seed:staging` for 19; `bootstrap:admin` for 21) | 1 | 1; grants to 2, 5, 6, 7, 19, 21 |
 | The saas-skills marker block at the end of `CLAUDE.md`, and the "Stack and commands" section of `.claude/project-rules.md` (content only; any other change goes through REQUESTS.md) | 0 | 0; grant to 1 |
 | `M/manifest.ts` (initial version) | 2 | 19 |
 | `src/lib/money.ts` and `src/lib/money.test.ts` (`docs/contracts/common.md`) | 2 | 1; grant to 2 |

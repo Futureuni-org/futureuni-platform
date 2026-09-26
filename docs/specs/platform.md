@@ -131,7 +131,7 @@ Each capability names the phase that builds it and the contract it implements. F
 - Platform jobs: `platform.send-email`, `platform.deliver-event`, `platform.notifications-digest`, `platform.job-runs-cleanup`, `platform.retention-purge`, `platform.credentials-health`. `platform.retention-purge` purges **platform-owned** data only (AI call content, job runs, expired files, and the audit log if `platform.retention.auditLogMonths` is set); a module purges its own data with its own job (for acquisition, `acquisition.compliance.retention-purge`), because platform code never imports modules.
 
 ### 3.12 File storage (Phase 6)
-- `StorageAdapter` with `vercel-blob` and `local` (`.storage/`, gitignored) implementations. `putFile`, `getSignedUrl`, `deleteFile`, `createUploadUrl` (direct browser uploads, saas-api upload rules).
+- `StorageAdapter` with `vercel-blob` and `local` (`.storage/`, gitignored; a file lives at `.storage/<key>`, the key's `/` segments becoming folders, and the development seed writes under `seed/…`) implementations. `putFile`, `getSignedUrl`, `deleteFile`, `createUploadUrl` (direct browser uploads, saas-api upload rules).
 - Every file has a `FileObject` row with its purpose (`FilePurpose`), access (`PRIVATE` by default), size, type and uploader. Type and size are validated on the server from content, never from the extension.
 
 ### 3.13 Domain events (Phase 6)
@@ -142,6 +142,7 @@ Each capability names the phase that builds it and the contract it implements. F
 - A module lives in `src/modules/<module-id>/` and declares itself with a `manifest.ts`: `id`, `name`, `icon` (a Lucide icon name), `routePrefix`, the navigation tree, the permission actions it adds, jobs, cron schedules, an optional dynamic-schedules provider, settings panels, home widgets, notification types, and an `enabled` flag.
 - **Discovery by code generation:** `pnpm registry:gen` finds every `src/modules/*/manifest.ts` and writes `src/platform/registry/generated.ts` (committed; CI fails if stale). Generation fails on duplicate module IDs, overlapping route prefixes, duplicate actions or job names, invalid cron expressions, and navigation outside the route prefix.
 - **Enable/disable:** a module is enabled when its manifest's `enabled` is true, unless the platform setting `module.<id>.enabled` overrides it. A disabled module disappears from navigation, the command palette and the home, its routes return not found, and its schedules stop.
+- **Module ids:** 2–32 lower-case letters (for example `marketing`), never `platform` or a reserved route segment (`home`, `settings`, `admin`, `dev`, `login`, `invite`, `reset`, `setup-2fa`, `signed-out`, `u`, `api`). The id is the first segment of the module's permissions, jobs, AI tasks and events.
 - **Creating a module:** `pnpm create-module <id> "<Name>"` copies `templates/create-module/` into `src/modules/<id>/` and `src/app/(platform)/<id>/`, replaces the tokens, runs `registry:gen` and prints the next steps (write `docs/specs/module-<id>.md`, add an ownership entry, add `prisma/schema/<id>.prisma` with a `<id>_` table prefix). Modules never import each other; they share data through the directory and events.
 
 ### 3.15 Platform home

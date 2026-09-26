@@ -22,6 +22,8 @@ export default defineConfig({
     },
   },
   test: {
+    // Applies pending migrations to the test database once, before any test file runs.
+    globalSetup: ["./tests/setup/migrate-test-db.ts"],
     setupFiles: ["./tests/setup/test-env.ts", "./tests/setup/msw.ts"],
     exclude: [
       ...configDefaults.exclude,

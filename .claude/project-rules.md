@@ -41,6 +41,8 @@ Last updated: 2026-09-25 (Phase 0). After Phase 0, this file changes only when a
   - The `prisma-client` generator outputs to `src/generated/prisma` (gitignored).
   - `@prisma/adapter-pg` with a pooled `pg` connection is used everywhere.
   - Neon in Vercel environments. Locally, native PostgreSQL 18 on `localhost:5432` (`LOCAL_DB_MODE=native`); Docker Compose where Docker exists and in CI (ADR-003, ADR-004, ADR-019).
+  - Prisma 7 refuses `migrate reset` (and a destructive `migrate dev`) when an AI agent runs it, until the user consents. Agents ask the user to run `pnpm db:reset` themselves (`! pnpm db:reset`), or check a fresh database with `pnpm db:deploy` against a throwaway local database.
+  - Never `upsert`, `findUnique`, `update` or `delete` through a partial unique index's key (listed in `src/platform/db/README.md`): Prisma types them as unique keys, but upsert fails (SQLSTATE 42P10) and the others can pick a row outside the index. Use `findFirst` with the predicate and write by `id`, or `createOrOnConflict` from `@/platform/db`.
 - **Auth library:** Better Auth (ADR-013).
 - **Background work:** Vercel Workflow for multi-step jobs; one Vercel Cron entry (`/api/cron/tick`, every 5 minutes) drives every schedule (ADR-003).
 - **Hosting and environments:** Vercel Pro. Preview deploys per branch use a Neon branch and `MOCKS=true`. Production deploys from `main` only, with `MOCKS=false`.
@@ -56,17 +58,21 @@ Last updated: 2026-09-25 (Phase 0). After Phase 0, this file changes only when a
 | Unit and integration tests | `pnpm test` (`vitest run`; `pnpm test:watch` locally) |
 | End-to-end tests | `pnpm test:e2e` (Playwright on a production build at `PORT + 1000`; `--grep @smoke` for the smoke suite) |
 | Local database up / down | `pnpm db:up` / `pnpm db:down` (`scripts/db.mjs`; native mode: `pg_ctl start` detached / `pg_ctl stop -m fast`; docker mode: Compose). `db:up` also creates any missing `futureuni_dev` / `futureuni_test` |
-| DB migrate | `pnpm db:migrate` (`prisma migrate dev`) |
-| DB generate client | `pnpm db:generate` (`prisma generate`) |
-| DB seed | `pnpm db:seed` (`prisma db seed`) |
+| DB migrate (development) | `pnpm db:migrate --name <change>` (`prisma migrate dev`; read the generated SQL) |
+| DB apply migrations | `pnpm db:deploy` (`prisma migrate deploy`; CI, previews, production, `pnpm phase start`) |
+| DB validate | `pnpm db:validate` (`prisma validate`, then a drift check in a throwaway local database) |
+| DB generate client | `pnpm db:generate` (`prisma generate`; also runs on install and before `dev`, `build`, `lint`, `typecheck` and `test`, only when the schema changed) |
+| DB seed | `pnpm db:seed` (`prisma db seed`; idempotent; see `prisma/seed/README.md`) |
 | DB studio | `pnpm db:studio` (`prisma studio`) |
-| DB reset (development only) | `pnpm db:reset` (`prisma migrate reset`) |
+| DB reset (development only) | `pnpm db:reset` (local databases only: drop, re-apply migrations, generate, seed) |
+| Module registry | `pnpm registry:gen` (writes `src/platform/registry/generated.ts`; `--check` fails when it's stale) |
+| New module | `pnpm create-module <id> "<Name>"` (id: 2–32 lower-case letters) |
 | Mock providers on / off | `pnpm mocks:on` / `pnpm mocks:off` (sets `MOCKS` in `.env.local`) |
 | Parallel phase worktrees | `pnpm phase start <nn> <slug>` · `list` · `finish <nn>` · `remove <nn> [--yes]` |
 | Ownership checks | `node scripts/ownership/check.mjs` (fails on a path claimed by two phases) · `node scripts/ownership/check.mjs --phase-diff` (fails when a phase branch changed a path it doesn't own); CI runs both |
 | Everything CI runs | `pnpm check` (lint, typecheck, test, build) |
 
-Added by later phases (the names are fixed now): `registry:gen`, `db:validate`, `create-module` and `db:deploy` (`prisma migrate deploy`, used by CI and `pnpm phase start`) (Phase 2), `evals` (5), `jobs:run` and `credentials:rotate` (6), `profiles:check` (7), `seed:staging` (19), `bootstrap:admin` (21).
+Added by later phases (the names are fixed now): `evals` (5), `jobs:run` and `credentials:rotate` (6), `profiles:check` (7), `seed:staging` (19), `bootstrap:admin` (21).
 
 - **Known pre-existing failures:** none.
 - **Launch gates:** no real prospect is contacted until every gate in `docs/launch-checklist.md` (Phase 21) is ticked. Until then `acquisition.outreach.globalPause` stays `true` in production.

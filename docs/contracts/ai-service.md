@@ -134,8 +134,9 @@ export type StreamTaskEvent =
 
 /** Batches API for large non-urgent jobs (e.g. re-scoring 500 leads). Phase 5 implements it if the API supports batches (it does as of 2026-09). */
 export type BatchHandle = { batchId: string; task: TaskId; count: number; status: "SUBMITTED" | "IN_PROGRESS" | "ENDED" | "FAILED"; submittedAt: string };
-export type RunBatch = <TInput>(req: { task: TaskId; items: Array<{ customId: string; input: TInput }>; actor: Actor }) => Promise<BatchHandle>;
-export type GetBatchResults = <TOutput>(batchId: string) => Promise<Array<{ customId: string; ok: true; output: TOutput; usage: AiUsage } | { customId: string; ok: false; error: string }>>;
+// Inputs and outputs are `unknown`: each item's input is validated with the task's inputSchema, and callers parse outputs with its outputSchema.
+export type RunBatch = (req: { task: TaskId; items: Array<{ customId: string; input: unknown }>; actor: Actor }) => Promise<BatchHandle>;
+export type GetBatchResults = (batchId: string) => Promise<Array<{ customId: string; ok: true; output: unknown; usage: AiUsage } | { customId: string; ok: false; error: string }>>;
 
 export type RegisterTask = <TInput, TOutput>(def: TaskDefinition<TInput, TOutput>) => void;
 /**
