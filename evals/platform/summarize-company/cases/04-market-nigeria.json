@@ -1,0 +1,19 @@
+{
+  "id": "04-market-nigeria",
+  "description": "Nigeria market reference should be loaded.",
+  "input": {
+    "company": {
+      "name": "Delta Foods",
+      "city": "Abuja",
+      "country": "NG",
+      "market": "NG"
+    },
+    "signals": [
+      { "id": "sig1000000000000000000000000", "kind": "site-fact", "text": "Ships nationally in Nigeria" },
+      { "id": "sig2000000000000000000000000", "kind": "job-post", "text": "Hiring a Next.js developer" }
+    ]
+  },
+  "expectations": {
+    "citedEvidenceIds": ["sig1000000000000000000000000"]
+  }
+}

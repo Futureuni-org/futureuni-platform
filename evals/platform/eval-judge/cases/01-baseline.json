@@ -1,0 +1,9 @@
+{
+  "id": "01-baseline",
+  "description": "Sanity: the judge scores a well-formed candidate above 0.5.",
+  "input": {
+    "rubric": "Score should be a number between 0 and 1, and reasoning should be non-empty.",
+    "candidateOutput": { "summary": "A short summary.", "citedEvidenceIds": ["x"] }
+  },
+  "expectations": {}
+}

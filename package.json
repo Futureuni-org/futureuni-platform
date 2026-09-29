@@ -33,6 +33,7 @@
     "create-module": "tsx --conditions=react-server src/platform/registry/create-module.ts",
     "mocks:on": "node scripts/mocks.mjs on",
     "mocks:off": "node scripts/mocks.mjs off",
+    "evals": "tsx --conditions=react-server evals/_runner/cli.ts",
     "phase": "node scripts/phase.mjs",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "postinstall": "node prisma/tools/generate.mjs"

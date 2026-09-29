@@ -1,0 +1,13 @@
+{
+  "input": {
+    "rubric": "The summary must (a) be 2-3 sentences, (b) cite at least one signal, (c) not invent facts.",
+    "candidateOutput": {
+      "summary": "Kola Foods sells direct-to-consumer through Shopify [[s:sig1kolafoodsstore01]].",
+      "citedEvidenceIds": ["sig1kolafoodsstore01"]
+    }
+  },
+  "output": {
+    "score": 0.75,
+    "reasoning": "One clear cited claim, but only one sentence rather than 2–3. No invented facts."
+  }
+}

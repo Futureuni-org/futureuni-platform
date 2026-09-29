@@ -1,0 +1,28 @@
+{
+  "id": "01-baseline",
+  "description": "Two clear signals; both must be cited.",
+  "input": {
+    "company": {
+      "name": "Acme Ltd",
+      "website": "https://acme.example",
+      "city": "Lagos",
+      "country": "NG",
+      "market": "NG"
+    },
+    "signals": [
+      {
+        "id": "sig1000000000000000000000000",
+        "kind": "site-fact",
+        "text": "Direct-to-consumer storefront"
+      },
+      {
+        "id": "sig2000000000000000000000000",
+        "kind": "job-post",
+        "text": "Hiring a Next.js developer"
+      }
+    ]
+  },
+  "expectations": {
+    "citedEvidenceIds": ["sig1000000000000000000000000", "sig2000000000000000000000000"]
+  }
+}

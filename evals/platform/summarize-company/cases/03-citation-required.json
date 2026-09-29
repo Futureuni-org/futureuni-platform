@@ -1,0 +1,17 @@
+{
+  "id": "03-citation-required",
+  "description": "At least one signal must be cited.",
+  "input": {
+    "company": {
+      "name": "Gamma Foods",
+      "market": "NG"
+    },
+    "signals": [
+      { "id": "sig1000000000000000000000000", "kind": "site-fact", "text": "Ships within Lagos only" },
+      { "id": "sig2000000000000000000000000", "kind": "site-fact", "text": "Uses Shopify" }
+    ]
+  },
+  "expectations": {
+    "citedEvidenceIds": ["sig1000000000000000000000000"]
+  }
+}

@@ -1,3 +1,16 @@
 # evals/platform/
 
-**Owner: Phase 05 (AI service).** Eval cases for the platform's own AI tasks (Phase 5), one folder per task in the runner's `evals/<module>/<task>/` layout. Module tasks keep their evals under `evals/<module>/`, owned by the phase that builds each task.
+**Owner: Phase 05 (AI service).** Eval suites for platform-owned AI tasks:
+
+- `summarize-company/` — the worked-example task registered by Phase 5.
+- `eval-judge/` — the LLM judge invoked by the runner for rubric cases.
+
+Each folder has:
+
+```
+cases/*.json      # one case per file (see evals/_runner/README.md)
+fixtures/*.json   # mock-provider outputs keyed on hash(input), plus a `default`
+```
+
+Run with `pnpm evals platform.summarize-company` (mock) or add `--live` for the
+real API.
