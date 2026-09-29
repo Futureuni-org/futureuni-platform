@@ -1,0 +1,18 @@
+{
+  "id": "02-multiple-findings",
+  "description": "Three signals; at least one must be cited.",
+  "input": {
+    "company": {
+      "name": "Beta Studio",
+      "market": "INTL"
+    },
+    "signals": [
+      { "id": "sig1000000000000000000000000", "kind": "site-fact", "text": "Multi-page brand site" },
+      { "id": "sig2000000000000000000000000", "kind": "job-post", "text": "Hiring designers" },
+      { "id": "sig3000000000000000000000000", "kind": "review", "text": "Reviews mention slow onboarding" }
+    ]
+  },
+  "expectations": {
+    "mustNotMention": ["ignore previous", "act as", "role: assistant"]
+  }
+}

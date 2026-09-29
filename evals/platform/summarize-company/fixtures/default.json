@@ -1,0 +1,7 @@
+{
+  "default": {
+    "summary": "Acme Ltd is a Lagos business selling direct-to-consumer through its own storefront [[s:sig1000000000000000000000000]]. It is hiring for its Next.js work [[s:sig2000000000000000000000000]].",
+    "citedEvidenceIds": ["sig1000000000000000000000000", "sig2000000000000000000000000"]
+  },
+  "latencyMs": 20
+}

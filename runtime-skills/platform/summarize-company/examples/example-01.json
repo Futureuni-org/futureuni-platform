@@ -1,0 +1,19 @@
+{
+  "input": {
+    "company": {
+      "name": "Kola Foods Ltd",
+      "website": "https://kolafoods.com",
+      "city": "Lagos",
+      "country": "NG",
+      "market": "NG"
+    },
+    "signals": [
+      { "id": "sig1kolafoodshiring1", "kind": "job-post", "text": "Seeking a Next.js developer for e-commerce work." },
+      { "id": "sig1kolafoodsstore01", "kind": "site-fact", "text": "Runs a Shopify storefront for direct-to-consumer orders." }
+    ]
+  },
+  "output": {
+    "summary": "Kola Foods is a Lagos food business selling direct-to-consumer through Shopify [[s:sig1kolafoodsstore01]]. It is actively hiring for its Next.js e-commerce work [[s:sig1kolafoodshiring1]].",
+    "citedEvidenceIds": ["sig1kolafoodsstore01", "sig1kolafoodshiring1"]
+  }
+}

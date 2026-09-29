@@ -1,0 +1,17 @@
+{
+  "id": "05-market-international",
+  "description": "International market reference should be loaded.",
+  "input": {
+    "company": {
+      "name": "Epsilon Ltd",
+      "market": "INTL"
+    },
+    "signals": [
+      { "id": "sig1000000000000000000000000", "kind": "site-fact", "text": "GDPR compliance page present" },
+      { "id": "sig2000000000000000000000000", "kind": "job-post", "text": "Hiring a Next.js developer" }
+    ]
+  },
+  "expectations": {
+    "citedEvidenceIds": ["sig1000000000000000000000000"]
+  }
+}
