@@ -1,3 +1,6 @@
-# src/app/api/cron/
+# /api/cron
 
-**Owner: Phase 06 (Platform services).** The single Vercel Cron entry, `/api/cron/tick`, called every 5 minutes (UTC). It rejects anything without `Authorization: Bearer <CRON_SECRET>` and enqueues each due schedule with an idempotency key, so a duplicated tick never runs a job twice (`docs/contracts/jobs.md` rule 5, INV-22). README.md files are ignored by Next.js routing.
+Vercel Cron endpoints owned by Phase 6. The single entry `GET /api/cron/tick` runs every 5
+minutes and dispatches every due manifest schedule (`docs/contracts/jobs.md`, ADR-033). Modules
+never edit `vercel.json`; a request to add or change a cron entry goes through the module's
+manifest.

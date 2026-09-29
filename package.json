@@ -34,6 +34,8 @@
     "mocks:on": "node scripts/mocks.mjs on",
     "mocks:off": "node scripts/mocks.mjs off",
     "phase": "node scripts/phase.mjs",
+    "credentials:rotate": "tsx src/platform/credentials/rotate.script.ts",
+    "jobs:run": "tsx src/platform/jobs/run.script.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm build",
     "postinstall": "node prisma/tools/generate.mjs"
   },
