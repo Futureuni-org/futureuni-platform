@@ -23,11 +23,11 @@ import { z } from "zod";
 
 import { RoleSchema, ServiceLineSchema } from "@/contracts/common";
 import { AppError } from "@/lib/errors";
+import { audit } from "@/platform/audit-log";
 import { db, isUniqueViolation, withTransaction, type Tx } from "@/platform/db";
+import { sendEmail } from "@/platform/notifications";
 
-import { actorOf } from "./permissions";
-import { recordAudit, sendAuthEmail } from "./_seams";
-import { assertCan } from "./permissions";
+import { actorOf, assertCan } from "./permissions";
 import { checkPassword } from "./password";
 import { INVITE_ACCEPT_LIMIT, INVITE_CREATE_LIMIT, consume } from "./rate-limit";
 import { hashToken, newToken } from "./tokens";
@@ -105,8 +105,22 @@ export async function createInvite(
   }
 
   const link = inviteLink(token.plain);
-  await sendAuthEmail({ kind: "invite", to: created.email, link });
-  await recordAudit(null, {
+  const inviter = await db.user.findUnique({
+    where: { id: actor.id },
+    select: { name: true },
+  });
+  await sendEmail({
+    template: "invite",
+    to: created.email,
+    props: {
+      inviteeName: created.email.split("@")[0] ?? "there",
+      inviterName: inviter?.name ?? "your administrator",
+      role: created.role,
+      acceptUrl: link,
+      expiresInDays: INVITE_EXPIRY_DAYS,
+    },
+  });
+  await audit.record(null, {
     actor: actorOf({ id: actor.id, role: actor.role }),
     action: "platform.user.invite",
     targetType: "Invite",
@@ -128,11 +142,12 @@ export async function revokeInvite(actor: Inviter, inviteId: string): Promise<vo
     throw new AppError("CONFLICT", "That invite has already been used or revoked.");
   }
   await db.invite.update({ where: { id: inviteId }, data: { revokedAt: new Date() } });
-  await recordAudit(null, {
+  await audit.record(null, {
     actor: actorOf({ id: actor.id, role: actor.role }),
-    action: "platform.user.invite.revoke",
+    action: "platform.user.invite",
     targetType: "Invite",
     targetId: inviteId,
+    after: { revokedAt: new Date().toISOString() },
   });
 }
 
@@ -165,12 +180,27 @@ export async function resendInvite(actor: Inviter, inviteId: string): Promise<Cr
     select: { id: true, email: true, role: true, expiresAt: true },
   });
   const link = inviteLink(token.plain);
-  await sendAuthEmail({ kind: "invite", to: updated.email, link });
-  await recordAudit(null, {
+  const inviter = await db.user.findUnique({
+    where: { id: actor.id },
+    select: { name: true },
+  });
+  await sendEmail({
+    template: "invite",
+    to: updated.email,
+    props: {
+      inviteeName: updated.email.split("@")[0] ?? "there",
+      inviterName: inviter?.name ?? "your administrator",
+      role: updated.role,
+      acceptUrl: link,
+      expiresInDays: INVITE_EXPIRY_DAYS,
+    },
+  });
+  await audit.record(null, {
     actor: actorOf({ id: actor.id, role: actor.role }),
-    action: "platform.user.invite.resend",
+    action: "platform.user.invite",
     targetType: "Invite",
     targetId: inviteId,
+    after: { resentAt: new Date().toISOString(), sendCount: updated.role },
   });
   return { ...updated, link };
 }
@@ -292,12 +322,12 @@ export async function acceptInvite(
       data: { usedAt: new Date(), acceptedUserId: user.id },
     });
 
-    await recordAudit(tx, {
+    await audit.record(tx, {
       actor: { type: "USER", userId: user.id, role: user.role },
-      action: "platform.user.acceptInvite",
+      action: "platform.user.invite",
       targetType: "User",
       targetId: user.id,
-      after: { role: user.role, serviceLines: invite.serviceLines },
+      after: { role: user.role, serviceLines: invite.serviceLines, accepted: true },
       ...(meta.ip === undefined ? {} : { ip: meta.ip }),
       ...(meta.userAgent === undefined ? {} : { userAgent: meta.userAgent }),
     });

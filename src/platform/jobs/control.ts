@@ -8,7 +8,7 @@ import "server-only";
 import type { Actor, JobStatus } from "@/contracts/common";
 import { AppError } from "@/lib/errors";
 import { db } from "@/platform/db";
-import { assertCanSeam } from "@/platform/_seams";
+import { assertActorCan } from "@/platform/auth";
 
 import { enqueueJob } from "./enqueue";
 import { markRunCancelled } from "./runtime";
@@ -29,7 +29,7 @@ export interface JobRunSummary {
 }
 
 export async function getJobRun(actor: Actor, id: string): Promise<JobRunSummary | null> {
-  await assertCanSeam(actor, "platform.job.read");
+  await assertActorCan(actor, "platform.job.read");
   const row = await db.jobRun.findUnique({
     where: { id },
     select: {
@@ -64,7 +64,7 @@ export async function listJobRuns(
   actor: Actor,
   query: ListJobRunsQuery,
 ): Promise<{ items: JobRunSummary[]; nextCursor: string | null }> {
-  await assertCanSeam(actor, "platform.job.read");
+  await assertActorCan(actor, "platform.job.read");
   const limit = Math.min(Math.max(query.limit ?? 25, 1), 100);
   const rows = await db.jobRun.findMany({
     where: {
@@ -105,7 +105,7 @@ export async function listJobRuns(
 }
 
 export async function cancelJob(actor: Actor, jobRunId: string): Promise<void> {
-  await assertCanSeam(actor, "platform.job.cancel");
+  await assertActorCan(actor, "platform.job.cancel");
   const row = await db.jobRun.findUnique({ where: { id: jobRunId }, select: { status: true } });
   if (row === null) throw new AppError("NOT_FOUND", "Job run not found.");
   if (row.status === "SUCCEEDED" || row.status === "FAILED" || row.status === "CANCELLED") return;
@@ -113,7 +113,7 @@ export async function cancelJob(actor: Actor, jobRunId: string): Promise<void> {
 }
 
 export async function retryJob(actor: Actor, jobRunId: string): Promise<{ jobRunId: string }> {
-  await assertCanSeam(actor, "platform.job.retry");
+  await assertActorCan(actor, "platform.job.retry");
   const row = await db.jobRun.findUnique({
     where: { id: jobRunId },
     select: { name: true, input: true, status: true },

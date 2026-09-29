@@ -19,7 +19,7 @@ import type { Role, ServiceLine } from "@/contracts/common";
 import { RoleSchema, ServiceLineSchema } from "@/contracts/common";
 import { AppError } from "@/lib/errors";
 import { actorOf, assertCan, type CurrentUser } from "@/platform/auth";
-import { recordAudit } from "@/platform/auth/_seams";
+import { audit } from "@/platform/audit-log";
 import { withTransaction } from "@/platform/db";
 
 import {
@@ -154,7 +154,7 @@ export async function updateTeamProfile(
     if (input.title !== undefined) patch.title = input.title;
 
     const updated = await updateTeamProfileRow(tx, userId, patch);
-    await recordAudit(tx, {
+    await audit.record(tx, {
       actor: actorOf({ id: actor.id, role: actor.role }),
       action: "platform.team.update",
       targetType: "TeamProfile",

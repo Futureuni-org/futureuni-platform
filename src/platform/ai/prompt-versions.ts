@@ -18,9 +18,11 @@ import type {
 import { db, withTransaction } from "@/platform/db";
 import { AppError } from "@/lib/errors";
 
+import { assertActorCan } from "@/platform/auth";
+import { audit } from "@/platform/audit-log";
+
 import { getTask } from "./registry";
 import { compileFullPrompt } from "./skills/compile";
-import { assertActorCan, recordAudit } from "./_seams";
 
 /** Score-regression tolerance: publish is refused when new < active - tolerance without force. */
 export const EVAL_REGRESSION_TOLERANCE = 0.02;
@@ -48,7 +50,7 @@ export const publishPromptVersion: PublishPromptVersion = async (
   note,
   opts = {},
 ) => {
-  assertActorCan(actor, "platform.prompt.publish");
+  await assertActorCan(actor, "platform.prompt.publish");
   const taskDef = getTask(task);
 
   const compiled = await compileFullPrompt(taskDef);
@@ -97,7 +99,7 @@ export const publishPromptVersion: PublishPromptVersion = async (
       },
       select: { id: true, version: true },
     });
-    await recordAudit(tx, {
+    await audit.record(tx, {
       actor,
       action: "platform.prompt.publish",
       targetType: "PromptVersion",
@@ -117,7 +119,7 @@ export const publishPromptVersion: PublishPromptVersion = async (
 };
 
 export const activatePromptVersion: ActivatePromptVersion = async (actor, task, version) => {
-  assertActorCan(actor, "platform.prompt.activate");
+  await assertActorCan(actor, "platform.prompt.activate");
   await withTransaction(async (tx) => {
     const target = await tx.promptVersion.findFirst({
       where: { task, version },
@@ -135,7 +137,7 @@ export const activatePromptVersion: ActivatePromptVersion = async (actor, task, 
       where: { id: target.id },
       data: { isActive: true, activatedAt: new Date() },
     });
-    await recordAudit(tx, {
+    await audit.record(tx, {
       actor,
       action: "platform.prompt.activate",
       targetType: "PromptVersion",

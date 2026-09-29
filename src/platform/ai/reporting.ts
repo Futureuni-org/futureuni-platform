@@ -9,7 +9,7 @@ import "server-only";
 import type { Actor, AiOutcome } from "@/contracts/common";
 import { db } from "@/platform/db";
 
-import { assertActorCan } from "./_seams";
+import { assertActorCan } from "@/platform/auth";
 
 export type UsageGroupBy = "task" | "module" | "user" | "model" | "day";
 
@@ -41,7 +41,7 @@ export async function getUsageSummary(args: {
   to: Date;
   groupBy: UsageGroupBy;
 }): Promise<UsageBucket[]> {
-  assertActorCan(args.actor, "platform.aiUsage.read");
+  await assertActorCan(args.actor, "platform.aiUsage.read");
   const rows: AiCallSlim[] = await db.aiCall.findMany({
     where: { createdAt: { gte: args.from, lte: args.to } },
     select: {
@@ -65,7 +65,7 @@ export async function getCostPerOutcome(args: {
   from: Date;
   to: Date;
 }): Promise<{ outcome: AiOutcome; calls: number; costMicros: number }[]> {
-  assertActorCan(args.actor, "platform.aiUsage.read");
+  await assertActorCan(args.actor, "platform.aiUsage.read");
   const rows = await db.aiCall.groupBy({
     by: ["outcome"],
     where: { createdAt: { gte: args.from, lte: args.to } },

@@ -13,7 +13,7 @@ import "server-only";
 import type { Actor, ProviderId } from "@/contracts/common";
 import { AppError } from "@/lib/errors";
 import { db } from "@/platform/db";
-import { assertCanSeam } from "@/platform/_seams";
+import { assertActorCan } from "@/platform/auth";
 import { audit } from "@/platform/audit-log";
 
 import { decrypt, encrypt } from "./crypto";
@@ -66,7 +66,7 @@ export async function saveCredential(
   providerId: ProviderId,
   rawPayload: unknown,
 ): Promise<CredentialStatus> {
-  await assertCanSeam(actor, "platform.credential.manage");
+  await assertActorCan(actor, "platform.credential.manage");
   if (actor.type !== "USER") throw new AppError("FORBIDDEN", "Only a user can save credentials.");
   const provider = requireProvider(providerId);
   const payload = parsePayload(provider, rawPayload);
@@ -155,7 +155,7 @@ export async function getCredentialStatus(providerId: ProviderId): Promise<Crede
 
 /** All providers with their statuses. */
 export async function listCredentialStatuses(actor: Actor): Promise<CredentialStatus[]> {
-  await assertCanSeam(actor, "platform.credential.read");
+  await assertActorCan(actor, "platform.credential.read");
   const rows = await db.integrationCredential.findMany({
     select: {
       provider: true,
@@ -198,7 +198,7 @@ function toStatus(
 
 /** Run the provider's test call. In mock mode it succeeds without network access. */
 export async function testCredential(actor: Actor, providerId: ProviderId): Promise<CredentialStatus> {
-  await assertCanSeam(actor, "platform.credential.test");
+  await assertActorCan(actor, "platform.credential.test");
   const provider = requireProvider(providerId);
   const payload = await getCredential(providerId);
   if (payload === null) {
@@ -233,7 +233,7 @@ export async function testCredential(actor: Actor, providerId: ProviderId): Prom
 
 /** Remove a provider's stored credential. `ADMIN` only. */
 export async function deleteCredential(actor: Actor, providerId: ProviderId): Promise<void> {
-  await assertCanSeam(actor, "platform.credential.manage");
+  await assertActorCan(actor, "platform.credential.manage");
   requireProvider(providerId);
   const before = await db.integrationCredential.findUnique({
     where: { provider: providerId },

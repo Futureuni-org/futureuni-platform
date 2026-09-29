@@ -30,7 +30,7 @@ import { composeSystemPrompt } from "./skills/loader";
 import { wrapUntrusted } from "./skills/delimiter";
 import { env } from "@/env";
 
-import { getAiSettings, getProviderKey } from "./_seams";
+import { getAiSettings, getProviderKey } from "./settings-adapter";
 import { citationInvalid } from "./errors";
 import { checkQuotasBeforeCall } from "./quota";
 import { buildAiCallInput, writeAiCallRow } from "./usage-log";

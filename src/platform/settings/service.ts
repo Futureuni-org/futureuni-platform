@@ -21,7 +21,7 @@ import { audit } from "@/platform/audit-log";
 import { db, toJsonInput } from "@/platform/db";
 import { publish } from "@/platform/events";
 import { getSettingDefinitions } from "@/platform/registry";
-import { assertCanSeam } from "@/platform/_seams";
+import { assertActorCan } from "@/platform/auth";
 
 import { PLATFORM_SETTINGS } from "./definitions";
 
@@ -107,7 +107,7 @@ export async function setSetting(
   if (def.scope === "USER" && userId === undefined) {
     throw new AppError("VALIDATION_FAILED", "User-scope settings need a userId.");
   }
-  await assertCanSeam(actor, def.requiredPermission, def.scope === "USER" ? { userId } : {});
+  await assertActorCan(actor, def.requiredPermission, def.scope === "USER" ? { userId } : {});
 
   const updatedById = actor.type === "USER" ? actor.userId : null;
   const before = await db.setting.findFirst({

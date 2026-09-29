@@ -5,6 +5,10 @@
  * Platform jobs, settings and notification types arrive through the Wave 1 integration.
  */
 
+import { platformJobs, platformSchedules } from "@/platform/jobs/platform-jobs";
+import { platformNotificationTypes } from "@/platform/notifications/types";
+import { PLATFORM_SETTINGS } from "@/platform/settings/definitions";
+
 import { defineModule, permission, scopes } from "./define";
 
 const EVERYONE = scopes("ALL", "ALL", "ALL", "ALL");
@@ -131,11 +135,11 @@ export const coreManifest = defineModule({
       "/dev/ui in production.",
     ),
   ],
-  jobs: [],
-  schedules: [],
-  settings: [],
+  jobs: [...platformJobs],
+  schedules: [...platformSchedules],
+  settings: [...PLATFORM_SETTINGS],
   settingsPanels: [],
   homeWidgets: [],
-  notificationTypes: [],
+  notificationTypes: [...platformNotificationTypes],
   commands: [],
 });

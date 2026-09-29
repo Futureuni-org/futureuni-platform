@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { z } from "zod";
 
 import { auth, requireUser } from "@/platform/auth";
-import { sendAuthEmail } from "@/platform/auth/_seams";
+import { sendEmail } from "@/platform/notifications";
 import { AppError, isAppError } from "@/lib/errors";
 import { err, ok, type ActionResult } from "@/lib/result";
 import { db } from "@/platform/db";
@@ -63,10 +63,10 @@ export async function verifyEnable2FA(
       where: { id: user.id },
       data: { twoFactorEnabled: true, mustSetUp2fa: false },
     });
-    await sendAuthEmail({
-      kind: "2fa-enabled",
+    await sendEmail({
+      template: "two-factor-enabled",
       to: user.email,
-      name: user.name,
+      props: { name: user.name },
     });
     return ok({ done: true });
   } catch (error) {

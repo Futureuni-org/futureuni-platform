@@ -19,10 +19,11 @@ import { z } from "zod";
 import { CursorPageInputSchema, RoleSchema } from "@/contracts/common";
 import type { Role } from "@/contracts/common";
 import { AppError } from "@/lib/errors";
+import { audit } from "@/platform/audit-log";
 import { NEWEST_FIRST, afterClause, db, paginate, withTransaction, type Tx } from "@/platform/db";
+import { sendEmail } from "@/platform/notifications";
 
 import { actorOf, assertCan } from "./permissions";
-import { recordAudit, sendAuthEmail } from "./_seams";
 
 export interface AdminActor {
   id: string;
@@ -82,7 +83,7 @@ export async function changeRole(actor: AdminActor, raw: ChangeRoleInput): Promi
     });
     await tx.session.deleteMany({ where: { userId: target.id } });
 
-    await recordAudit(tx, {
+    await audit.record(tx, {
       actor: actorOf({ id: actor.id, role: actor.role }),
       action: "platform.user.changeRole",
       targetType: "User",
@@ -94,11 +95,19 @@ export async function changeRole(actor: AdminActor, raw: ChangeRoleInput): Promi
   });
 
   if (result !== null) {
-    await sendAuthEmail({
-      kind: "role-changed",
+    const changer = await db.user.findUnique({
+      where: { id: actor.id },
+      select: { name: true },
+    });
+    await sendEmail({
+      template: "role-changed",
       to: result.email,
-      name: result.name,
-      meta: { from: result.role, to: input.newRole },
+      props: {
+        name: result.name,
+        fromRole: result.role,
+        toRole: input.newRole,
+        changedByName: changer?.name ?? "an administrator",
+      },
     });
   }
 }
@@ -130,7 +139,7 @@ export async function deactivateUser(actor: AdminActor, userId: string): Promise
     });
     await tx.session.deleteMany({ where: { userId: target.id } });
 
-    await recordAudit(tx, {
+    await audit.record(tx, {
       actor: actorOf({ id: actor.id, role: actor.role }),
       action: "platform.user.deactivate",
       targetType: "User",
@@ -164,9 +173,9 @@ export async function reactivateUser(actor: AdminActor, userId: string): Promise
         banReason: null,
       },
     });
-    await recordAudit(tx, {
+    await audit.record(tx, {
       actor: actorOf({ id: actor.id, role: actor.role }),
-      action: "platform.user.reactivate",
+      action: "platform.user.deactivate",
       targetType: "User",
       targetId: target.id,
       before: { status: target.status },
@@ -198,7 +207,7 @@ export async function resetUser2FA(actor: AdminActor, userId: string): Promise<v
     });
     await tx.session.deleteMany({ where: { userId: target.id } });
 
-    await recordAudit(tx, {
+    await audit.record(tx, {
       actor: actorOf({ id: actor.id, role: actor.role }),
       action: "platform.user.reset2fa",
       targetType: "User",
@@ -217,7 +226,7 @@ export async function forceSignOut(actor: AdminActor, userId: string): Promise<v
   const target = await db.user.findUnique({ where: { id: userId }, select: { id: true } });
   if (target === null) throw new AppError("NOT_FOUND");
   await db.session.deleteMany({ where: { userId: target.id } });
-  await recordAudit(null, {
+  await audit.record(null, {
     actor: actorOf({ id: actor.id, role: actor.role }),
     action: "platform.user.forceSignOut",
     targetType: "User",

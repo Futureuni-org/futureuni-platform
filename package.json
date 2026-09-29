@@ -29,7 +29,7 @@
     "db:studio": "prisma studio",
     "db:reset": "node prisma/tools/reset.mjs",
     "db:validate": "node prisma/tools/validate.mjs",
-    "registry:gen": "tsx --conditions=react-server src/platform/registry/codegen.ts",
+    "registry:gen": "tsx --conditions=react-server src/platform/registry/codegen.entry.mjs",
     "create-module": "tsx --conditions=react-server src/platform/registry/create-module.ts",
     "mocks:on": "node scripts/mocks.mjs on",
     "mocks:off": "node scripts/mocks.mjs off",

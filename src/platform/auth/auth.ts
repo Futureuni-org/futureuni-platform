@@ -27,8 +27,7 @@ import { admin as adminPlugin, twoFactor } from "better-auth/plugins";
 
 import { env } from "@/env";
 import { db } from "@/platform/db";
-
-import { sendAuthEmail } from "./_seams";
+import { sendEmail } from "@/platform/notifications";
 
 const ALLOWED_GOOGLE_DOMAINS = (process.env.AUTH_GOOGLE_ALLOWED_DOMAINS ?? "")
   .split(",")
@@ -72,11 +71,14 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
     revokeSessionsOnPasswordReset: true,
     sendResetPassword: async ({ user, url }: { user: { email: string; name?: string }; url: string }) => {
-      await sendAuthEmail({
-        kind: "password-reset",
+      await sendEmail({
+        template: "password-reset",
         to: user.email,
-        ...(user.name === undefined ? {} : { name: user.name }),
-        link: url,
+        props: {
+          name: user.name ?? user.email.split("@")[0] ?? "there",
+          resetUrl: url,
+          expiresInMinutes: 30,
+        },
       });
     },
   },

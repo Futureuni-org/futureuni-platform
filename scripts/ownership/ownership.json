@@ -290,7 +290,6 @@
         "src/platform/settings/**",
         "src/platform/credentials/**",
         "src/platform/storage/**",
-        "src/platform/_seams/**",
         "src/app/api/cron/**",
         "src/app/api/workflows/**",
         "src/app/api/notifications/**",

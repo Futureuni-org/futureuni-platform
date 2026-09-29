@@ -19,7 +19,7 @@ import type { Actor } from "@/contracts/common";
 import { db } from "@/platform/db";
 
 import { aiQuotaExceeded } from "./errors";
-import { getAiSettings } from "./_seams";
+import { getAiSettings } from "./settings-adapter";
 
 const USD_TO_MICROS = 1_000_000;
 
