@@ -1,16 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-
-import { applySavedTheme } from "@/lib/use-theme";
 import { fontVariables } from "@/styles/fonts";
 
-import "@/styles/globals.css";
-
 /**
- * Last-resort error page: replaces the root layout when it fails, so it renders its own
- * <html>, styles, fonts and theme. It shows no internals, only the error reference.
- * Minimal on purpose; Phase 4 restyles it.
+ * Root error boundary. Because it renders outside every layout, it re-declares `<html>` and
+ * `<body>`. Kept token-only.
  */
 export default function GlobalError({
   error,
@@ -19,38 +13,32 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  useEffect(() => {
-    applySavedTheme();
-    console.error(error);
-  }, [error]);
-
   return (
-    <html lang="en" data-theme="light" className={fontVariables} suppressHydrationWarning>
-      <head>
-        <title>Something went wrong · FUTUREUNI</title>
-      </head>
-      <body>
-        <main className="mx-auto flex min-h-dvh max-w-xl flex-col justify-center gap-6 px-6 py-16">
-          <p className="text-xs font-semibold tracking-[0.08em] text-muted uppercase">FUTUREUNI</p>
-          <h1 className="text-4xl leading-tight font-semibold">Something went wrong</h1>
-          <p className="text-lg text-muted">
-            The page couldn&apos;t load. Try again. If it keeps happening, tell the platform admin
-            what you were doing{error.digest === undefined ? "" : " and quote the reference below"}.
+    <html lang="en" data-theme="light" className={fontVariables}>
+      <body className="min-h-dvh bg-background text-foreground">
+        <main className="mx-auto flex min-h-dvh w-full max-w-xl flex-col justify-center gap-6 px-6 py-16">
+          <p className="text-xs font-semibold uppercase tracking-[0.08em] text-muted">
+            Something broke
           </p>
-          {error.digest === undefined ? null : (
-            <p className="text-sm text-muted">
-              Reference: <code className="font-mono tabular-nums">{error.digest}</code>
-            </p>
+          <h1 className="font-display text-4xl font-semibold text-heading">
+            Sorry — the platform hit an unexpected error
+          </h1>
+          <p className="text-muted">
+            Try again in a moment. If the problem keeps happening, tell an administrator; the
+            error id below helps them find the log.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              reset();
+            }}
+            className="h-12 w-fit rounded-md bg-primary px-5 font-semibold text-primary-foreground hover:bg-primary/90"
+          >
+            Try again
+          </button>
+          {error.digest !== undefined && (
+            <p className="font-mono text-xs text-muted">Error id: {error.digest}</p>
           )}
-          <div>
-            <button
-              type="button"
-              onClick={reset}
-              className="inline-flex min-h-12 items-center rounded-md bg-primary px-5 font-semibold text-primary-foreground"
-            >
-              Try again
-            </button>
-          </div>
         </main>
       </body>
     </html>

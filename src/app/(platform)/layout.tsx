@@ -1,7 +1,13 @@
+import { ShellLayout } from "@/components/shell";
+
 /**
- * Placeholder for the signed-in platform shell. Phase 1 created it; Phase 4 replaces it with
- * the real shell (navigation, user menu, notifications).
+ * Platform (signed-in) layout. Every route under `(platform)` renders inside the shell:
+ * sidebar + top bar + notification bell + user menu on desktop, bottom nav on mobile.
+ *
+ * The shell calls `getCurrentUser()` from `@/platform/auth` and redirects to `/login` if the
+ * session has expired. `src/proxy.ts` already redirects anonymous requests before the layout
+ * runs — this is defence in depth.
  */
 export default function PlatformLayout({ children }: LayoutProps<"/">) {
-  return <div className="min-h-dvh bg-background text-foreground">{children}</div>;
+  return <ShellLayout>{children}</ShellLayout>;
 }

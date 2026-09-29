@@ -267,7 +267,7 @@
         "src/app/(platform)/home/**",
         "public/brand/**"
       ],
-      "alsoAllow": ["tests/e2e/phase-01/**"]
+      "alsoAllow": ["tests/e2e/phase-01/**", "package.json"]
     },
     "05": {
       "name": "AI service",
