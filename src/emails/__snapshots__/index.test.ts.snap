@@ -1,0 +1,100 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`email templates > plain-text version of budget-warning is snapshot-stable 1`] = `
+"AI budget 80% used (platform.daily)
+
+AI budget approaching limit
+
+platform.daily has used 40.00 of 50.00 (80%).
+
+FUTUREUNI · Transactional message."
+`;
+
+exports[`email templates > plain-text version of daily-digest is snapshot-stable 1`] = `
+"Your FUTUREUNI daily digest (3 items)
+
+Hi Ada, here's what's waiting
+
+- 3 drafts waiting (http://localhost:3000/acquisition/web-development/review)
+
+FUTUREUNI · Transactional message."
+`;
+
+exports[`email templates > plain-text version of invite is snapshot-stable 1`] = `
+"You're invited to FUTUREUNI as SERVICE_LEAD
+
+Hi Ada, join FUTUREUNI
+
+Prince Amadin invited you to FUTUREUNI as SERVICE_LEAD.
+The invite expires in 7 days.
+
+Accept invite: http://localhost:3000/invite/example
+
+FUTUREUNI · Transactional message."
+`;
+
+exports[`email templates > plain-text version of notification is snapshot-stable 1`] = `
+"A new reply from Delta Care
+
+A new reply from Delta Care
+
+Kelechi replied to your outreach.
+
+Open in the platform: http://localhost:3000/acquisition
+
+FUTUREUNI · Transactional message."
+`;
+
+exports[`email templates > plain-text version of password-reset is snapshot-stable 1`] = `
+"Reset your FUTUREUNI password
+
+Hi Ada, reset your password
+
+The link expires in 30 minutes. If you didn't ask for this, ignore this email.
+
+Reset password: http://localhost:3000/reset/example
+
+FUTUREUNI · Transactional message."
+`;
+
+exports[`email templates > plain-text version of role-changed is snapshot-stable 1`] = `
+"Your role has changed to SERVICE_LEAD
+
+Hi Ada, your role changed
+
+Prince Amadin changed your role from MEMBER to SERVICE_LEAD.
+
+FUTUREUNI · Transactional message."
+`;
+
+exports[`email templates > plain-text version of two-factor-enabled is snapshot-stable 1`] = `
+"Two-factor authentication is on
+
+Hi Ada, 2FA is enabled
+
+Two-factor authentication is now protecting your account.
+
+FUTUREUNI · Transactional message."
+`;
+
+exports[`email templates > plain-text version of two-factor-reset is snapshot-stable 1`] = `
+"Two-factor authentication reset
+
+Hi Ada, your 2FA was reset
+
+Prince Amadin reset your 2FA. Set it up again next time you sign in.
+
+FUTUREUNI · Transactional message."
+`;
+
+exports[`email templates > plain-text version of verify-email is snapshot-stable 1`] = `
+"Verify your FUTUREUNI email
+
+Hi Ada, confirm your email
+
+Confirm your email so we know we've got the right address.
+
+Verify email: http://localhost:3000/verify/example
+
+FUTUREUNI · Transactional message."
+`;
