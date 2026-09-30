@@ -1,0 +1,5 @@
+{
+  "primaryContactId": "c1",
+  "backupContactIds": ["c2"],
+  "reason": "Owner with a verified personal email matches the priority list."
+}
