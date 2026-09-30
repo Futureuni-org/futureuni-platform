@@ -1,0 +1,22 @@
+{
+  "id": "04-graphic-nigeria-tone",
+  "description": "Nigeria graphic: professional tone, no slang.",
+  "input": {
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "NIGERIA",
+    "contactFirstName": "Chinedu",
+    "findings": [
+      {
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+        "severity": "MEDIUM",
+        "checkId": "graphic.consistency",
+        "text": "Logo and colours differ across the website and Instagram."
+      }
+    ],
+    "missingFactExamples": []
+  },
+  "expectations": {
+    "citedEvidenceIds": ["aaaaaaaaaaaaaaaaaaaaaaaa"],
+    "mustNotMention": ["abeg", "wetin", "how far", "chai"]
+  }
+}

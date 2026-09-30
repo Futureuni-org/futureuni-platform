@@ -1,0 +1,20 @@
+{
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "contactFirstName": "Adaeze",
+    "findings": [
+      {
+        "id": "audit3xyz2024webpagespeed01a",
+        "severity": "HIGH",
+        "checkId": "web.pagespeed_mobile",
+        "text": "Homepage LCP measured at 7.2s on mobile 3G-Fast on 3 October."
+      }
+    ],
+    "missingFactExamples": []
+  },
+  "output": {
+    "opener": "Hi Adaeze, your homepage took 7.2 seconds to show its main content on mobile in our test on 3 October [[f:audit3xyz2024webpagespeed01a]]. On Nigerian mobile data that pushes visitors to bounce before they see what you do — a couple of targeted fixes usually recover most of it.",
+    "citedEvidenceIds": ["audit3xyz2024webpagespeed01a"]
+  }
+}

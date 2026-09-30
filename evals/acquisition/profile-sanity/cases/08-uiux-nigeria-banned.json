@@ -1,0 +1,31 @@
+{
+  "id": "08-uiux-nigeria-banned",
+  "description": "Nigeria UI/UX: catches banned marketing phrases (voice skill).",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "NIGERIA",
+    "contactFirstName": "Ngozi",
+    "findings": [
+      {
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+        "severity": "MEDIUM",
+        "checkId": "uiux.accessibility",
+        "text": "Onboarding form has 4 unlabelled inputs and a 2.9:1 contrast ratio on primary CTAs."
+      }
+    ],
+    "missingFactExamples": []
+  },
+  "expectations": {
+    "citedEvidenceIds": ["aaaaaaaaaaaaaaaaaaaaaaaa"],
+    "bannedPhrases": [
+      "unlock the power of",
+      "world-class",
+      "cutting-edge",
+      "revolutionary",
+      "game-changer",
+      "seamless",
+      "synergy",
+      "leverage your"
+    ]
+  }
+}

@@ -34,6 +34,7 @@
     "mocks:on": "node scripts/mocks.mjs on",
     "mocks:off": "node scripts/mocks.mjs off",
     "evals": "tsx --conditions=react-server evals/_runner/cli.ts",
+    "profiles:check": "tsx --conditions=react-server src/modules/acquisition/profiles/check.ts",
     "phase": "node scripts/phase.mjs",
     "credentials:rotate": "tsx src/platform/credentials/rotate.script.ts",
     "jobs:run": "tsx src/platform/jobs/run.script.ts",

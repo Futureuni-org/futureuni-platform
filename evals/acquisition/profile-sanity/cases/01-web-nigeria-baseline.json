@@ -1,0 +1,21 @@
+{
+  "id": "01-web-nigeria-baseline",
+  "description": "Web dev, Nigeria: cite the supplied finding.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "contactFirstName": "Adaeze",
+    "findings": [
+      {
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+        "severity": "HIGH",
+        "checkId": "web.pagespeed_mobile",
+        "text": "Homepage LCP measured at 7.2s on mobile 3G-Fast."
+      }
+    ],
+    "missingFactExamples": []
+  },
+  "expectations": {
+    "citedEvidenceIds": ["aaaaaaaaaaaaaaaaaaaaaaaa"]
+  }
+}
