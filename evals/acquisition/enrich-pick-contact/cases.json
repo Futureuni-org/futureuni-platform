@@ -1,0 +1,109 @@
+[
+  {
+    "id": "owner-personal-valid",
+    "input": {
+      "serviceLine": "WEB_DEVELOPMENT",
+      "market": "INTERNATIONAL",
+      "size": "SIZE_2_10",
+      "rolePriority": ["owner", "founder", "operations manager"],
+      "candidates": [
+        { "id": "c1", "name": "Ada Adeleke", "role": "Founder", "emailStatus": "VALID", "emailKind": "PERSONAL", "source": "crawl" },
+        { "id": "c2", "name": null, "role": "info", "emailStatus": "RISKY", "emailKind": "ROLE", "source": "crawl" }
+      ]
+    },
+    "expected": { "primaryContactId": "c1" }
+  },
+  {
+    "id": "role-only",
+    "input": {
+      "serviceLine": "GRAPHIC_DESIGN",
+      "market": "NIGERIA",
+      "size": "SOLO",
+      "rolePriority": ["founder", "marketing manager"],
+      "candidates": [
+        { "id": "c1", "name": null, "role": "info", "emailStatus": "VALID", "emailKind": "ROLE", "source": "crawl" }
+      ]
+    },
+    "expected": { "primaryContactId": "c1" }
+  },
+  {
+    "id": "invalid-personal-vs-valid-role",
+    "input": {
+      "serviceLine": "WEB_DEVELOPMENT",
+      "market": "INTERNATIONAL",
+      "size": "SIZE_2_10",
+      "rolePriority": ["owner", "founder"],
+      "candidates": [
+        { "id": "c1", "name": "Ada", "role": "Founder", "emailStatus": "INVALID", "emailKind": "PERSONAL", "source": "crawl" },
+        { "id": "c2", "name": null, "role": "hello", "emailStatus": "VALID", "emailKind": "ROLE", "source": "crawl" }
+      ]
+    },
+    "expected": { "primaryContactId": "c2" }
+  },
+  {
+    "id": "empty-candidates-error",
+    "input": {
+      "serviceLine": "UI_UX_DESIGN",
+      "market": "INTERNATIONAL",
+      "size": "UNKNOWN",
+      "rolePriority": ["founder"],
+      "candidates": []
+    },
+    "expected": { "shouldFailValidation": true }
+  },
+  {
+    "id": "seniority-tiebreak",
+    "input": {
+      "serviceLine": "VIDEO_EDITING",
+      "market": "INTERNATIONAL",
+      "size": "SIZE_11_50",
+      "rolePriority": ["creator", "manager"],
+      "candidates": [
+        { "id": "c1", "name": "Alex", "role": "Video Editor", "emailStatus": "VALID", "emailKind": "PERSONAL", "source": "crawl" },
+        { "id": "c2", "name": "Sam", "role": "Head of Content", "emailStatus": "VALID", "emailKind": "PERSONAL", "source": "crawl" }
+      ]
+    },
+    "expected": { "primaryContactId": "c2" }
+  },
+  {
+    "id": "unverified-primary",
+    "input": {
+      "serviceLine": "GRAPHIC_DESIGN",
+      "market": "INTERNATIONAL",
+      "size": "SOLO",
+      "rolePriority": ["founder"],
+      "candidates": [
+        { "id": "c1", "name": "Ada", "role": "Founder", "emailStatus": "UNVERIFIED", "emailKind": "PERSONAL", "source": "crawl" },
+        { "id": "c2", "name": null, "role": "hello", "emailStatus": "VALID", "emailKind": "ROLE", "source": "crawl" }
+      ]
+    },
+    "expected": { "primaryContactId": "c1" }
+  },
+  {
+    "id": "multiple-lines-owner-wins",
+    "input": {
+      "serviceLine": "WEB_DEVELOPMENT",
+      "market": "INTERNATIONAL",
+      "size": "SIZE_11_50",
+      "rolePriority": ["owner", "operations manager", "marketing manager"],
+      "candidates": [
+        { "id": "c1", "name": "Kate", "role": "Owner", "emailStatus": "VALID", "emailKind": "PERSONAL", "source": "crawl" },
+        { "id": "c2", "name": "Jim", "role": "Operations Manager", "emailStatus": "VALID", "emailKind": "PERSONAL", "source": "crawl" }
+      ]
+    },
+    "expected": { "primaryContactId": "c1" }
+  },
+  {
+    "id": "risky-still-usable",
+    "input": {
+      "serviceLine": "GRAPHIC_DESIGN",
+      "market": "NIGERIA",
+      "size": "SIZE_2_10",
+      "rolePriority": ["founder"],
+      "candidates": [
+        { "id": "c1", "name": "Ada", "role": "Founder", "emailStatus": "RISKY", "emailKind": "PERSONAL", "source": "crawl" }
+      ]
+    },
+    "expected": { "primaryContactId": "c1" }
+  }
+]
