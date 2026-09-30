@@ -96,7 +96,6 @@ const serverShape = {
   // Mock mode (ADR-005)
   MOCKS: bool(true),
   AI_MOCK_FAIL: optional(z.enum(["empty", "invalid", "timeout", "429"])),
-  MOCK_SESSION_ROLE: z.enum(["ADMIN", "MANAGER", "SERVICE_LEAD", "MEMBER"]).default("ADMIN"),
 
   // Database (ADR-004, ADR-019)
   DATABASE_URL: postgresUrl(),

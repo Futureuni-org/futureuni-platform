@@ -77,9 +77,7 @@ export const registerTask: RegisterTask = <TInput, TOutput>(
   registerTaskInternal(def as unknown as AnyTaskDefinition);
 };
 
-export const defineTask: DefineTask = <TInput, TOutput>(
-  def: TaskDefinition<TInput, TOutput>,
-): AnyTaskDefinition => def as unknown as AnyTaskDefinition;
+export { defineTask } from "./define";
 
 export const getTask: GetTask = (id) => {
   bootRegistry();

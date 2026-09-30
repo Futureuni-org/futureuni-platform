@@ -6,7 +6,7 @@
 
 import { z } from "zod";
 
-import { defineTask } from "@/platform/ai";
+import { defineTask } from "@/platform/ai/define";
 import type { Market, ServiceLine } from "@/contracts/common";
 import { ServiceLineSchema, MarketSchema } from "@/contracts/common";
 

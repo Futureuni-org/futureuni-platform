@@ -11,6 +11,10 @@ import type { NavItem } from "@/contracts/module-manifest";
 import type { ServiceLine } from "@/contracts/common";
 import { defineModule, permission, scopes } from "@/platform/registry/define";
 
+import { complianceJobs, complianceSettings, complianceSubscribers } from "./compliance";
+import { enrichmentJobs, enrichmentSettings, enrichmentTasks } from "./enrichment";
+import { profilesAiTasks, profilesSettings } from "./profiles";
+
 /** The four line tabs and their URL slugs (module spec §6). */
 const LINES = [
   {
@@ -241,10 +245,12 @@ export default defineModule({
     permission("acquisition.domain.checkDns", "Check a sending domain's DNS", ADMIN_AND_MANAGER),
     permission("acquisition.outreach.globalPause", "Pause all outreach", ADMIN_ONLY),
   ],
-  jobs: [],
+  jobs: [...enrichmentJobs, ...complianceJobs],
   schedules: [],
-  settings: [],
+  settings: [...profilesSettings, ...enrichmentSettings, ...complianceSettings],
   settingsPanels: [],
+  subscribers: [...complianceSubscribers],
+  aiTasks: [...profilesAiTasks, ...enrichmentTasks],
   homeWidgets: [
     {
       id: "acquisition.my-review-queue",

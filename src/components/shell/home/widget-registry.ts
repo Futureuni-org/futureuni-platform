@@ -20,7 +20,7 @@ export interface WidgetProps {
  * re-registers them at merge with real acquisition service reads.
  */
 export const WIDGET_REGISTRY: Record<string, (props: WidgetProps) => Promise<ReactNode>> = {
-  "acquisition.review-queue": AcquisitionReviewQueueWidget,
-  "acquisition.inbox": AcquisitionInboxWidget,
+  "acquisition.my-review-queue": AcquisitionReviewQueueWidget,
+  "acquisition.my-inbox": AcquisitionInboxWidget,
   "acquisition.pipeline-value": AcquisitionPipelineValueWidget,
 };
