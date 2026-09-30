@@ -1,0 +1,22 @@
+{
+  "id": "03-uiux-international-consent",
+  "description": "UK UI/UX: never imply consent or a prior conversation.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL",
+    "contactFirstName": "Priya",
+    "findings": [
+      {
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+        "severity": "MEDIUM",
+        "checkId": "uiux.onboarding_capture",
+        "text": "Sign-up requires 6 screens with no progress cue."
+      }
+    ],
+    "missingFactExamples": []
+  },
+  "expectations": {
+    "citedEvidenceIds": ["aaaaaaaaaaaaaaaaaaaaaaaa"],
+    "mustNotMention": ["as we discussed", "as agreed", "you consented", "following our call"]
+  }
+}

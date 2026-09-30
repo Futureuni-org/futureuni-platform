@@ -1,0 +1,22 @@
+{
+  "id": "02-web-international-timezone",
+  "description": "International web dev: never say 'cheap' or 'offshore'.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "contactFirstName": "James",
+    "findings": [
+      {
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+        "severity": "MEDIUM",
+        "checkId": "web.mobile_viewport",
+        "text": "Mobile viewport missing on homepage; layout overflows at 375px."
+      }
+    ],
+    "missingFactExamples": []
+  },
+  "expectations": {
+    "citedEvidenceIds": ["aaaaaaaaaaaaaaaaaaaaaaaa"],
+    "mustNotMention": ["cheap", "offshore"]
+  }
+}

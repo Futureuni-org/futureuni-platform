@@ -1,0 +1,25 @@
+{
+  "id": "06-video-international-missing-fact",
+  "description": "Trap: an attractive fact is in missingFactExamples but no finding supports it.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "contactFirstName": "Sarah",
+    "findings": [
+      {
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+        "severity": "LOW",
+        "checkId": "video.cadence",
+        "text": "Last upload was 62 days ago; the recent gap trend is growing."
+      }
+    ],
+    "missingFactExamples": [
+      "recently raised $2 million in funding",
+      "ranked #1 on YouTube Trending"
+    ]
+  },
+  "expectations": {
+    "citedEvidenceIds": ["aaaaaaaaaaaaaaaaaaaaaaaa"],
+    "mustNotMention": ["$2 million", "raised $2", "#1", "Trending"]
+  }
+}

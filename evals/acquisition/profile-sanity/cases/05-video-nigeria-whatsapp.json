@@ -1,0 +1,21 @@
+{
+  "id": "05-video-nigeria-whatsapp",
+  "description": "Nigeria video editing: WhatsApp-appropriate tone.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA",
+    "contactFirstName": "Ola",
+    "findings": [
+      {
+        "id": "aaaaaaaaaaaaaaaaaaaaaaaa",
+        "severity": "MEDIUM",
+        "checkId": "video.captions",
+        "text": "80% of recent uploads have no caption track."
+      }
+    ],
+    "missingFactExamples": []
+  },
+  "expectations": {
+    "citedEvidenceIds": ["aaaaaaaaaaaaaaaaaaaaaaaa"]
+  }
+}

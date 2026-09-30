@@ -1,3 +1,5 @@
 # evals/acquisition/profiles/
 
-**Owner: Phase 07 (Profiles and runtime skills).** Eval cases for the Client Acquisition profile tasks (Phase 7), kept next to the per-task folders `evals/acquisition/profile-*/` (ADR-026). The runner in `evals/_runner/` reads them.
+**Owner: Phase 07.** This folder is kept for the ownership map compatibility (per
+`ownership.json`'s `evals/acquisition/profiles/**` entry). The active eval suite lives
+under `evals/acquisition/profile-sanity/`.

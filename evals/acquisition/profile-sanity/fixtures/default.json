@@ -1,0 +1,7 @@
+{
+  "default": {
+    "opener": "Hi there, we noticed something worth flagging on your site [[f:aaaaaaaaaaaaaaaaaaaaaaaa]]. A short focused fix would help — happy to show a before/after if useful.",
+    "citedEvidenceIds": ["aaaaaaaaaaaaaaaaaaaaaaaa"]
+  },
+  "latencyMs": 25
+}
