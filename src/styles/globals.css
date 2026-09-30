@@ -168,3 +168,41 @@
     scroll-behavior: auto !important;
   }
 }
+
+/*
+ * The Editorial Ledger signature detail: a 2px-wide, 20px-tall violet rule that marks the
+ * currently focused / active item — a nav link, a table row, a kanban card, a review card.
+ *
+ *   <li class="reading-rule" data-active>…</li>
+ *
+ * The rule appears when `data-active` is set (via aria-current, useState, or a Radix data-state
+ * attribute). In dark mode the accent token takes over. `position: relative` and left padding
+ * are the consumer's responsibility.
+ */
+@layer components {
+  .reading-rule {
+    position: relative;
+  }
+  .reading-rule::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%) scaleY(0);
+    height: 1.25rem;
+    width: 2px;
+    background-color: var(--primary);
+    border-radius: 1px;
+    transform-origin: center;
+    transition: transform var(--duration-fast) var(--motion-ease-standard);
+  }
+  :where([data-theme="dark"]) .reading-rule::before {
+    background-color: var(--accent);
+  }
+  .reading-rule[data-active="true"]::before,
+  .reading-rule[data-state="active"]::before,
+  .reading-rule[aria-current="page"]::before,
+  .reading-rule[aria-current="true"]::before {
+    transform: translateY(-50%) scaleY(1);
+  }
+}

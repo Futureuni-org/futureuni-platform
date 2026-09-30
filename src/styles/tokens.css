@@ -59,6 +59,33 @@
   --chart-7: #3a4170;
   --chart-8: #5e9a2f;
 
+  /* Service-line accents (indicator-only; see src/styles/README.md) */
+  --accent-web: #5342cc;
+  --accent-uiux: #8a5cc9;
+  --accent-graphic: #c27a0e;
+  --accent-video: #2f7fd0;
+
+  /* Sequential — primary (5 stops, low → high) */
+  --seq-primary-1: #e3e4f5;
+  --seq-primary-2: #b4aaf0;
+  --seq-primary-3: #8677e1;
+  --seq-primary-4: #6653d6;
+  --seq-primary-5: #5342cc;
+
+  /* Sequential — accent (5 stops) */
+  --seq-accent-1: #a89df5;
+  --seq-accent-2: #8878ea;
+  --seq-accent-3: #6653d6;
+  --seq-accent-4: #3f2fa6;
+  --seq-accent-5: #0c1148;
+
+  /* Diverging (negative → neutral → positive) */
+  --div-1: #bf2b40;
+  --div-2: #f0b34a;
+  --div-3: #f4efde;
+  --div-4: #4fd19f;
+  --div-5: #137a52;
+
   /* Overlay backdrop: navy #060925 at 40% */
   --scrim: rgb(6 9 37 / 0.4);
 
@@ -122,6 +149,29 @@
   --chart-6: #d59cf0;
   --chart-7: #c6c9e6;
   --chart-8: #8fcb5b;
+
+  --accent-web: #a89df5;
+  --accent-uiux: #d59cf0;
+  --accent-graphic: #f0b34a;
+  --accent-video: #6faef2;
+
+  --seq-primary-1: #22286b;
+  --seq-primary-2: #3f2fa6;
+  --seq-primary-3: #6653d6;
+  --seq-primary-4: #8878ea;
+  --seq-primary-5: #a89df5;
+
+  --seq-accent-1: #22286b;
+  --seq-accent-2: #3f2fa6;
+  --seq-accent-3: #6b5ce0;
+  --seq-accent-4: #a89df5;
+  --seq-accent-5: #ecedf8;
+
+  --div-1: #ff8a99;
+  --div-2: #f2b955;
+  --div-3: #20266a;
+  --div-4: #4fd19f;
+  --div-5: #3fc2b1;
 
   /* Black at 60% */
   --scrim: rgb(0 0 0 / 0.6);

@@ -78,7 +78,7 @@ Each path has exactly one owner phase. `scripts/ownership/ownership.json` is the
 | `src/app/layout.tsx`, `global-error.tsx`, `not-found.tsx`, `src/app/(platform)/layout.tsx` and `page.tsx` (placeholders), `src/styles/**` (seed tokens), `public/brand/**` (logo copy) | 1 | 4 |
 | `.gitignore`, `.env.example` (new variables from later phases arrive through `REQUESTS.md`) | 0 | 1 |
 | A one-paragraph `README.md` in every folder above (skeleton) | 1 | That folder's owner |
-| `package.json` **scripts only**, adding the phase's own named scripts (`registry:gen`, `db:validate`, `create-module`, `db:deploy`, `db:reset`, `postinstall` and the `pre*` generation hooks for 2; `evals` for 5; `jobs:run`, `credentials:rotate` for 6; `profiles:check` for 7; `seed:staging` for 19; `bootstrap:admin` for 21) | 1 | 1; grants to 2, 5, 6, 7, 19, 21 |
+| `package.json` **scripts only**, adding the phase's own named scripts (`registry:gen`, `db:validate`, `create-module`, `db:deploy`, `db:reset`, `postinstall` and the `pre*` generation hooks for 2; `evals` for 5; `jobs:run`, `credentials:rotate` for 6; `profiles:check` for 7; `seed:staging` for 19; `bootstrap:admin` for 21) | 1 | 1; grants to 2, 4, 5, 6, 7, 19, 21 (Phase 4 adds the design-system runtime deps: Radix, cmdk, sonner, vaul, recharts, TanStack Table, nuqs, dnd-kit) |
 | The saas-skills marker block at the end of `CLAUDE.md`, and the "Stack and commands" section of `.claude/project-rules.md` (content only; any other change goes through REQUESTS.md) | 0 | 0; grant to 1 |
 | `M/manifest.ts` (initial version) | 2 | 19 |
 | `src/lib/money.ts` and `src/lib/money.test.ts` (`docs/contracts/common.md`) | 2 | 1; grant to 2 |
