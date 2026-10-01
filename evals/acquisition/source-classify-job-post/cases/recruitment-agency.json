@@ -1,0 +1,17 @@
+{
+  "id": "recruitment-agency",
+  "description": "Trap: a recruitment agency hiring on behalf of a client.",
+  "input": {
+    "title": "Web Developer (on behalf of our client)",
+    "companyName": "TalentBridge Recruitment",
+    "snippet": "We are a staffing agency hiring on behalf of our client.",
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "isRecruitmentAgency": true
+    }
+  }
+}

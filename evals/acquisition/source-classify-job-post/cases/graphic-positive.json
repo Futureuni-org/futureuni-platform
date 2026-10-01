@@ -1,0 +1,18 @@
+{
+  "id": "graphic-positive",
+  "description": "A brand designer role.",
+  "input": {
+    "title": "Brand Designer",
+    "companyName": "Bloom Cosmetics",
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "NIGERIA"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "relevantLine": "GRAPHIC_DESIGN",
+      "isRecruitmentAgency": false,
+      "isInHouseFullTeam": false
+    }
+  }
+}

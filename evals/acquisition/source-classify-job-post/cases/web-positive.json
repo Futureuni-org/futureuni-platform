@@ -1,0 +1,19 @@
+{
+  "id": "web-positive",
+  "description": "A web developer role at a small business.",
+  "input": {
+    "title": "Frontend Developer",
+    "companyName": "Lagos Bistro Group",
+    "location": "Lagos, Nigeria",
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "relevantLine": "WEB_DEVELOPMENT",
+      "isRecruitmentAgency": false,
+      "isInHouseFullTeam": false
+    }
+  }
+}

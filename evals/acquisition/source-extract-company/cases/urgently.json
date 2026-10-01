@@ -1,0 +1,18 @@
+{
+  "id": "urgently",
+  "description": "Shouty 'URGENTLY HIRING' noise with an Abuja location.",
+  "input": {
+    "rawText": "URGENTLY HIRING!! Video Editor at Creator Hub Abuja",
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "mustNotMention": [
+      "URGENTLY"
+    ],
+    "exactMatch": {
+      "country": "NG"
+    }
+  }
+}

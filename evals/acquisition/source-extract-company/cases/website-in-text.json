@@ -1,0 +1,17 @@
+{
+  "id": "website-in-text",
+  "description": "A website and city stated inline.",
+  "input": {
+    "rawText": "Northgate Studio (northgatestudio.co.uk) hiring a product designer in Manchester",
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "website": "https://northgatestudio.co.uk",
+      "city": "Manchester",
+      "country": "GB"
+    }
+  }
+}
