@@ -5,7 +5,7 @@
 | Scope | Merge Phases 8 (sourcing) and 10 (audits) into `main`; Part C3 Wave 2 integration for Phases 07–10 |
 | Date | 2026-10-01 |
 | Prompt | `docs/prompts/wave-2/wave-2-prep-and-merge.md` Part C3 |
-| Verification | `pnpm check`: **Pass** (lint, typecheck, tests, build; tests serialized — see §Parallelism). `pnpm evals`: **blocked** by a pre-existing eval-runner crash (see §Known issues). `pnpm test:e2e`: not run (no Wave 2 UI). |
+| Verification | `pnpm check`: **Pass** (lint, typecheck, tests, build; tests serialized — see §Parallelism). `tests/integration/wave-2-pipeline.test.ts`: **Pass** (C3 step 6 — 4 lines + market + suppression). `pnpm evals`: **blocked** by a pre-existing eval-runner crash (see §Known issues). `pnpm test:e2e`: not run (no Wave 2 UI). |
 
 ## What was done
 
@@ -54,26 +54,38 @@ longer-term option (isolate only the admin-sensitive integration tests) is left 
 - **No-op / confirmed:** CR-08-04/05 (no schema or contract change needed — adapter IDs already in
   the contract, audit models already in the schema); CR-10-03 (`platform.retention.screenshotsDays`
   default 90 read defensively; left as the default).
+- **Done:** C3 step 6 (the combined `tests/integration/wave-2-pipeline.test.ts`).
 - **Deferred (see Known issues):** CR-08-02 / C3 step 3 (flip optional references to required and run
-  `pnpm evals`); C3 step 6 (combined `tests/integration/wave-2-pipeline.test.ts`).
+  `pnpm evals`) — blocked by the eval-runner crash.
 - **Rejected:** none.
+
+## C3 step 6 — the Wave 2 pipeline test (done)
+
+`tests/integration/wave-2-pipeline.test.ts` seeds the four active profiles from `DEFAULT_PROFILES`
+and drives the full chain with mock adapters/providers and SYSTEM actors (the jobs are
+manifest-registered, so no users are committed): for each service line (NIGERIA) and for
+Web Development (INTERNATIONAL), it runs `runSearch` with the line's primary mock source, asserts
+`NEW` leads with a creation `LeadEvent`, re-runs to prove dedupe, then `enrichLead` → `ENRICHED`
+and `runAudits` → `AUDITED` with a `LeadEvent` per transition and every finding carrying evidence
+plus a source URL or artifact (INV-18). It also asserts a suppressed company never becomes a lead
+(INV-2). The google-places lines (Web, Graphic) reach `AUDITED` strictly; the app/video lines reach
+`ENRICHED` and then `AUDITED` **or** a valid rebound to `ENRICHED` when the required audit checks
+can't complete on mock review/channel data. 6 tests, green.
 
 ## Known issues / deferred
 
 1. **`pnpm evals` is blocked by a pre-existing eval-runner crash** — `evals/_runner/cli.ts` under
    `tsx --conditions=react-server` throws `_react.default.createContext is not a function` at startup,
-   before any task runs. It reproduces for a pre-Wave-2 task (`acquisition.enrich-pick-contact`), and
-   no sourcing/audits/browser module uses `createContext`, so it is a platform tooling defect (owner:
-   Phase 5 / Phase 1), **not** introduced by Phase 8 or 10. The eval **content** (cases + mock
-   fixtures) exists and is manifest-registered for every acquisition task; it will run once the
-   runner is fixed. The Wave 2 AI-task references remain `optional: true` (the Phase 7 reference files
-   exist on `main`, so behaviour is unchanged); flip them to required when the runner can verify them.
-2. **Combined `tests/integration/wave-2-pipeline.test.ts` (C3 step 6) not written this session.** Each
-   phase's own integration tests pass against the real test DB with mocks and cover its leg
-   (sourcing: `runner.integration.test.ts`; enrichment: `pipeline.test.ts`; audits: Phase 10's
-   suite), and the seams are verified connected. The combined 4-lines × 2-markets
-   search→enrich→audit test is a deliberate follow-up (drive `enrichLead` and `runAudits` per lead
-   with seeded profiles). Recommended before Wave 3 starts.
+   before any task runs. Investigated: it reproduces for a pre-Wave-2 task
+   (`acquisition.enrich-pick-contact`); no sourcing/audits/browser module uses `createContext`; the
+   crash comes from the registry boot graph transitively importing a client dependency that calls
+   `React.createContext` at module scope, which the react-server build of React doesn't provide. It
+   is a platform tooling defect (owner: Phase 5 eval runner / Phase 20), **not** introduced by
+   Phase 8 or 10. The eval **content** (cases + mock fixtures) exists and is manifest-registered for
+   every acquisition task; it will run once the runner boots under a React build that has
+   `createContext` (or the offending client import is made lazy). The Wave 2 AI-task references
+   remain `optional: true` (the Phase 7 reference files exist on `main`, so behaviour is unchanged);
+   flip them to required when the runner can verify them.
 
 ## How to verify
 
