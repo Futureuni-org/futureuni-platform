@@ -1,0 +1,31 @@
+{
+  "id": "warmer",
+  "description": "Make the draft warmer without adding claims.",
+  "input": {
+    "channel": "EMAIL",
+    "isFirstTouch": true,
+    "instruction": "make it warmer",
+    "subject": "A note on your website speed",
+    "body": "Hi there, the homepage is slow on mobile __CITE1__. We can help."
+  },
+  "expectations": {
+    "schemaValid": true,
+    "bannedPhrases": [
+      "reach out",
+      "touch base",
+      "circle back",
+      "world-class",
+      "cutting-edge",
+      "revolutionary",
+      "game-changer",
+      "seamless",
+      "synergy",
+      "solutions",
+      "supercharge",
+      "unlock the power of"
+    ],
+    "mustNotMention": [
+      "!"
+    ]
+  }
+}

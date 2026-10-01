@@ -1,0 +1,70 @@
+{
+  "id": "graphic-intl-intro",
+  "description": "Graphic design, international, first-touch email.",
+  "input": {
+    "company": {
+      "name": "Acme Foods",
+      "country": "US",
+      "city": "Chicago",
+      "industry": null
+    },
+    "contact": {
+      "firstName": "Ada",
+      "role": "Owner"
+    },
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "INTERNATIONAL",
+    "findings": [
+      {
+        "id": "cmockfindingwebperf00000001",
+        "checkId": "graphic.brand.consistency",
+        "severity": "MEDIUM",
+        "claim": "The logo renders differently across the site and social profiles.",
+        "evidence": "Three logo variants observed",
+        "sourceUrl": "https://example.com"
+      }
+    ],
+    "pitchAngle": {
+      "id": "web_performance",
+      "hook": "A faster site keeps more visitors",
+      "proofTags": [
+        "performance"
+      ]
+    },
+    "portfolio": [],
+    "step": {
+      "index": 0,
+      "purpose": "INTRO_AUDIT_INSIGHT",
+      "channel": "EMAIL",
+      "includeBookingLink": false,
+      "isFirstTouch": true
+    },
+    "previousMessages": [],
+    "crossSell": null,
+    "sender": {
+      "name": "Sam",
+      "title": "Studio lead"
+    },
+    "bookingLink": null
+  },
+  "expectations": {
+    "schemaValid": true,
+    "bannedPhrases": [
+      "reach out",
+      "touch base",
+      "circle back",
+      "world-class",
+      "cutting-edge",
+      "revolutionary",
+      "game-changer",
+      "seamless",
+      "synergy",
+      "solutions",
+      "supercharge",
+      "unlock the power of"
+    ],
+    "mustNotMention": [
+      "!"
+    ]
+  }
+}
