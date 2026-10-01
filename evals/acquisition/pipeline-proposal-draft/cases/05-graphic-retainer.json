@@ -1,0 +1,53 @@
+{
+  "id": "05-graphic-retainer",
+  "description": "A graphic design brand identity proposal.",
+  "input": {
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "NIGERIA",
+    "companyName": "Enugu Foods",
+    "leadBrief": "A Lagos interiors brand with a slow site.",
+    "meetingSummary": "They want a faster site and more enquiries.",
+    "findings": [
+      {
+        "id": "cm1finding00000000000001",
+        "claim": "The homepage takes over 8 seconds on mobile."
+      }
+    ],
+    "packages": [
+      {
+        "name": "Brand identity",
+        "quantity": 1,
+        "unitPriceMinor": 90000000
+      }
+    ],
+    "lineItems": [],
+    "totals": {
+      "subtotalMinor": 90000000,
+      "discountMinor": 0,
+      "taxMinor": 0,
+      "totalMinor": 90000000,
+      "currency": "NGN"
+    },
+    "catalogue": [
+      {
+        "name": "Brand identity",
+        "includes": [
+          "Logo suite",
+          "Colour and type",
+          "Brand guide"
+        ]
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "timelineSummary": "About four to six weeks from kick-off.",
+    "validUntil": "25 Oct 2026"
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

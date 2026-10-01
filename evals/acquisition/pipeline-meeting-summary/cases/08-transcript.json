@@ -1,0 +1,13 @@
+{
+  "id": "08-transcript",
+  "description": "A longer pasted transcript.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "companyName": "Austin Creators",
+    "notes": "Host: Thanks for joining. Client: We publish weekly and our edits are inconsistent. Host: What does success look like? Client: A consistent style and faster turnaround. We can start in two weeks. Host: Who approves spend? Client: Just me."
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

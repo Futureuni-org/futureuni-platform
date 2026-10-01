@@ -1,0 +1,53 @@
+{
+  "id": "01-web-nigeria",
+  "description": "A standard Nigerian web proposal (₦).",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "companyName": "Lagos Interiors",
+    "leadBrief": "A Lagos interiors brand with a slow site.",
+    "meetingSummary": "They want a faster site and more enquiries.",
+    "findings": [
+      {
+        "id": "cm1finding00000000000001",
+        "claim": "The homepage takes over 8 seconds on mobile."
+      }
+    ],
+    "packages": [
+      {
+        "name": "Business site",
+        "quantity": 1,
+        "unitPriceMinor": 180000000
+      }
+    ],
+    "lineItems": [],
+    "totals": {
+      "subtotalMinor": 180000000,
+      "discountMinor": 0,
+      "taxMinor": 0,
+      "totalMinor": 180000000,
+      "currency": "NGN"
+    },
+    "catalogue": [
+      {
+        "name": "Business site",
+        "includes": [
+          "Up to 6 pages",
+          "Contact flow",
+          "Mobile-first build"
+        ]
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "timelineSummary": "About four to six weeks from kick-off.",
+    "validUntil": "25 Oct 2026"
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

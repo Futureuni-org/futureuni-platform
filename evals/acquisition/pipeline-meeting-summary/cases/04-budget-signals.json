@@ -1,0 +1,13 @@
+{
+  "id": "04-budget-signals",
+  "description": "Clear budget signals the summary should capture.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL",
+    "companyName": "Bristol Fintech",
+    "notes": "They have a 10k budget approved and want to start next month. CFO must sign off over 5k."
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

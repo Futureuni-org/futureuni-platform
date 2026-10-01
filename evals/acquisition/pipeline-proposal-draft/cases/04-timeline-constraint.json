@@ -1,0 +1,53 @@
+{
+  "id": "04-timeline-constraint",
+  "description": "A stated deadline the timeline section must mention.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "companyName": "Leeds Events",
+    "leadBrief": "A Lagos interiors brand with a slow site.",
+    "meetingSummary": "They must be live before their festival on 1 December.",
+    "findings": [
+      {
+        "id": "cm1finding00000000000001",
+        "claim": "The homepage takes over 8 seconds on mobile."
+      }
+    ],
+    "packages": [
+      {
+        "name": "Business site",
+        "quantity": 1,
+        "unitPriceMinor": 500000
+      }
+    ],
+    "lineItems": [],
+    "totals": {
+      "subtotalMinor": 500000,
+      "discountMinor": 0,
+      "taxMinor": 0,
+      "totalMinor": 500000,
+      "currency": "GBP"
+    },
+    "catalogue": [
+      {
+        "name": "Business site",
+        "includes": [
+          "Up to 6 pages",
+          "Contact flow",
+          "Mobile-first build"
+        ]
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "timelineSummary": "Live before the festival on 1 December, working back from that date.",
+    "validUntil": "25 Oct 2026"
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

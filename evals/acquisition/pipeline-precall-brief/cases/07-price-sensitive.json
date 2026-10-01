@@ -1,0 +1,54 @@
+{
+  "id": "07-price-sensitive",
+  "description": "The prospect signalled a tight budget; this should appear as a risk.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "companyName": "Kaduna Crafts",
+    "leadBrief": "A small crafts business, budget-conscious.",
+    "findings": [
+      {
+        "id": "cm1finding00000000000007",
+        "claim": "The site is a single outdated page."
+      }
+    ],
+    "conversation": [
+      {
+        "from": "them",
+        "text": "We don't have a big budget, to be honest."
+      }
+    ],
+    "packages": [
+      {
+        "id": "web_business",
+        "name": "Business site",
+        "minMinor": 120000000,
+        "typicalMinor": 180000000,
+        "maxMinor": 250000000,
+        "currency": "NGN"
+      },
+      {
+        "id": "web_care",
+        "name": "Care plan",
+        "minMinor": 5000000,
+        "typicalMinor": 10000000,
+        "maxMinor": 15000000,
+        "currency": "NGN"
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "priceRange": {
+      "minMinor": 120000000,
+      "maxMinor": 250000000,
+      "currency": "NGN"
+    }
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "05-objections",
+  "description": "The prospect raised objections the summary should record.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "companyName": "Leeds Events",
+    "notes": "Keen but worried about timeline and whether we understand events. Asked for references."
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

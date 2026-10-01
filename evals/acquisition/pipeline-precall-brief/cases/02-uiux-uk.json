@@ -1,0 +1,46 @@
+{
+  "id": "02-uiux-uk",
+  "description": "UX prospect in the UK with a GBP price range.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL",
+    "companyName": "Bristol Fintech",
+    "leadBrief": "A UK fintech with a confusing onboarding flow.",
+    "findings": [
+      {
+        "id": "cm1finding00000000000002",
+        "claim": "Onboarding drops users at the identity step."
+      }
+    ],
+    "conversation": [
+      {
+        "from": "them",
+        "text": "Our sign-up conversion is poor."
+      }
+    ],
+    "packages": [
+      {
+        "id": "uiux_flow_redesign",
+        "name": "Flow redesign",
+        "minMinor": 250000,
+        "typicalMinor": 400000,
+        "maxMinor": 500000,
+        "currency": "GBP"
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "priceRange": {
+      "minMinor": 250000,
+      "maxMinor": 500000,
+      "currency": "GBP"
+    }
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "id": "06-uk-client",
+  "description": "A UK client; figures in the notes are in pounds.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "companyName": "Manchester Retail",
+    "notes": "Wants an online store. Mentioned they spent 3,000 pounds on the last site and were unhappy. Decision by the two founders."
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

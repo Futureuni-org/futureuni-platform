@@ -1,0 +1,54 @@
+{
+  "id": "08-timeline-constraint",
+  "description": "The prospect stated a launch date; the brief must surface the timeline.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "companyName": "Leeds Events",
+    "leadBrief": "An events company with a festival in eight weeks.",
+    "findings": [
+      {
+        "id": "cm1finding00000000000008",
+        "claim": "The current site can't list upcoming events."
+      }
+    ],
+    "conversation": [
+      {
+        "from": "them",
+        "text": "We need this live before our festival on 1 December."
+      }
+    ],
+    "packages": [
+      {
+        "id": "web_business",
+        "name": "Business site",
+        "minMinor": 240000,
+        "typicalMinor": 360000,
+        "maxMinor": 500000,
+        "currency": "GBP"
+      },
+      {
+        "id": "web_care",
+        "name": "Care plan",
+        "minMinor": 10000,
+        "typicalMinor": 20000,
+        "maxMinor": 30000,
+        "currency": "GBP"
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "priceRange": {
+      "minMinor": 240000,
+      "maxMinor": 500000,
+      "currency": "GBP"
+    }
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

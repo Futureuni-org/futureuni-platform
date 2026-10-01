@@ -1,0 +1,13 @@
+{
+  "id": "01-positive-web",
+  "description": "A positive discovery call for a website.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "companyName": "Lagos Interiors",
+    "notes": "Great call. They want a new site, budget approved this quarter. Owner Ada decides. Next step: send a proposal."
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}
