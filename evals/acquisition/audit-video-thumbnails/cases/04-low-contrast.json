@@ -1,0 +1,29 @@
+{
+  "id": "04-low-contrast",
+  "description": "Faces/text blend into the background.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "thumbnails": [
+      {
+        "videoId": "v7",
+        "url": "https://i.ytimg.com/vi/v7/hqdefault.jpg"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "The subject blends into a busy background with low contrast, so the thumbnail has no clear focal point.",
+          "evidenceRefs": [
+            "https://i.ytimg.com/vi/v7/hqdefault.jpg"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.68
+        }
+      ]
+    }
+  }
+}

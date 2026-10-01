@@ -1,0 +1,24 @@
+{
+  "id": "01-clear-titles",
+  "description": "Clear, well-formed titles — no finding.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA",
+    "titles": [
+      {
+        "videoId": "v1",
+        "title": "How to plate jollof rice for photos"
+      },
+      {
+        "videoId": "v2",
+        "title": "5 quick edits for product reels"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

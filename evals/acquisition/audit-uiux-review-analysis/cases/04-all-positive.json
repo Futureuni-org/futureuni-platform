@@ -1,0 +1,27 @@
+{
+  "id": "04-all-positive",
+  "description": "All positive — no finding.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL",
+    "appName": "Calmly",
+    "reviews": [
+      {
+        "id": "rev_app_1",
+        "rating": 5,
+        "text": "Clean and fast, sign up was simple."
+      },
+      {
+        "id": "rev_app_2",
+        "rating": 5,
+        "text": "Easy to navigate, everything where I expect."
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

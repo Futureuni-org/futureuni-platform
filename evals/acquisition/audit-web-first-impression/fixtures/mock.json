@@ -1,0 +1,68 @@
+{
+  "default": {
+    "findings": []
+  },
+  "byHash": {
+    "7c209bcb32218a26682bad4552780337eebbdd40c641f31f89e9c72c478cfc71": {
+      "findings": []
+    },
+    "24d26818ecff4e1d55c8b66e7647ef78ad89b5c7c22310bd6fc97f2689270fe4": {
+      "findings": [
+        {
+          "claim": "The mobile homepage shows a crowded hero with no single clear primary action for a visitor to take.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000003.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.7
+        }
+      ]
+    },
+    "f55f1388195e66bab9ef9b4ea454d0516f07336b1cd43bfeea2a0206fe6190f8": {
+      "findings": [
+        {
+          "claim": "No call-to-action button is visible above the fold on the desktop homepage, so visitors are not guided to contact or buy.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000004.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.68
+        }
+      ]
+    },
+    "66760d1e6e7548d6ac61d365fd31e4746a32c6dc193e6420c8973fa61a950a0f": {
+      "findings": [
+        {
+          "claim": "The homepage uses a dated layout with heavy borders and small body text that reads as several years old.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000005.webp"
+          ],
+          "severity": "LOW",
+          "confidence": 0.6
+        }
+      ]
+    },
+    "d91f48680d981410ce9e1d44de85f860feae5bd0f203d8f22bf86ddd8a5c531a": {
+      "findings": [
+        {
+          "claim": "Body text on the mobile homepage is very small and hard to read without zooming.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000006.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.66
+        }
+      ]
+    },
+    "d3d01112ab5868349f6331bcd586e13600815f221a6e24f51ff9f0e9fd43efce": {
+      "findings": []
+    },
+    "d2f50a81f30f47cfcfdc8a6e1b96acd713129353e36f53647564dc7ba2706658": {
+      "findings": []
+    },
+    "852df301859faf617fb8a4b3b9fdc84b24a21ee94d6b9fdbcb0100625567a3ed": {
+      "findings": []
+    }
+  },
+  "latencyMs": 20
+}

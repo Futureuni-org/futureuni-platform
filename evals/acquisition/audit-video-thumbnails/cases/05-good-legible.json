@@ -1,0 +1,24 @@
+{
+  "id": "05-good-legible",
+  "description": "Clear, legible thumbnails — no finding.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA",
+    "thumbnails": [
+      {
+        "videoId": "v8",
+        "url": "https://i.ytimg.com/vi/v8/hqdefault.jpg"
+      },
+      {
+        "videoId": "v9",
+        "url": "https://i.ytimg.com/vi/v9/hqdefault.jpg"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

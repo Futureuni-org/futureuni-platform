@@ -1,0 +1,24 @@
+{
+  "id": "05-clear-pattern",
+  "description": "Consistent, informative pattern — no finding.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA",
+    "titles": [
+      {
+        "videoId": "v9",
+        "title": "Reels tips #1: hooks"
+      },
+      {
+        "videoId": "v10",
+        "title": "Reels tips #2: pacing"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

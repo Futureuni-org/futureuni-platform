@@ -1,0 +1,30 @@
+{
+  "id": "03-no-visible-cta",
+  "description": "No visible call to action above the fold.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "pageUrl": "https://nocta.example/",
+    "screenshots": [
+      {
+        "viewport": "desktop",
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000004.webp"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "No call-to-action button is visible above the fold on the desktop homepage, so visitors are not guided to contact or buy.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000004.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.68
+        }
+      ]
+    }
+  }
+}

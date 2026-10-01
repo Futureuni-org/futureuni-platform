@@ -1,0 +1,34 @@
+{
+  "id": "02-generic-titles",
+  "description": "Generic, uninformative titles.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "titles": [
+      {
+        "videoId": "v3",
+        "title": "Update 3"
+      },
+      {
+        "videoId": "v4",
+        "title": "Untitled"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "Several titles are generic placeholders such as \"Update 3\" and \"Untitled\" that give a viewer no reason to click.",
+          "evidenceRefs": [
+            "v3",
+            "v4"
+          ],
+          "severity": "LOW",
+          "confidence": 0.7
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "04-no-feedback",
+  "description": "No visible state after an action.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL",
+    "steps": [
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000024.webp",
+        "label": "Submit"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "The submit step shows no visible loading or success state, leaving the user unsure the action worked.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000024.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.66
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "id": "03-unclear-cta",
+  "description": "No clear primary action on the first step.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL",
+    "steps": [
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000023.webp",
+        "label": "Landing"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "The landing step has no visually prominent primary action, so the next step is unclear.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000023.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.68
+        }
+      ]
+    }
+  }
+}

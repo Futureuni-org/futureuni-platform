@@ -1,0 +1,24 @@
+{
+  "id": "07-strong-hooks",
+  "description": "Strong, specific hooks — no finding.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA",
+    "titles": [
+      {
+        "videoId": "v13",
+        "title": "Turn one shoot into 7 reels"
+      },
+      {
+        "videoId": "v14",
+        "title": "The 3-second hook that keeps viewers"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

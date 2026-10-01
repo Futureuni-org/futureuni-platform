@@ -1,0 +1,34 @@
+{
+  "id": "03-inconsistent-style",
+  "description": "Thumbnail style varies video to video.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA",
+    "thumbnails": [
+      {
+        "videoId": "v5",
+        "url": "https://i.ytimg.com/vi/v5/hqdefault.jpg"
+      },
+      {
+        "videoId": "v6",
+        "url": "https://i.ytimg.com/vi/v6/hqdefault.jpg"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "The thumbnails use different layouts, fonts and colours with no consistent template across videos.",
+          "evidenceRefs": [
+            "https://i.ytimg.com/vi/v5/hqdefault.jpg",
+            "https://i.ytimg.com/vi/v6/hqdefault.jpg"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.7
+        }
+      ]
+    }
+  }
+}

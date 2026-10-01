@@ -1,0 +1,70 @@
+{
+  "default": {
+    "findings": []
+  },
+  "byHash": {
+    "b4b81c3fa3f4a27b84bc6c593962bd18ec978ae1f78123380c82f2f6e7ee7556": {
+      "findings": []
+    },
+    "61c44672d1f37b367cd3b3feccfb46b8c00a74325ebf654d08c3847fd199bffe": {
+      "findings": [
+        {
+          "claim": "Thumbnail text is small and low contrast, so it is unreadable at the size viewers see in feeds.",
+          "evidenceRefs": [
+            "https://i.ytimg.com/vi/v3/hqdefault.jpg",
+            "https://i.ytimg.com/vi/v4/hqdefault.jpg"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.74
+        }
+      ]
+    },
+    "93a99480f76ac46d69958f4b9373dc8492d3594a6d58499ecdcca07320d0442a": {
+      "findings": [
+        {
+          "claim": "The thumbnails use different layouts, fonts and colours with no consistent template across videos.",
+          "evidenceRefs": [
+            "https://i.ytimg.com/vi/v5/hqdefault.jpg",
+            "https://i.ytimg.com/vi/v6/hqdefault.jpg"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.7
+        }
+      ]
+    },
+    "066859676a1da2043df5c7b70aab97e7ac78968aa2471eeaf883344f1b1f944a": {
+      "findings": [
+        {
+          "claim": "The subject blends into a busy background with low contrast, so the thumbnail has no clear focal point.",
+          "evidenceRefs": [
+            "https://i.ytimg.com/vi/v7/hqdefault.jpg"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.68
+        }
+      ]
+    },
+    "82c649352c3e55577f43be7c63600681ced5955c11940df4dbce9795b89fec79": {
+      "findings": []
+    },
+    "8ad8fce6ebf536405bef7bb316390bb3cf9403af8e0bd0874eed7ed6624129de": {
+      "findings": [
+        {
+          "claim": "One thumbnail has unreadable overlaid text while the others are clear, breaking the set's consistency.",
+          "evidenceRefs": [
+            "https://i.ytimg.com/vi/v10/hqdefault.jpg"
+          ],
+          "severity": "LOW",
+          "confidence": 0.62
+        }
+      ]
+    },
+    "c20184021c2da439f17b345246e8431654442c38d4a60dacb4e2949381390188": {
+      "findings": []
+    },
+    "0504ed500e8d96e5a4c8fabe1998eb37a2c0df2f316ae684638c69570075d064": {
+      "findings": []
+    }
+  },
+  "latencyMs": 20
+}

@@ -1,0 +1,24 @@
+{
+  "id": "08-clean-set",
+  "description": "Consistent branded set — no finding.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA",
+    "thumbnails": [
+      {
+        "videoId": "v13",
+        "url": "https://i.ytimg.com/vi/v13/hqdefault.jpg"
+      },
+      {
+        "videoId": "v14",
+        "url": "https://i.ytimg.com/vi/v14/hqdefault.jpg"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

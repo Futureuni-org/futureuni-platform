@@ -1,0 +1,37 @@
+{
+  "id": "03-navigation",
+  "description": "Navigation confusion.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL",
+    "appName": "Findit",
+    "reviews": [
+      {
+        "id": "rev_app_1",
+        "rating": 2,
+        "text": "I can never find the search button."
+      },
+      {
+        "id": "rev_app_2",
+        "rating": 3,
+        "text": "Navigation is confusing, menus are buried."
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "Reviewers report confusing navigation, including a hard-to-find search and buried menus.",
+          "evidenceRefs": [
+            "rev_app_1",
+            "rev_app_2"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.78
+        }
+      ]
+    }
+  }
+}

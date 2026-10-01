@@ -1,0 +1,34 @@
+{
+  "id": "02-illegible-text",
+  "description": "Text on thumbnails is unreadable at small size.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "thumbnails": [
+      {
+        "videoId": "v3",
+        "url": "https://i.ytimg.com/vi/v3/hqdefault.jpg"
+      },
+      {
+        "videoId": "v4",
+        "url": "https://i.ytimg.com/vi/v4/hqdefault.jpg"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "Thumbnail text is small and low contrast, so it is unreadable at the size viewers see in feeds.",
+          "evidenceRefs": [
+            "https://i.ytimg.com/vi/v3/hqdefault.jpg",
+            "https://i.ytimg.com/vi/v4/hqdefault.jpg"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.74
+        }
+      ]
+    }
+  }
+}

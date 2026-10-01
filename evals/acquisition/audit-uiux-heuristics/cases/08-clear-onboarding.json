@@ -1,0 +1,24 @@
+{
+  "id": "08-clear-onboarding",
+  "description": "Well-structured onboarding — no finding.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "NIGERIA",
+    "steps": [
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000030.webp",
+        "label": "Welcome"
+      },
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000031.webp",
+        "label": "Sign up"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

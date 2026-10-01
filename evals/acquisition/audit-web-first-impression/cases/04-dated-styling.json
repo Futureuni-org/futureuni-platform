@@ -1,0 +1,30 @@
+{
+  "id": "04-dated-styling",
+  "description": "Visibly dated visual styling.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "pageUrl": "https://dated.example/",
+    "screenshots": [
+      {
+        "viewport": "desktop",
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000005.webp"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "The homepage uses a dated layout with heavy borders and small body text that reads as several years old.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000005.webp"
+          ],
+          "severity": "LOW",
+          "confidence": 0.6
+        }
+      ]
+    }
+  }
+}

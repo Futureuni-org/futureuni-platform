@@ -1,0 +1,37 @@
+{
+  "id": "07-performance",
+  "description": "Slow performance across reviews.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "NIGERIA",
+    "appName": "Streamr",
+    "reviews": [
+      {
+        "id": "rev_app_1",
+        "rating": 2,
+        "text": "Very slow to load on my phone."
+      },
+      {
+        "id": "rev_app_2",
+        "rating": 2,
+        "text": "Freezes often and takes ages to open."
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "Recent reviews report slow loading and frequent freezing on mobile.",
+          "evidenceRefs": [
+            "rev_app_1",
+            "rev_app_2"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.8
+        }
+      ]
+    }
+  }
+}

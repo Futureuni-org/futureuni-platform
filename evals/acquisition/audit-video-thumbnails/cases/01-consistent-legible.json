@@ -1,0 +1,24 @@
+{
+  "id": "01-consistent-legible",
+  "description": "Consistent, legible thumbnails — no finding.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA",
+    "thumbnails": [
+      {
+        "videoId": "v1",
+        "url": "https://i.ytimg.com/vi/v1/hqdefault.jpg"
+      },
+      {
+        "videoId": "v2",
+        "url": "https://i.ytimg.com/vi/v2/hqdefault.jpg"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "id": "01-crashes",
+  "description": "Multiple reviews report crashes.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL",
+    "appName": "Shoply",
+    "reviews": [
+      {
+        "id": "rev_app_1",
+        "rating": 1,
+        "text": "App crashes every time I open settings."
+      },
+      {
+        "id": "rev_app_2",
+        "rating": 2,
+        "text": "Keeps crashing on checkout, lost my cart twice."
+      },
+      {
+        "id": "rev_app_3",
+        "rating": 5,
+        "text": "Love the design otherwise."
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "Multiple recent reviews report the app crashing on the settings and checkout screens.",
+          "evidenceRefs": [
+            "rev_app_1",
+            "rev_app_2"
+          ],
+          "severity": "HIGH",
+          "confidence": 0.85
+        }
+      ]
+    }
+  }
+}

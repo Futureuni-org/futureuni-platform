@@ -1,0 +1,34 @@
+{
+  "id": "04-inconsistent-pattern",
+  "description": "No consistent naming pattern.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "titles": [
+      {
+        "videoId": "v7",
+        "title": "ep1"
+      },
+      {
+        "videoId": "v8",
+        "title": "The Big One!!! final final"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "Titles follow no consistent pattern, mixing lowercase shorthand with long, cluttered phrasing.",
+          "evidenceRefs": [
+            "v7",
+            "v8"
+          ],
+          "severity": "INFO",
+          "confidence": 0.6
+        }
+      ]
+    }
+  }
+}

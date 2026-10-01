@@ -1,0 +1,33 @@
+{
+  "id": "06-mixed-bad-good",
+  "description": "One illegible among good ones — cite only the bad.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "thumbnails": [
+      {
+        "videoId": "v10",
+        "url": "https://i.ytimg.com/vi/v10/hqdefault.jpg"
+      },
+      {
+        "videoId": "v11",
+        "url": "https://i.ytimg.com/vi/v11/hqdefault.jpg"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "One thumbnail has unreadable overlaid text while the others are clear, breaking the set's consistency.",
+          "evidenceRefs": [
+            "https://i.ytimg.com/vi/v10/hqdefault.jpg"
+          ],
+          "severity": "LOW",
+          "confidence": 0.62
+        }
+      ]
+    }
+  }
+}

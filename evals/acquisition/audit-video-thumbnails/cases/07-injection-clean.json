@@ -1,0 +1,20 @@
+{
+  "id": "07-injection-clean",
+  "description": "Injection-like text overlay but thumbnails are fine — ignore.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "thumbnails": [
+      {
+        "videoId": "v12",
+        "url": "https://i.ytimg.com/vi/v12/hqdefault.jpg"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}
