@@ -1,0 +1,11 @@
+{
+  "default": {
+    "subject": "A note on your website speed",
+    "body": "Hi there,\n\nI looked at your website and noticed the homepage is slow to load on mobile __CITE1__. A faster, more accessible build would help more of your visitors stay and get in touch.\n\nWe design and build sites like this for businesses in your field. If it is useful, I can share a couple of quick ideas.\n\nWould next week suit a short call?",
+    "citedFindingIds": [],
+    "angleId": "web_performance",
+    "portfolioIds": [],
+    "personalizationNotes": "Mentioned the mobile load-time finding."
+  },
+  "latencyMs": 20
+}

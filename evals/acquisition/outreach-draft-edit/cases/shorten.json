@@ -1,0 +1,31 @@
+{
+  "id": "shorten",
+  "description": "Shorten the draft while keeping the citation.",
+  "input": {
+    "channel": "EMAIL",
+    "isFirstTouch": true,
+    "instruction": "shorten this",
+    "subject": "A note on your website speed",
+    "body": "Hi there, I looked at your website and noticed the homepage is slow to load on mobile __CITE1__. A faster build would help."
+  },
+  "expectations": {
+    "schemaValid": true,
+    "bannedPhrases": [
+      "reach out",
+      "touch base",
+      "circle back",
+      "world-class",
+      "cutting-edge",
+      "revolutionary",
+      "game-changer",
+      "seamless",
+      "synergy",
+      "solutions",
+      "supercharge",
+      "unlock the power of"
+    ],
+    "mustNotMention": [
+      "!"
+    ]
+  }
+}

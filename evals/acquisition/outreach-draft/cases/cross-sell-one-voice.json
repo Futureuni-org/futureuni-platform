@@ -1,0 +1,75 @@
+{
+  "id": "cross-sell-one-voice",
+  "description": "Cross-sell: one voice, the leading line first.",
+  "input": {
+    "company": {
+      "name": "Acme Foods",
+      "country": "NG",
+      "city": "Lagos",
+      "industry": null
+    },
+    "contact": {
+      "firstName": "Ada",
+      "role": "Owner"
+    },
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "findings": [
+      {
+        "id": "cmockfindingwebperf00000001",
+        "checkId": "web.perf.lcp",
+        "severity": "HIGH",
+        "claim": "The homepage takes over 6 seconds to become interactive on a mid-range phone.",
+        "evidence": "Lighthouse mobile TTI 6.4s",
+        "sourceUrl": "https://example.com"
+      }
+    ],
+    "pitchAngle": {
+      "id": "web_performance",
+      "hook": "A faster site keeps more visitors",
+      "proofTags": [
+        "performance"
+      ]
+    },
+    "portfolio": [],
+    "step": {
+      "index": 0,
+      "purpose": "INTRO_AUDIT_INSIGHT",
+      "channel": "EMAIL",
+      "includeBookingLink": false,
+      "isFirstTouch": true
+    },
+    "previousMessages": [],
+    "crossSell": {
+      "leadingLine": "WEB_DEVELOPMENT",
+      "secondaryLines": [
+        "UI_UX_DESIGN"
+      ]
+    },
+    "sender": {
+      "name": "Sam",
+      "title": "Studio lead"
+    },
+    "bookingLink": null
+  },
+  "expectations": {
+    "schemaValid": true,
+    "bannedPhrases": [
+      "reach out",
+      "touch base",
+      "circle back",
+      "world-class",
+      "cutting-edge",
+      "revolutionary",
+      "game-changer",
+      "seamless",
+      "synergy",
+      "solutions",
+      "supercharge",
+      "unlock the power of"
+    ],
+    "mustNotMention": [
+      "!"
+    ]
+  }
+}

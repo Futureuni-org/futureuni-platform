@@ -1,0 +1,70 @@
+{
+  "id": "video-ng-whatsapp",
+  "description": "Video editing, Nigeria, a short warm WhatsApp first touch with no slang.",
+  "input": {
+    "company": {
+      "name": "Acme Foods",
+      "country": "NG",
+      "city": "Lagos",
+      "industry": null
+    },
+    "contact": {
+      "firstName": "Ada",
+      "role": "Owner"
+    },
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA",
+    "findings": [
+      {
+        "id": "cmockfindingwebperf00000001",
+        "checkId": "video.thumbnail.legibility",
+        "severity": "MEDIUM",
+        "claim": "Recent video thumbnails use small text that is hard to read on a phone.",
+        "evidence": "5 of 6 thumbnails below the legibility threshold",
+        "sourceUrl": "https://example.com"
+      }
+    ],
+    "pitchAngle": {
+      "id": "web_performance",
+      "hook": "A faster site keeps more visitors",
+      "proofTags": [
+        "performance"
+      ]
+    },
+    "portfolio": [],
+    "step": {
+      "index": 0,
+      "purpose": "INTRO_AUDIT_INSIGHT",
+      "channel": "WHATSAPP_ASSISTED",
+      "includeBookingLink": false,
+      "isFirstTouch": true
+    },
+    "previousMessages": [],
+    "crossSell": null,
+    "sender": {
+      "name": "Sam",
+      "title": "Studio lead"
+    },
+    "bookingLink": null
+  },
+  "expectations": {
+    "schemaValid": true,
+    "bannedPhrases": [
+      "reach out",
+      "touch base",
+      "circle back",
+      "world-class",
+      "cutting-edge",
+      "revolutionary",
+      "game-changer",
+      "seamless",
+      "synergy",
+      "solutions",
+      "supercharge",
+      "unlock the power of"
+    ],
+    "mustNotMention": [
+      "!"
+    ]
+  }
+}
