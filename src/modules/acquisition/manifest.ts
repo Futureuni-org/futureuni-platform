@@ -25,6 +25,24 @@ import { sourcingNotificationTypes } from "./sourcing/notifications";
 import { getSourcingDynamicSchedules } from "./sourcing/schedules";
 import { sourcingSettings } from "./sourcing/settings";
 import { sourcingTasks } from "./sourcing/tasks";
+// Wave 3 (batch B4): scoring (11), outreach (12) and pipeline (14), imported from leaf files.
+import { scoringJobs } from "./scoring/jobs";
+import { scoringNotificationTypes } from "./scoring/notifications";
+import { scoringSchedules } from "./scoring/schedules";
+import { scoringSettings } from "./scoring/settings";
+import { scoringSubscribers } from "./scoring/subscribers";
+import { scoringTasks } from "./scoring/tasks";
+import { outreachJobs } from "./outreach/jobs";
+import { outreachNotifications } from "./outreach/notifications";
+import { outreachSchedules } from "./outreach/schedules";
+import { outreachSettings } from "./outreach/settings";
+import { outreachSubscribers } from "./outreach/subscribers";
+import { outreachAiTasks } from "./outreach/draft/tasks";
+import { pipelineJobs } from "./pipeline/jobs";
+import { pipelineNotificationTypes } from "./pipeline/notifications";
+import { pipelineSchedules } from "./pipeline/schedules";
+import { pipelineSettings } from "./pipeline/settings";
+import { pipelineTasks } from "./pipeline/tasks";
 
 /** The four line tabs and their URL slugs (module spec §6). */
 const LINES = [
@@ -256,8 +274,16 @@ export default defineModule({
     permission("acquisition.domain.checkDns", "Check a sending domain's DNS", ADMIN_AND_MANAGER),
     permission("acquisition.outreach.globalPause", "Pause all outreach", ADMIN_ONLY),
   ],
-  jobs: [...enrichmentJobs, ...complianceJobs, ...sourcingJobs, ...auditJobs],
-  schedules: [],
+  jobs: [
+    ...enrichmentJobs,
+    ...complianceJobs,
+    ...sourcingJobs,
+    ...auditJobs,
+    ...scoringJobs,
+    ...outreachJobs,
+    ...pipelineJobs,
+  ],
+  schedules: [...scoringSchedules, ...outreachSchedules, ...pipelineSchedules],
   dynamicSchedules: getSourcingDynamicSchedules,
   settings: [
     ...profilesSettings,
@@ -265,10 +291,21 @@ export default defineModule({
     ...complianceSettings,
     ...sourcingSettings,
     ...auditSettings,
+    ...scoringSettings,
+    ...outreachSettings,
+    ...pipelineSettings,
   ],
   settingsPanels: [],
-  subscribers: [...complianceSubscribers],
-  aiTasks: [...profilesAiTasks, ...enrichmentTasks, ...sourcingTasks, ...auditTasks],
+  subscribers: [...complianceSubscribers, ...scoringSubscribers, ...outreachSubscribers],
+  aiTasks: [
+    ...profilesAiTasks,
+    ...enrichmentTasks,
+    ...sourcingTasks,
+    ...auditTasks,
+    ...scoringTasks,
+    ...outreachAiTasks,
+    ...pipelineTasks,
+  ],
   homeWidgets: [
     {
       id: "acquisition.my-review-queue",
@@ -292,6 +329,11 @@ export default defineModule({
       order: 30,
     },
   ],
-  notificationTypes: [...sourcingNotificationTypes],
+  notificationTypes: [
+    ...sourcingNotificationTypes,
+    ...scoringNotificationTypes,
+    ...outreachNotifications,
+    ...pipelineNotificationTypes,
+  ],
   commands: [],
 });

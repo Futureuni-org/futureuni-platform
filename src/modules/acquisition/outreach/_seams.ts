@@ -1,14 +1,13 @@
 import "server-only";
 
 /**
- * Consumed-seam stand-ins (wave-3 guide Part B2). Phases 11 and 14 run in parallel with Phase 12,
- * so these are temporary implementations behind the exact seam signatures. At Wave 3 integration
- * each stub is deleted and the call is pointed at the real provider (see `phases/12/REQUESTS.md`);
- * `grep -r "SEAM:" src` must then be clean for these IDs.
+ * Seam adapters (wired at the Wave 3 / batch B4 integration). Phase 12 originally stubbed these while
+ * Phases 11 and 14 ran in parallel; now they delegate to the real providers. The calls are lazy
+ * (dynamic `import`) so the outreach ↔ pipeline edge (getBookingLink) never forms a load-time import
+ * cycle. No stand-in logic or seam markers remain, so a scan for seam markers in src is clean.
  */
 
 import type { ServiceLine } from "@/contracts/common";
-import { db } from "@/platform/db";
 
 export interface LeadBrief {
   brief: string | null;
@@ -18,35 +17,10 @@ export interface LeadBrief {
   scoreReasons: { ruleId: string; points: number; label: string }[];
 }
 
-// SEAM:SEAM-LEAD-BRIEF (provider: Phase 11). Stand-in reads Lead.brief + Lead.scoreReasons.
+/** SEAM-LEAD-BRIEF → Phase 11 scoring. */
 export async function getLeadBrief(leadId: string): Promise<LeadBrief> {
-  const lead = await db.lead.findUnique({
-    where: { id: leadId },
-    select: { brief: true, keyFindingIds: true, suggestedAngleId: true, score: true, scoreReasons: true },
-  });
-  if (lead === null) {
-    return { brief: null, keyFindingIds: [], suggestedAngleId: null, score: null, scoreReasons: [] };
-  }
-  const raw: unknown[] = Array.isArray(lead.scoreReasons) ? lead.scoreReasons : [];
-  const scoreReasons = raw.flatMap((r) => {
-    if (r === null || typeof r !== "object") return [];
-    const rec = r as Record<string, unknown>;
-    if (typeof rec.ruleId !== "string") return [];
-    return [
-      {
-        ruleId: rec.ruleId,
-        points: typeof rec.points === "number" ? rec.points : 0,
-        label: typeof rec.label === "string" ? rec.label : rec.ruleId,
-      },
-    ];
-  });
-  return {
-    brief: lead.brief,
-    keyFindingIds: lead.keyFindingIds,
-    suggestedAngleId: lead.suggestedAngleId,
-    score: lead.score,
-    scoreReasons,
-  };
+  const { getLeadBrief: real } = await import("@/modules/acquisition/scoring");
+  return real(leadId);
 }
 
 export interface OutreachThrottle {
@@ -55,9 +29,10 @@ export interface OutreachThrottle {
   reason: string;
 }
 
-// SEAM:SEAM-THROTTLE (provider: Phase 11). Stand-in never throttles.
+/** SEAM-THROTTLE → Phase 11 scoring. */
 export async function getOutreachThrottle(line: ServiceLine): Promise<OutreachThrottle> {
-  return Promise.resolve({ mode: "NORMAL", newFirstTouchesToday: Number.POSITIVE_INFINITY, reason: `no throttle (${line})` });
+  const { getOutreachThrottle: real } = await import("@/modules/acquisition/scoring");
+  return real(line);
 }
 
 export interface CrossSellContext {
@@ -67,49 +42,14 @@ export interface CrossSellContext {
   lines: ServiceLine[];
 }
 
-// SEAM:SEAM-CROSSSELL (provider: Phase 11). Stand-in reads CrossSellGroup rows.
+/** SEAM-CROSSSELL → Phase 11 cross-sell. */
 export async function getCrossSellContext(leadId: string): Promise<CrossSellContext> {
-  const lead = await db.lead.findUnique({
-    where: { id: leadId },
-    select: { crossSellGroupId: true, heldByCrossSell: true },
-  });
-  // No lead or no group: a lone lead leads itself.
-  if (lead === null) {
-    return { groupId: null, isLeading: true, leadingLeadId: leadId, lines: [] };
-  }
-  if (lead.crossSellGroupId === null) {
-    return { groupId: null, isLeading: !lead.heldByCrossSell, leadingLeadId: leadId, lines: [] };
-  }
-  const group = await db.crossSellGroup.findUnique({
-    where: { id: lead.crossSellGroupId },
-    select: { id: true, leadingLeadId: true, leads: { select: { serviceLine: true } } },
-  });
-  if (group === null) {
-    return { groupId: null, isLeading: !lead.heldByCrossSell, leadingLeadId: leadId, lines: [] };
-  }
-  const lines = [...new Set(group.leads.map((l) => l.serviceLine))];
-  return {
-    groupId: group.id,
-    isLeading: group.leadingLeadId === leadId,
-    leadingLeadId: group.leadingLeadId,
-    lines,
-  };
+  const { getCrossSellContext: real } = await import("@/modules/acquisition/crosssell");
+  return real(leadId);
 }
 
-// SEAM:SEAM-BOOKING-LINK (provider: Phase 14). Stand-in returns the default booking URL + ?lead=<id>.
+/** SEAM-BOOKING-LINK → Phase 14 pipeline (lazy to avoid the outreach ↔ pipeline cycle). */
 export async function getBookingLink(leadId: string, ownerId?: string): Promise<string> {
-  let base = "";
-  try {
-    const { getSetting } = await import("@/platform/settings");
-    base = await getSetting<string>("acquisition.defaultBookingUrl");
-  } catch {
-    base = "";
-  }
-  if (base === "") {
-    // Best-effort fallback so a draft that wants a booking link still has a value in the stub phase.
-    base = "https://cal.com/futureuni";
-  }
-  const separator = base.includes("?") ? "&" : "?";
-  const owner = ownerId === undefined ? "" : `&owner=${ownerId}`;
-  return `${base}${separator}lead=${leadId}${owner}`;
+  const { getBookingLink: real } = await import("@/modules/acquisition/pipeline");
+  return real(leadId, ownerId);
 }

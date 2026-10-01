@@ -108,6 +108,9 @@ Then remove the batch's worktrees (`pnpm phase remove <nn>`).
 | 7, 9 | Profiles · Enrichment and compliance | 2026-09 | Batch B2. See `phases/batch-b2-integration/SUMMARY.md`. |
 | 8 | Sourcing framework and adapters | 2026-10-01 | Batch B3. Merge commit `78f8290` (branch `phase/08-sourcing`); `phases/08/REQUESTS.md` applied at Wave 2 integration. See `phases/08/SUMMARY.md` and `phases/wave-2-integration/SUMMARY.md`. |
 | 10 | Audits engine and browser capture | 2026-10-01 | Batch B3. Merge commit `7e239f4` (branch `phase/10-audits`); `phases/10/REQUESTS.md` applied. See `phases/10/SUMMARY.md`. |
+| 11 | Scoring, qualification, briefs, cross-sell and capacity throttling | 2026-10-01 | Batch B4. Merge commit `dd414d3` (branch `phase/11-scoring`); `phases/11/REQUESTS.md` applied at B4 integration (no schema/transition requests). See `phases/11/SUMMARY.md`. |
+| 12 | Outreach engine | 2026-10-01 | Batch B4. Merge commit `6f9ed2c` (branch `phase/12-outreach`); `phases/12/REQUESTS.md` applied. See `phases/12/SUMMARY.md`. |
+| 14 | Pipeline, meetings, proposals and won/lost | 2026-10-01 | Batch B4. Merge commit `cdffb84` (branch `phase/14-pipeline`); `phases/14/REQUESTS.md` applied (`@react-pdf/renderer` added). See `phases/14/SUMMARY.md` and `phases/batch-b4-integration/SUMMARY.md`. |
 
 ## Where things are
 

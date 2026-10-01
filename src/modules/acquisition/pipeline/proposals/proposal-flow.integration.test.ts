@@ -79,8 +79,16 @@ describe("proposal flow", () => {
     const proposal = await db.proposal.findUnique({ where: { id: created.proposalId } });
     expect(proposal?.status).toBe("SENT");
     expect(proposal?.pdfFileId).not.toBeNull();
+    // Wave 3 integration: sendProposal now calls the REAL outreach sendOneOffEmail (not the stub),
+    // which creates a ONE_OFF email with the PDF attached and routes it through the single send path.
+    // Its delivery status (SENT/SCHEDULED/BLOCKED) depends on outreach infra (mailbox, postal address,
+    // send window, contactability) and is covered by Phase 12's send tests; here we assert the pipeline
+    // outcome and that the PDF reached the real seam as an attachment.
     const message = await db.message.findUnique({ where: { id: sent.messageId } });
-    expect(message?.status).toBe("SENT_MOCK");
+    expect(message?.kind).toBe("ONE_OFF");
+    expect(message?.channel).toBe("EMAIL");
+    const attachment = await db.messageAttachment.findFirst({ where: { messageId: sent.messageId } });
+    expect(attachment).not.toBeNull();
     const file = await db.fileObject.findFirst({ where: { id: proposal?.pdfFileId ?? "" } });
     expect(file?.purpose).toBe("PROPOSAL_PDF");
   }, 30_000);
