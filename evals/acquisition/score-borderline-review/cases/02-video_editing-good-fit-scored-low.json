@@ -1,0 +1,44 @@
+{
+  "id": "02-video_editing-good-fit-scored-low",
+  "description": "An active coach posting weekly with no captions; expected QUALIFY.",
+  "input": {
+    "companyName": "Coach Amina",
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA",
+    "score": 58,
+    "band": "BORDERLINE",
+    "scoreReasons": [
+      {
+        "ruleId": "mid",
+        "label": "Some fit",
+        "points": 50
+      }
+    ],
+    "signals": [
+      {
+        "id": "s00000000000000000000000002",
+        "signalType": "no_captions"
+      }
+    ],
+    "findings": [
+      {
+        "id": "f00000000000000000000000102",
+        "checkId": "video.captions",
+        "claim": "90% of the last 20 uploads have no caption track.",
+        "severity": "HIGH",
+        "pitchable": true
+      }
+    ],
+    "disqualifiers": [
+      {
+        "id": "competitor_agency",
+        "label": "Competitor agency",
+        "description": "An agency in this field itself.",
+        "aiReviewHint": "Sells this service itself."
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

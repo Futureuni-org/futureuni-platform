@@ -1,0 +1,283 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`scoreLead — golden snapshots per line > GRAPHIC_DESIGN: a strong lead 1`] = `
+{
+  "band": "QUALIFIED",
+  "reasons": [
+    {
+      "label": "Inconsistent branding",
+      "points": 25,
+      "ruleId": "branding_inconsistent",
+    },
+    {
+      "label": "No brand system",
+      "points": 20,
+      "ruleId": "no_system",
+    },
+    {
+      "label": "Hiring a graphic designer",
+      "points": 10,
+      "ruleId": "hiring_graphic_designer",
+    },
+    {
+      "label": "New business",
+      "points": 10,
+      "ruleId": "new_business_bonus",
+    },
+    {
+      "label": "Reachable primary contact",
+      "points": 10,
+      "ruleId": "reachable_owner",
+    },
+    {
+      "label": "Nigeria with a WhatsApp channel",
+      "points": 8,
+      "ruleId": "nigeria_whatsapp",
+    },
+    {
+      "label": "Legal form known",
+      "points": 3,
+      "ruleId": "legal_form_known",
+    },
+  ],
+  "score": 86,
+}
+`;
+
+exports[`scoreLead — golden snapshots per line > GRAPHIC_DESIGN: a weak lead (no signals or findings) 1`] = `
+{
+  "band": "BELOW",
+  "reasons": [
+    {
+      "label": "Reachable primary contact",
+      "points": 10,
+      "ruleId": "reachable_owner",
+    },
+    {
+      "label": "Nigeria with a WhatsApp channel",
+      "points": 8,
+      "ruleId": "nigeria_whatsapp",
+    },
+    {
+      "label": "Legal form known",
+      "points": 3,
+      "ruleId": "legal_form_known",
+    },
+  ],
+  "score": 21,
+}
+`;
+
+exports[`scoreLead — golden snapshots per line > UI_UX_DESIGN: a strong lead 1`] = `
+{
+  "band": "QUALIFIED",
+  "reasons": [
+    {
+      "label": "Usability complaints in app reviews",
+      "points": 25,
+      "ruleId": "review_pain",
+    },
+    {
+      "label": "High-friction sign-up (measured)",
+      "points": 20,
+      "ruleId": "friction_signup",
+    },
+    {
+      "label": "Accessibility fails (measured)",
+      "points": 15,
+      "ruleId": "accessibility_fail",
+    },
+    {
+      "label": "Hiring a product designer",
+      "points": 10,
+      "ruleId": "hiring_designer",
+    },
+    {
+      "label": "Reachable primary contact",
+      "points": 10,
+      "ruleId": "reachable_owner",
+    },
+    {
+      "label": "Nigeria with a WhatsApp channel",
+      "points": 8,
+      "ruleId": "nigeria_whatsapp",
+    },
+    {
+      "label": "Legal form known",
+      "points": 3,
+      "ruleId": "legal_form_known",
+    },
+  ],
+  "score": 91,
+}
+`;
+
+exports[`scoreLead — golden snapshots per line > UI_UX_DESIGN: a weak lead (no signals or findings) 1`] = `
+{
+  "band": "BELOW",
+  "reasons": [
+    {
+      "label": "Reachable primary contact",
+      "points": 10,
+      "ruleId": "reachable_owner",
+    },
+    {
+      "label": "Nigeria with a WhatsApp channel",
+      "points": 8,
+      "ruleId": "nigeria_whatsapp",
+    },
+    {
+      "label": "Legal form known",
+      "points": 3,
+      "ruleId": "legal_form_known",
+    },
+  ],
+  "score": 21,
+}
+`;
+
+exports[`scoreLead — golden snapshots per line > VIDEO_EDITING: a strong lead 1`] = `
+{
+  "band": "QUALIFIED",
+  "reasons": [
+    {
+      "label": "Most videos have no captions",
+      "points": 25,
+      "ruleId": "no_captions_hit",
+    },
+    {
+      "label": "Channel has gone quiet",
+      "points": 15,
+      "ruleId": "channel_quiet",
+    },
+    {
+      "label": "Hiring a video editor",
+      "points": 15,
+      "ruleId": "hiring_video_editor",
+    },
+    {
+      "label": "Active creator with rough editing",
+      "points": 15,
+      "ruleId": "rough_active_creator",
+    },
+    {
+      "label": "Reachable primary contact",
+      "points": 10,
+      "ruleId": "reachable_owner",
+    },
+    {
+      "label": "Thumbnails inconsistent",
+      "points": 10,
+      "ruleId": "thumb_inconsistent",
+    },
+    {
+      "label": "Nigeria with a WhatsApp channel",
+      "points": 8,
+      "ruleId": "nigeria_whatsapp",
+    },
+    {
+      "label": "Legal form known",
+      "points": 3,
+      "ruleId": "legal_form_known",
+    },
+  ],
+  "score": 100,
+}
+`;
+
+exports[`scoreLead — golden snapshots per line > VIDEO_EDITING: a weak lead (no signals or findings) 1`] = `
+{
+  "band": "BELOW",
+  "reasons": [
+    {
+      "label": "Reachable primary contact",
+      "points": 10,
+      "ruleId": "reachable_owner",
+    },
+    {
+      "label": "Nigeria with a WhatsApp channel",
+      "points": 8,
+      "ruleId": "nigeria_whatsapp",
+    },
+    {
+      "label": "Legal form known",
+      "points": 3,
+      "ruleId": "legal_form_known",
+    },
+  ],
+  "score": 21,
+}
+`;
+
+exports[`scoreLead — golden snapshots per line > WEB_DEVELOPMENT: a strong lead 1`] = `
+{
+  "band": "QUALIFIED",
+  "reasons": [
+    {
+      "label": "No website on Google Maps",
+      "points": 30,
+      "ruleId": "has_no_website",
+    },
+    {
+      "label": "Missing TLS",
+      "points": 25,
+      "ruleId": "ssl_missing",
+    },
+    {
+      "label": "Slow on mobile (measured)",
+      "points": 20,
+      "ruleId": "slow_mobile_high_severity",
+    },
+    {
+      "label": "Hiring a web developer",
+      "points": 15,
+      "ruleId": "hiring_developer",
+    },
+    {
+      "label": "Selling through DMs",
+      "points": 10,
+      "ruleId": "ecommerce_dms",
+    },
+    {
+      "label": "Reachable primary contact",
+      "points": 10,
+      "ruleId": "reachable_owner",
+    },
+    {
+      "label": "Nigeria with a WhatsApp channel",
+      "points": 8,
+      "ruleId": "nigeria_whatsapp",
+    },
+    {
+      "label": "Legal form known",
+      "points": 3,
+      "ruleId": "legal_form_known",
+    },
+  ],
+  "score": 100,
+}
+`;
+
+exports[`scoreLead — golden snapshots per line > WEB_DEVELOPMENT: a weak lead (no signals or findings) 1`] = `
+{
+  "band": "BELOW",
+  "reasons": [
+    {
+      "label": "Reachable primary contact",
+      "points": 10,
+      "ruleId": "reachable_owner",
+    },
+    {
+      "label": "Nigeria with a WhatsApp channel",
+      "points": 8,
+      "ruleId": "nigeria_whatsapp",
+    },
+    {
+      "label": "Legal form known",
+      "points": 3,
+      "ruleId": "legal_form_known",
+    },
+  ],
+  "score": 21,
+}
+`;
