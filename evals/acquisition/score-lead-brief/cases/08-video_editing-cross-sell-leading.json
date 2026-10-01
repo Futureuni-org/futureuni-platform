@@ -1,0 +1,50 @@
+{
+  "id": "08-video_editing-cross-sell-leading",
+  "description": "A VIDEO_EDITING lead leading a cross-sell group: the brief leads with this line and mentions the others as secondary.",
+  "input": {
+    "companyName": "Group Lead VIDEO_EDITING Co",
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "scoreReasons": [
+      {
+        "ruleId": "fit",
+        "label": "Clear fit",
+        "points": 60
+      }
+    ],
+    "signals": [
+      {
+        "id": "s00000000000000000000000208",
+        "signalType": "no_captions"
+      }
+    ],
+    "findings": [
+      {
+        "id": "f00000000000000000000000308",
+        "checkId": "video.captions",
+        "claim": "The audit measured a clear, specific gap this line can close.",
+        "severity": "HIGH",
+        "pitchable": true
+      }
+    ],
+    "angleCandidates": [
+      {
+        "id": "captions_reach",
+        "hook": "A concrete, honest hook for this line."
+      }
+    ],
+    "crossSell": {
+      "isLeading": true,
+      "lines": [
+        "VIDEO_EDITING",
+        "WEB_DEVELOPMENT"
+      ]
+    }
+  },
+  "expectations": {
+    "schemaValid": true,
+    "mustNotMention": [
+      "guarantee"
+    ]
+  }
+}

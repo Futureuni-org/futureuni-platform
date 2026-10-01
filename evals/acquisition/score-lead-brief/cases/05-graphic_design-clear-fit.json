@@ -1,0 +1,50 @@
+{
+  "id": "05-graphic_design-clear-fit",
+  "description": "A clear GRAPHIC_DESIGN fit: the brief must cite only the given finding and suggest a real angle.",
+  "input": {
+    "companyName": "Example GRAPHIC_DESIGN Co",
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "NIGERIA",
+    "scoreReasons": [
+      {
+        "ruleId": "fit",
+        "label": "Clear fit",
+        "points": 60
+      }
+    ],
+    "signals": [
+      {
+        "id": "s00000000000000000000000205",
+        "signalType": "inconsistent_brand"
+      }
+    ],
+    "findings": [
+      {
+        "id": "f00000000000000000000000305",
+        "checkId": "graphic.brand_consistency",
+        "claim": "The audit measured a clear, specific gap this line can close.",
+        "severity": "HIGH",
+        "pitchable": true
+      }
+    ],
+    "angleCandidates": [
+      {
+        "id": "cohesion",
+        "hook": "A concrete, honest hook for this line."
+      }
+    ],
+    "crossSell": {
+      "isLeading": true,
+      "lines": [
+        "GRAPHIC_DESIGN"
+      ]
+    }
+  },
+  "expectations": {
+    "schemaValid": true,
+    "mustNotMention": [
+      "guarantee",
+      "best in the world"
+    ]
+  }
+}

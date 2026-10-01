@@ -1,0 +1,44 @@
+{
+  "id": "04-graphic_design-competitor-agency",
+  "description": "A branding agency; expected DISQUALIFY.",
+  "input": {
+    "companyName": "Northstar Brand Co",
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "INTERNATIONAL",
+    "score": 50,
+    "band": "BORDERLINE",
+    "scoreReasons": [
+      {
+        "ruleId": "mid",
+        "label": "Some fit",
+        "points": 50
+      }
+    ],
+    "signals": [
+      {
+        "id": "s00000000000000000000000004",
+        "signalType": "inconsistent_brand"
+      }
+    ],
+    "findings": [
+      {
+        "id": "f00000000000000000000000104",
+        "checkId": "graphic.brand_consistency",
+        "claim": "Portfolio shows logo work for clients; the firm is a design agency.",
+        "severity": "HIGH",
+        "pitchable": true
+      }
+    ],
+    "disqualifiers": [
+      {
+        "id": "competitor_agency",
+        "label": "Competitor agency",
+        "description": "An agency in this field itself.",
+        "aiReviewHint": "Sells this service itself."
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "default": {
+    "recommendation": "NEEDS_HUMAN",
+    "confidence": 0.5,
+    "reasons": ["The signals are mixed; a person should weigh the fit before outreach."],
+    "citedFindingIds": [],
+    "riskFlags": ["thin-evidence"]
+  },
+  "latencyMs": 20
+}

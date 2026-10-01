@@ -1,0 +1,9 @@
+{
+  "default": {
+    "brief": "This business shows clear gaps this service line can close. The audit findings give a concrete, honest opening for a first conversation.",
+    "keyFindingIds": [],
+    "suggestedAngleId": null,
+    "talkingPoints": ["Lead with the clearest audit finding.", "Keep the first message short and specific."]
+  },
+  "latencyMs": 20
+}

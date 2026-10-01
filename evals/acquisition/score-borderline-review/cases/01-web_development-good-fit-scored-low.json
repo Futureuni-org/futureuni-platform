@@ -1,0 +1,44 @@
+{
+  "id": "01-web_development-good-fit-scored-low",
+  "description": "A small clinic with a slow, dated site and a reachable owner — a clear fit the rules under-scored; expected QUALIFY.",
+  "input": {
+    "companyName": "Brightpath Dental",
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "score": 55,
+    "band": "BORDERLINE",
+    "scoreReasons": [
+      {
+        "ruleId": "mid",
+        "label": "Some fit",
+        "points": 50
+      }
+    ],
+    "signals": [
+      {
+        "id": "s00000000000000000000000001",
+        "signalType": "slow_site"
+      }
+    ],
+    "findings": [
+      {
+        "id": "f00000000000000000000000101",
+        "checkId": "web.pagespeed_mobile",
+        "claim": "The homepage took 7.4s to load on mobile and has no booking path.",
+        "severity": "CRITICAL",
+        "pitchable": true
+      }
+    ],
+    "disqualifiers": [
+      {
+        "id": "competitor_agency",
+        "label": "Competitor agency",
+        "description": "An agency in this field itself.",
+        "aiReviewHint": "Sells this service itself."
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}
