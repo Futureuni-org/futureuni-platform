@@ -1,0 +1,13 @@
+{
+  "id": "02-brief-notes",
+  "description": "Short notes only; the summary must not over-reach.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "companyName": "Abuja Dental",
+    "notes": "Quick chat. Interested, will think about it."
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

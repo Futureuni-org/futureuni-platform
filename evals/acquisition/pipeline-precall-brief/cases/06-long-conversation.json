@@ -1,0 +1,66 @@
+{
+  "id": "06-long-conversation",
+  "description": "A long back-and-forth; the brief should stay concise.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "companyName": "Ibadan Logistics",
+    "leadBrief": "A logistics firm wanting a booking site.",
+    "findings": [
+      {
+        "id": "cm1finding00000000000006",
+        "claim": "The current site has no way to request a quote."
+      }
+    ],
+    "conversation": [
+      {
+        "from": "us",
+        "text": "Thanks for the reply — happy to help."
+      },
+      {
+        "from": "them",
+        "text": "We want customers to request quotes online."
+      },
+      {
+        "from": "us",
+        "text": "Understood. Any examples you like?"
+      },
+      {
+        "from": "them",
+        "text": "Something clean and fast on mobile."
+      }
+    ],
+    "packages": [
+      {
+        "id": "web_business",
+        "name": "Business site",
+        "minMinor": 120000000,
+        "typicalMinor": 180000000,
+        "maxMinor": 250000000,
+        "currency": "NGN"
+      },
+      {
+        "id": "web_care",
+        "name": "Care plan",
+        "minMinor": 5000000,
+        "typicalMinor": 10000000,
+        "maxMinor": 15000000,
+        "currency": "NGN"
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "priceRange": {
+      "minMinor": 120000000,
+      "maxMinor": 250000000,
+      "currency": "NGN"
+    }
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

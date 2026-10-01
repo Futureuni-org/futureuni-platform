@@ -1,0 +1,18 @@
+{
+  "default": {
+    "summary": "A warm prospect who wants more enquiries from their website and a more professional look.",
+    "whatTheyCareAbout": ["More enquiries from the site", "Looking credible to new customers"],
+    "likelyNeeds": ["A faster, clearer website", "A prominent way to get in touch"],
+    "suggestedQuestions": [
+      "What does a good month of enquiries look like for you?",
+      "Who updates the website today?",
+      "What's prompting the change now?",
+      "Which pages matter most to your customers?",
+      "Is there a date you're working towards?"
+    ],
+    "suggestedPackage": null,
+    "priceRangeToDiscuss": null,
+    "risks": ["Budget may need sign-off from someone not on the call"],
+    "citedFindingIds": []
+  }
+}

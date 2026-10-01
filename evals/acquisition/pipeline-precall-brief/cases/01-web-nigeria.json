@@ -1,0 +1,54 @@
+{
+  "id": "01-web-nigeria",
+  "description": "Web prospect in Nigeria with findings and an NGN price range.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "companyName": "Lagos Interiors",
+    "leadBrief": "A Lagos interiors brand with a slow, dated site.",
+    "findings": [
+      {
+        "id": "cm1finding00000000000001",
+        "claim": "The homepage takes over 8 seconds to load on mobile."
+      }
+    ],
+    "conversation": [
+      {
+        "from": "them",
+        "text": "We'd like a better website."
+      }
+    ],
+    "packages": [
+      {
+        "id": "web_business",
+        "name": "Business site",
+        "minMinor": 120000000,
+        "typicalMinor": 180000000,
+        "maxMinor": 250000000,
+        "currency": "NGN"
+      },
+      {
+        "id": "web_care",
+        "name": "Care plan",
+        "minMinor": 5000000,
+        "typicalMinor": 10000000,
+        "maxMinor": 15000000,
+        "currency": "NGN"
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "priceRange": {
+      "minMinor": 120000000,
+      "maxMinor": 250000000,
+      "currency": "NGN"
+    }
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

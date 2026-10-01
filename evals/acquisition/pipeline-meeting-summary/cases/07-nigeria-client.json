@@ -1,0 +1,13 @@
+{
+  "id": "07-nigeria-client",
+  "description": "A Nigerian client; figures in naira.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "companyName": "Port Harcourt Auto",
+    "notes": "Wants a brand refresh. Said a previous agency quoted 800,000 naira. Owner decides alone."
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

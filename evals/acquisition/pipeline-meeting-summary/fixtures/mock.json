@@ -1,0 +1,11 @@
+{
+  "default": {
+    "summary": "A positive first call. They need a new website and have budget to spend this quarter.",
+    "needs": ["A new website", "A clear enquiry path"],
+    "budgetSignals": ["Said budget is approved for this quarter"],
+    "decisionMakers": ["The owner, who was on the call"],
+    "objections": [],
+    "nextSteps": [{ "action": "Send a proposal", "owner": "us", "due": null }],
+    "recommendedPackageIds": []
+  }
+}

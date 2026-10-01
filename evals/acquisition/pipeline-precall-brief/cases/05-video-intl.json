@@ -1,0 +1,46 @@
+{
+  "id": "05-video-intl",
+  "description": "Video editing prospect, international, USD.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "companyName": "Austin Creators",
+    "leadBrief": "A creator channel needing consistent edits.",
+    "findings": [
+      {
+        "id": "cm1finding00000000000005",
+        "claim": "Thumbnails vary wildly in style across recent videos."
+      }
+    ],
+    "conversation": [
+      {
+        "from": "them",
+        "text": "We need help keeping our edits consistent."
+      }
+    ],
+    "packages": [
+      {
+        "id": "video_channel_retainer",
+        "name": "Channel retainer",
+        "minMinor": 100000,
+        "typicalMinor": 180000,
+        "maxMinor": 280000,
+        "currency": "USD"
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "priceRange": {
+      "minMinor": 100000,
+      "maxMinor": 280000,
+      "currency": "USD"
+    }
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

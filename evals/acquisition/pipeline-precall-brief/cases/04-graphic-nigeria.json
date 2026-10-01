@@ -1,0 +1,46 @@
+{
+  "id": "04-graphic-nigeria",
+  "description": "Graphic design prospect in Nigeria.",
+  "input": {
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "NIGERIA",
+    "companyName": "Enugu Foods",
+    "leadBrief": "A food brand with inconsistent packaging.",
+    "findings": [
+      {
+        "id": "cm1finding00000000000004",
+        "claim": "The logo differs across the pack and the social avatar."
+      }
+    ],
+    "conversation": [
+      {
+        "from": "them",
+        "text": "Our branding looks messy."
+      }
+    ],
+    "packages": [
+      {
+        "id": "graphic_brand_identity",
+        "name": "Brand identity",
+        "minMinor": 50000000,
+        "typicalMinor": 90000000,
+        "maxMinor": 150000000,
+        "currency": "NGN"
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "priceRange": {
+      "minMinor": 50000000,
+      "maxMinor": 150000000,
+      "currency": "NGN"
+    }
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "id": "03-no-findings",
+  "description": "No findings yet and no price range; the brief must not invent facts.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "companyName": "Abuja Dental",
+    "leadBrief": null,
+    "findings": [],
+    "conversation": [
+      {
+        "from": "them",
+        "text": "Can you help with a website?"
+      }
+    ],
+    "packages": [
+      {
+        "id": "web_business",
+        "name": "Business site",
+        "minMinor": 120000000,
+        "typicalMinor": 180000000,
+        "maxMinor": 250000000,
+        "currency": "NGN"
+      },
+      {
+        "id": "web_care",
+        "name": "Care plan",
+        "minMinor": 5000000,
+        "typicalMinor": 10000000,
+        "maxMinor": 15000000,
+        "currency": "NGN"
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "priceRange": null
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}

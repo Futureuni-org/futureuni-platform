@@ -1,0 +1,53 @@
+{
+  "id": "06-video-intl",
+  "description": "A video retainer proposal (USD).",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "companyName": "Austin Creators",
+    "leadBrief": "A Lagos interiors brand with a slow site.",
+    "meetingSummary": "They want a faster site and more enquiries.",
+    "findings": [
+      {
+        "id": "cm1finding00000000000001",
+        "claim": "The homepage takes over 8 seconds on mobile."
+      }
+    ],
+    "packages": [
+      {
+        "name": "Channel retainer",
+        "quantity": 3,
+        "unitPriceMinor": 180000
+      }
+    ],
+    "lineItems": [],
+    "totals": {
+      "subtotalMinor": 540000,
+      "discountMinor": 0,
+      "taxMinor": 0,
+      "totalMinor": 540000,
+      "currency": "USD"
+    },
+    "catalogue": [
+      {
+        "name": "Channel retainer",
+        "includes": [
+          "Weekly edits",
+          "Thumbnails",
+          "Shorts"
+        ]
+      }
+    ],
+    "portfolio": [
+      {
+        "title": "Kano Textiles store",
+        "outcomeMetric": "35% more enquiries"
+      }
+    ],
+    "timelineSummary": "About four to six weeks from kick-off.",
+    "validUntil": "25 Oct 2026"
+  },
+  "expectations": {
+    "schemaValid": true
+  }
+}
