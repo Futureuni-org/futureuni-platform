@@ -1,0 +1,29 @@
+{
+  "id": "02-too-many-fields",
+  "description": "Sign-up asks for too many fields at once.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "NIGERIA",
+    "steps": [
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000022.webp",
+        "label": "Sign up"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "The sign-up step presents many required fields at once with no grouping, raising the effort to start.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000022.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.7
+        }
+      ]
+    }
+  }
+}

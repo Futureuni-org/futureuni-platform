@@ -1,0 +1,24 @@
+{
+  "id": "06-clean-two-step",
+  "description": "Consistent, clear flow — no finding.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL",
+    "steps": [
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000027.webp",
+        "label": "Landing"
+      },
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000028.webp",
+        "label": "Get started"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "id": "08-blocking-bug",
+  "description": "One severe blocking bug — HIGH on a single review.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL",
+    "appName": "Bankly",
+    "reviews": [
+      {
+        "id": "rev_app_1",
+        "rating": 1,
+        "text": "I cannot complete a transfer at all, it fails every time."
+      },
+      {
+        "id": "rev_app_2",
+        "rating": 5,
+        "text": "Looks nice."
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "A reviewer reports being unable to complete a transfer at all, a task-blocking failure.",
+          "evidenceRefs": [
+            "rev_app_1"
+          ],
+          "severity": "HIGH",
+          "confidence": 0.75
+        }
+      ]
+    }
+  }
+}

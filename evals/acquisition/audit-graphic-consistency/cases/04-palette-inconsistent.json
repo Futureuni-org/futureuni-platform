@@ -1,0 +1,34 @@
+{
+  "id": "04-palette-inconsistent",
+  "description": "Colour palette varies across surfaces.",
+  "input": {
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "INTERNATIONAL",
+    "surfaces": [
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000045.webp",
+        "label": "Hero"
+      },
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000046.webp",
+        "label": "og:image"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "The colour palette differs between the hero and the og:image, so the brand looks inconsistent across channels.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000045.webp",
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000046.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.7
+        }
+      ]
+    }
+  }
+}

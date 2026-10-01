@@ -1,0 +1,34 @@
+{
+  "id": "03-vague-hooks",
+  "description": "Vague hooks with no clear promise.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA",
+    "titles": [
+      {
+        "videoId": "v5",
+        "title": "Some thoughts"
+      },
+      {
+        "videoId": "v6",
+        "title": "A video"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "The titles state no clear topic or promise, so they offer a viewer little reason to watch.",
+          "evidenceRefs": [
+            "v5",
+            "v6"
+          ],
+          "severity": "LOW",
+          "confidence": 0.66
+        }
+      ]
+    }
+  }
+}

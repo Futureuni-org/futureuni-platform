@@ -1,0 +1,27 @@
+{
+  "id": "06-single-mild",
+  "description": "One mild complaint — below threshold.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "NIGERIA",
+    "appName": "Tasky",
+    "reviews": [
+      {
+        "id": "rev_app_1",
+        "rating": 5,
+        "text": "Works well for me."
+      },
+      {
+        "id": "rev_app_2",
+        "rating": 4,
+        "text": "Wish the font were a little bigger but fine."
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

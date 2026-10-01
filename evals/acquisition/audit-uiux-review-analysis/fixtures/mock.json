@@ -1,0 +1,81 @@
+{
+  "default": {
+    "findings": []
+  },
+  "byHash": {
+    "d9e79aa531fd44aad7c424bcedbd872d1bb93ba1bae93a98cbcacacf3a134071": {
+      "findings": [
+        {
+          "claim": "Multiple recent reviews report the app crashing on the settings and checkout screens.",
+          "evidenceRefs": [
+            "rev_app_1",
+            "rev_app_2"
+          ],
+          "severity": "HIGH",
+          "confidence": 0.85
+        }
+      ]
+    },
+    "681f2b551247c890f9467612c2bd56ed496499ee2d9e0b047ecbc1142513d1c0": {
+      "findings": [
+        {
+          "claim": "Recent reviews describe a long, demanding sign-up and onboarding that causes users to give up.",
+          "evidenceRefs": [
+            "rev_app_1",
+            "rev_app_2"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.8
+        }
+      ]
+    },
+    "1255e25db8d7ce1eaa97189f37740f3c0356c254d3001f570335b5357a356912": {
+      "findings": [
+        {
+          "claim": "Reviewers report confusing navigation, including a hard-to-find search and buried menus.",
+          "evidenceRefs": [
+            "rev_app_1",
+            "rev_app_2"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.78
+        }
+      ]
+    },
+    "dc8e41a0751e29b06844ba9d9bff1b39de0809e10583a66980998f9a2ee1160e": {
+      "findings": []
+    },
+    "6cb7f55c297e268b99764388910b405546636f4be505b39372aca10a54c24816": {
+      "findings": []
+    },
+    "07cbf716275a210693207943dc4f63e61a1f1459062bec8a976e990a26c857ea": {
+      "findings": []
+    },
+    "6c5a4f1e160557dd3914bb085aa8075259e5ad84a3a269340b5c894930aa8092": {
+      "findings": [
+        {
+          "claim": "Recent reviews report slow loading and frequent freezing on mobile.",
+          "evidenceRefs": [
+            "rev_app_1",
+            "rev_app_2"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.8
+        }
+      ]
+    },
+    "86e86b317c2efefc0c7151aab744355675c72eb1e6a59c03c4563a5fe55ad596": {
+      "findings": [
+        {
+          "claim": "A reviewer reports being unable to complete a transfer at all, a task-blocking failure.",
+          "evidenceRefs": [
+            "rev_app_1"
+          ],
+          "severity": "HIGH",
+          "confidence": 0.75
+        }
+      ]
+    }
+  },
+  "latencyMs": 20
+}

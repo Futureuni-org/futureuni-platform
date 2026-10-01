@@ -1,0 +1,62 @@
+{
+  "default": {
+    "findings": []
+  },
+  "byHash": {
+    "2f6c6ea58577001cd84be8b487832591a617164e0c3398ddd0e51e029bae6c3e": {
+      "findings": []
+    },
+    "491dd745fdbb1e1f3580088a8d40830f84750c2f737b24c96fa2e7a4e5e1a84b": {
+      "findings": [
+        {
+          "claim": "Several titles are generic placeholders such as \"Update 3\" and \"Untitled\" that give a viewer no reason to click.",
+          "evidenceRefs": [
+            "v3",
+            "v4"
+          ],
+          "severity": "LOW",
+          "confidence": 0.7
+        }
+      ]
+    },
+    "bc3809057e7fbb33ac34f2d55166db95a616d99be71339a3710a575cd5d59bce": {
+      "findings": [
+        {
+          "claim": "The titles state no clear topic or promise, so they offer a viewer little reason to watch.",
+          "evidenceRefs": [
+            "v5",
+            "v6"
+          ],
+          "severity": "LOW",
+          "confidence": 0.66
+        }
+      ]
+    },
+    "3af16308e455d9b021113152ecb354686e2d79619ae1a2df0e7b63c1a4549e67": {
+      "findings": [
+        {
+          "claim": "Titles follow no consistent pattern, mixing lowercase shorthand with long, cluttered phrasing.",
+          "evidenceRefs": [
+            "v7",
+            "v8"
+          ],
+          "severity": "INFO",
+          "confidence": 0.6
+        }
+      ]
+    },
+    "99f5c8f5be9b354a795697960ad4aa69848ae98966f6fbdea16cec899f27233d": {
+      "findings": []
+    },
+    "3f84d78cce6b774e7e62eeda2ac1aa19e9ed73d75e1e42cb196b4a1b2a81fecd": {
+      "findings": []
+    },
+    "8643beb9affea053f0ee08b7adcbc000c7508e1affe44324a84018a7228a17a0": {
+      "findings": []
+    },
+    "8bbbe28f490ad38b598da36ac85a2bb355e6e292285b593fac130fe2e8851b0c": {
+      "findings": []
+    }
+  },
+  "latencyMs": 20
+}

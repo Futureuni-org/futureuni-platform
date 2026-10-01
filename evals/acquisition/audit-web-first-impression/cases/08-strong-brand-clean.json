@@ -1,0 +1,25 @@
+{
+  "id": "08-strong-brand-clean",
+  "description": "Strong, clear brand presentation — no finding.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "pageUrl": "https://strong.example/",
+    "screenshots": [
+      {
+        "viewport": "mobile",
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000009.webp"
+      },
+      {
+        "viewport": "desktop",
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000010.webp"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

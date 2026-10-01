@@ -1,0 +1,30 @@
+{
+  "id": "05-tiny-mobile-text",
+  "description": "Body text too small to read on mobile.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "pageUrl": "https://tiny.example/",
+    "screenshots": [
+      {
+        "viewport": "mobile",
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000006.webp"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "Body text on the mobile homepage is very small and hard to read without zooming.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000006.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.66
+        }
+      ]
+    }
+  }
+}

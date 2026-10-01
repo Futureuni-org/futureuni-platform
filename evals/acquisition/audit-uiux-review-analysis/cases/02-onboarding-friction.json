@@ -1,0 +1,37 @@
+{
+  "id": "02-onboarding-friction",
+  "description": "Reviews describe hard sign-up.",
+  "input": {
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "NIGERIA",
+    "appName": "Paygo",
+    "reviews": [
+      {
+        "id": "rev_app_1",
+        "rating": 2,
+        "text": "Sign up takes too many steps and I gave up."
+      },
+      {
+        "id": "rev_app_2",
+        "rating": 2,
+        "text": "The onboarding asks for too much before I can try anything."
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "Recent reviews describe a long, demanding sign-up and onboarding that causes users to give up.",
+          "evidenceRefs": [
+            "rev_app_1",
+            "rev_app_2"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.8
+        }
+      ]
+    }
+  }
+}

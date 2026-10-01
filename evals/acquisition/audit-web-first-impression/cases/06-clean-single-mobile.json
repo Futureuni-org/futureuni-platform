@@ -1,0 +1,21 @@
+{
+  "id": "06-clean-single-mobile",
+  "description": "Single clean mobile capture — no finding.",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "pageUrl": "https://clean2.example/",
+    "screenshots": [
+      {
+        "viewport": "mobile",
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000007.webp"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

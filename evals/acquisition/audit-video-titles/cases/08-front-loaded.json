@@ -1,0 +1,24 @@
+{
+  "id": "08-front-loaded",
+  "description": "Front-loaded keywords — no finding.",
+  "input": {
+    "serviceLine": "VIDEO_EDITING",
+    "market": "INTERNATIONAL",
+    "titles": [
+      {
+        "videoId": "v15",
+        "title": "Color grading: cinematic look in 2 minutes"
+      },
+      {
+        "videoId": "v16",
+        "title": "Captions that boost watch time"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": []
+    }
+  }
+}

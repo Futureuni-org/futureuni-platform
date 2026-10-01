@@ -1,0 +1,29 @@
+{
+  "id": "03-pixelated-logo",
+  "description": "Low-resolution, pixelated logo.",
+  "input": {
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "NIGERIA",
+    "surfaces": [
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000044.webp",
+        "label": "Logo"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "The logo is low resolution and visibly pixelated at the size shown, which reads as unprofessional.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000044.webp"
+          ],
+          "severity": "HIGH",
+          "confidence": 0.8
+        }
+      ]
+    }
+  }
+}

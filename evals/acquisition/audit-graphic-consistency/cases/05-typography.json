@@ -1,0 +1,34 @@
+{
+  "id": "05-typography",
+  "description": "Typography inconsistent across surfaces.",
+  "input": {
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "NIGERIA",
+    "surfaces": [
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000047.webp",
+        "label": "Banner"
+      },
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000048.webp",
+        "label": "Avatar"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "Two different, clashing typefaces appear across the banner and avatar, with no consistent type system.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000047.webp",
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000048.webp"
+          ],
+          "severity": "LOW",
+          "confidence": 0.64
+        }
+      ]
+    }
+  }
+}

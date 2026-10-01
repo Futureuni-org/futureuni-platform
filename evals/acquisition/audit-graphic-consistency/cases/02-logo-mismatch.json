@@ -1,0 +1,34 @@
+{
+  "id": "02-logo-mismatch",
+  "description": "Logo differs across surfaces.",
+  "input": {
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "INTERNATIONAL",
+    "surfaces": [
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000042.webp",
+        "label": "Website logo"
+      },
+      {
+        "artifactKey": "audit-screenshots/20261001/00000000-0000-0000-0000-000000000043.webp",
+        "label": "Social avatar"
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "findings": [
+        {
+          "claim": "The logo on the website and the social avatar differ in colour and proportion, weakening a consistent brand.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000042.webp",
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000043.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.72
+        }
+      ]
+    }
+  }
+}

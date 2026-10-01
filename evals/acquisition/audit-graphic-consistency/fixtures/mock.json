@@ -1,0 +1,71 @@
+{
+  "default": {
+    "findings": []
+  },
+  "byHash": {
+    "3bfd8d6ff198568672c6c0ad0932060ad2ac985306cfcacc96fd1dd83dcdb3e4": {
+      "findings": []
+    },
+    "6eea2cffd6868b9f844f3c64309192127dbb5e5b5c39ad29475ba1475f5df4ef": {
+      "findings": [
+        {
+          "claim": "The logo on the website and the social avatar differ in colour and proportion, weakening a consistent brand.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000042.webp",
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000043.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.72
+        }
+      ]
+    },
+    "3f13c11e1b6ba0bb9b08ae32aa0c9eb7ceee6a0e645b544f9ecc1582753b1feb": {
+      "findings": [
+        {
+          "claim": "The logo is low resolution and visibly pixelated at the size shown, which reads as unprofessional.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000044.webp"
+          ],
+          "severity": "HIGH",
+          "confidence": 0.8
+        }
+      ]
+    },
+    "f73fed8cb49fef63513efd67a4eeae7679cfdefcbcc598f0d843cd944cd7fd8c": {
+      "findings": [
+        {
+          "claim": "The colour palette differs between the hero and the og:image, so the brand looks inconsistent across channels.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000045.webp",
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000046.webp"
+          ],
+          "severity": "MEDIUM",
+          "confidence": 0.7
+        }
+      ]
+    },
+    "0ef7e7c70c5a8717282b6fe19752292b5dfeb491aa1eb3900148541bde6827c9": {
+      "findings": [
+        {
+          "claim": "Two different, clashing typefaces appear across the banner and avatar, with no consistent type system.",
+          "evidenceRefs": [
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000047.webp",
+            "audit-screenshots/20261001/00000000-0000-0000-0000-000000000048.webp"
+          ],
+          "severity": "LOW",
+          "confidence": 0.64
+        }
+      ]
+    },
+    "477345df5c85be03bdcadcf84ad117cfca4e2ad96fac6122e932c57986b04f27": {
+      "findings": []
+    },
+    "28d9b3705213eed314baf830159332c5a4b10a5515468db6259efc82dd943449": {
+      "findings": []
+    },
+    "9856f8e72711e271cdcc01c3cd16e52508e6eeca28aeb9b9d03725576f8052a7": {
+      "findings": []
+    }
+  },
+  "latencyMs": 20
+}
