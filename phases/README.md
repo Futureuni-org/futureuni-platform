@@ -104,6 +104,10 @@ Then remove the batch's worktrees (`pnpm phase remove <nn>`).
 | 0 | Requirements pack | 2026-09-25 | Committed directly to `main` (the repository was created in this phase). See `phases/00/SUMMARY.md`. |
 | 1 | Scaffold | 2026-09-26 | Merge commit `19ca895` (branch `phase/01-scaffold`); `phases/01/REQUESTS.md` applied, CR-01-11 left open for Phase 21. See `phases/01/SUMMARY.md`. |
 | 2 | Core schema, contracts and registry | 2026-09-26 | Merge commit `1debae8` (branch `phase/02-core-schema`); `phases/02/REQUESTS.md` applied (CR-02-07 with its recommended option; CR-02-21 is notes for later phases). `futureuni_dev` needs one `pnpm db:reset` (run by the owner: Prisma asks for consent). See `phases/02/SUMMARY.md`. |
+| 3–6 | Auth · AI service · Platform services · (Design system in B2) | 2026-09 | Batch B1/B2. Merge commits in `git log main`; integrations in `phases/wave-1-integration/SUMMARY.md` and `phases/batch-b2-integration/SUMMARY.md`. |
+| 7, 9 | Profiles · Enrichment and compliance | 2026-09 | Batch B2. See `phases/batch-b2-integration/SUMMARY.md`. |
+| 8 | Sourcing framework and adapters | 2026-10-01 | Batch B3. Merge commit `78f8290` (branch `phase/08-sourcing`); `phases/08/REQUESTS.md` applied at Wave 2 integration. See `phases/08/SUMMARY.md` and `phases/wave-2-integration/SUMMARY.md`. |
+| 10 | Audits engine and browser capture | 2026-10-01 | Batch B3. Merge commit `7e239f4` (branch `phase/10-audits`); `phases/10/REQUESTS.md` applied. See `phases/10/SUMMARY.md`. |
 
 ## Where things are
 

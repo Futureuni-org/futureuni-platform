@@ -11,7 +11,8 @@ import "server-only";
 import { z } from "zod";
 
 import { MarketSchema, ServiceLineSchema, type Market, type ServiceLine } from "@/contracts/common";
-import { defineTask, registerTask } from "@/platform/ai";
+import { defineTask } from "@/platform/ai/define";
+import { registerTask } from "@/platform/ai/registry";
 
 // ---- source-classify-job-post ---------------------------------------------
 

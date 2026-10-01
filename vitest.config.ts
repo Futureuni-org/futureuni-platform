@@ -22,6 +22,11 @@ export default defineConfig({
     },
   },
   test: {
+    // Integration tests share one Postgres database and some commit globally-visible rows (e.g. an
+    // active admin for a service test). The acceptance tests assert on global state (the
+    // last-active-admin invariant), so test files must not run concurrently or they see each other's
+    // committed rows. Serialise files; tests within a file already run in order.
+    fileParallelism: false,
     // Applies pending migrations to the test database once, before any test file runs.
     globalSetup: ["./tests/setup/migrate-test-db.ts"],
     setupFiles: ["./tests/setup/test-env.ts", "./tests/setup/msw.ts"],

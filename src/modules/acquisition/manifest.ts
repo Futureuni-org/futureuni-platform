@@ -14,6 +14,17 @@ import { defineModule, permission, scopes } from "@/platform/registry/define";
 import { complianceJobs, complianceSettings, complianceSubscribers } from "./compliance";
 import { enrichmentJobs, enrichmentSettings, enrichmentTasks } from "./enrichment";
 import { profilesAiTasks, profilesSettings } from "./profiles";
+// Import registration arrays from the areas' leaf files, not their barrels: the barrels re-export
+// runtime code (orchestration, the runner/adapters) that pulls @/platform/ai, whose index boots the
+// task registry at import and would form a manifest ↔ registry cycle (TDZ on `validated`).
+import { auditJobs } from "./audits/jobs";
+import { auditSettings } from "./audits/settings";
+import { auditTasks } from "./audits/tasks";
+import { sourcingJobs } from "./sourcing/jobs";
+import { sourcingNotificationTypes } from "./sourcing/notifications";
+import { getSourcingDynamicSchedules } from "./sourcing/schedules";
+import { sourcingSettings } from "./sourcing/settings";
+import { sourcingTasks } from "./sourcing/tasks";
 
 /** The four line tabs and their URL slugs (module spec §6). */
 const LINES = [
@@ -245,12 +256,19 @@ export default defineModule({
     permission("acquisition.domain.checkDns", "Check a sending domain's DNS", ADMIN_AND_MANAGER),
     permission("acquisition.outreach.globalPause", "Pause all outreach", ADMIN_ONLY),
   ],
-  jobs: [...enrichmentJobs, ...complianceJobs],
+  jobs: [...enrichmentJobs, ...complianceJobs, ...sourcingJobs, ...auditJobs],
   schedules: [],
-  settings: [...profilesSettings, ...enrichmentSettings, ...complianceSettings],
+  dynamicSchedules: getSourcingDynamicSchedules,
+  settings: [
+    ...profilesSettings,
+    ...enrichmentSettings,
+    ...complianceSettings,
+    ...sourcingSettings,
+    ...auditSettings,
+  ],
   settingsPanels: [],
   subscribers: [...complianceSubscribers],
-  aiTasks: [...profilesAiTasks, ...enrichmentTasks],
+  aiTasks: [...profilesAiTasks, ...enrichmentTasks, ...sourcingTasks, ...auditTasks],
   homeWidgets: [
     {
       id: "acquisition.my-review-queue",
@@ -274,6 +292,6 @@ export default defineModule({
       order: 30,
     },
   ],
-  notificationTypes: [],
+  notificationTypes: [...sourcingNotificationTypes],
   commands: [],
 });
