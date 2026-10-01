@@ -1,0 +1,74 @@
+{
+  "default": {
+    "relevantLine": null,
+    "isRecruitmentAgency": false,
+    "isInHouseFullTeam": false,
+    "confidence": 0.5,
+    "reason": "No specific hiring signal detected."
+  },
+  "byHash": {
+    "a906ed46cc1830c32c8277c32383764cbdc6efe8281d1cd6230859cca8f76f73": {
+      "relevantLine": "WEB_DEVELOPMENT",
+      "isRecruitmentAgency": false,
+      "isInHouseFullTeam": false,
+      "confidence": 0.9,
+      "reason": "A frontend developer role at a single small business."
+    },
+    "85894f535ad249d869eb3d70715e5331bc31bad11168a5c1e08d722a1e40e16c": {
+      "relevantLine": "UI_UX_DESIGN",
+      "isRecruitmentAgency": false,
+      "isInHouseFullTeam": false,
+      "confidence": 0.88,
+      "reason": "A single product designer role at a health company."
+    },
+    "f2498af441ece988f1d2a0e01323e5c381e7edbc5ec6121fadde1c3d16b6af83": {
+      "relevantLine": "GRAPHIC_DESIGN",
+      "isRecruitmentAgency": false,
+      "isInHouseFullTeam": false,
+      "confidence": 0.85,
+      "reason": "A brand designer role at a cosmetics brand."
+    },
+    "ab539a2fedf06ab405898e346472b38ed34bcf880ac0f117f40dc2feaddd8e9f": {
+      "relevantLine": "VIDEO_EDITING",
+      "isRecruitmentAgency": false,
+      "isInHouseFullTeam": false,
+      "confidence": 0.9,
+      "reason": "A YouTube editor role at a single creator business."
+    },
+    "c31d9d615716d45ff441c8611f17b9a560ed647508e5602f2992fff01c64a8d8": {
+      "relevantLine": "WEB_DEVELOPMENT",
+      "isRecruitmentAgency": true,
+      "isInHouseFullTeam": false,
+      "confidence": 0.95,
+      "reason": "The employer is a recruitment agency hiring on behalf of a client."
+    },
+    "e8a3d0e8433e4cd3630c4b0e7c313cdcd29b29a52c01981df05533c16d5ec91f": {
+      "relevantLine": "UI_UX_DESIGN",
+      "isRecruitmentAgency": true,
+      "isInHouseFullTeam": false,
+      "confidence": 0.93,
+      "reason": "The employer is a staffing/placement firm, not the end client."
+    },
+    "cb1803e8c324353372506f31652f91982c7cbdedda736ec9d9aa211c907773c3": {
+      "relevantLine": "WEB_DEVELOPMENT",
+      "isRecruitmentAgency": false,
+      "isInHouseFullTeam": true,
+      "confidence": 0.9,
+      "reason": "Hiring 20 developers at once signals a full in-house engineering team."
+    },
+    "f583b56fc812c2fd7c04dc219a5b9effcc20ddbcc42603c0f451683ff9b919b5": {
+      "relevantLine": "GRAPHIC_DESIGN",
+      "isRecruitmentAgency": false,
+      "isInHouseFullTeam": false,
+      "confidence": 0.86,
+      "reason": "A single graphic designer role at a boutique."
+    },
+    "45246b2769d23a99436f73de05eddf357060215115d812d438cd5c67eef150d3": {
+      "relevantLine": null,
+      "isRecruitmentAgency": false,
+      "isInHouseFullTeam": false,
+      "confidence": 0.92,
+      "reason": "An accountant role does not map to any FUTUREUNI service line."
+    }
+  }
+}

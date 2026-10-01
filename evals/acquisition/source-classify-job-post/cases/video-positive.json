@@ -1,0 +1,18 @@
+{
+  "id": "video-positive",
+  "description": "A YouTube editor role at a creator.",
+  "input": {
+    "title": "YouTube Video Editor",
+    "companyName": "Coach Ayo Media",
+    "serviceLine": "VIDEO_EDITING",
+    "market": "NIGERIA"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "relevantLine": "VIDEO_EDITING",
+      "isRecruitmentAgency": false,
+      "isInHouseFullTeam": false
+    }
+  }
+}

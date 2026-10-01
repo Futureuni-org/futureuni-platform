@@ -14,7 +14,6 @@ import "server-only";
 import {
   TaskDefinitionMetaSchema,
   type AnyTaskDefinition,
-  type DefineTask,
   type GetTask,
   type RegisterTask,
   type TaskDefinition,

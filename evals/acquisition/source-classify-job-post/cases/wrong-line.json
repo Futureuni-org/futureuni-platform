@@ -1,0 +1,16 @@
+{
+  "id": "wrong-line",
+  "description": "A role unrelated to any FUTUREUNI line.",
+  "input": {
+    "title": "Accountant",
+    "companyName": "Delta Foods",
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "relevantLine": null
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "id": "staffing-firm",
+  "description": "Trap: a staffing/placement firm.",
+  "input": {
+    "title": "UI Designer",
+    "companyName": "PeopleSource Staffing LLC",
+    "snippet": "Placement agency connecting designers with employers.",
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "isRecruitmentAgency": true
+    }
+  }
+}

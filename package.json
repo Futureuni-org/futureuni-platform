@@ -77,6 +77,7 @@
     "croner": "10.0.1",
     "date-fns": "^4.4.0",
     "date-fns-tz": "^3.2.0",
+    "fast-xml-parser": "^5.11.2",
     "libphonenumber-js": "1.13.14",
     "lucide-react": "^1.48.0",
     "motion": "^13.4.3",

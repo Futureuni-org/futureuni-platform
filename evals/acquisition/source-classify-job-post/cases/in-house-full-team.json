@@ -1,0 +1,18 @@
+{
+  "id": "in-house-full-team",
+  "description": "Trap: urgently hiring 20 developers for an in-house team.",
+  "input": {
+    "title": "Developers Wanted",
+    "companyName": "MegaCorp",
+    "snippet": "Urgently hiring 20 developers to build our in-house engineering team.",
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "isInHouseFullTeam": true,
+      "isRecruitmentAgency": false
+    }
+  }
+}

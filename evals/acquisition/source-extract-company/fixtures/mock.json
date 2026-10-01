@@ -1,0 +1,58 @@
+{
+  "default": {
+    "companyName": "Unknown",
+    "website": null,
+    "city": null,
+    "country": null
+  },
+  "byHash": {
+    "cd9f303ac4b5b95b1ac81e47c3233ec7a5653d842b73925af762b661d48bc5b9": {
+      "companyName": "ACME Web Ltd",
+      "website": null,
+      "city": "Lagos",
+      "country": "NG"
+    },
+    "e47cfc7b1f3b30d8aa4c0ec5b234ac9b6f604b821cbe9c7b926180c4614349a3": {
+      "companyName": "Bright Studios",
+      "website": null,
+      "city": null,
+      "country": null
+    },
+    "adc09a63905f39d4693109988eaa4a10da3c6567c4ff0bcd69d7d3d35c30dd80": {
+      "companyName": "Northgate Studio",
+      "website": "https://northgatestudio.co.uk",
+      "city": "Manchester",
+      "country": "GB"
+    },
+    "8346cf7be3c66197ffa726a00f2dc6b52bc2e0841eb70f5dcc6e274c35216a96": {
+      "companyName": "Creator Hub",
+      "website": null,
+      "city": "Abuja",
+      "country": "NG"
+    },
+    "89e5b00d61c44280014e16d0a5d61b87fd0b7267840bfeea387fca6cfb68ccae": {
+      "companyName": "Fresh Bakes",
+      "website": null,
+      "city": null,
+      "country": null
+    },
+    "89f86c93829287a7fff839fea9d456a10bc29378e6b74beb92c2e261c33ae4e3": {
+      "companyName": "Brightwave Apps",
+      "website": null,
+      "city": "Houston",
+      "country": "US"
+    },
+    "c3e92bd08480d92dfa8de11ec04a4edbfa2e7b39b6c3eda6bb4f28b98df56fad": {
+      "companyName": "JollofMart",
+      "website": "https://jollofmart.com.ng",
+      "city": null,
+      "country": "NG"
+    },
+    "117721777c5a116df29e4fe82c496ad2a6b7866371ce1a5a869b2dc0a1886d68": {
+      "companyName": "Delta Agency",
+      "website": null,
+      "city": "Toronto",
+      "country": "CA"
+    }
+  }
+}

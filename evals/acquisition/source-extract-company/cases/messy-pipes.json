@@ -1,0 +1,19 @@
+{
+  "id": "messy-pipes",
+  "description": "Pipes and a 'Hiring' prefix around the name.",
+  "input": {
+    "rawText": "ACME WEB LTD | Hiring: Senior Web Developer | Lagos",
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "mustNotMention": [
+      "Hiring"
+    ],
+    "exactMatch": {
+      "country": "NG",
+      "city": "Lagos"
+    }
+  }
+}

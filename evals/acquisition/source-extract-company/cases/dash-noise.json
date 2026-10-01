@@ -1,0 +1,15 @@
+{
+  "id": "dash-noise",
+  "description": "Dash-separated careers noise.",
+  "input": {
+    "rawText": "Bright Studios - Careers - Brand Designer",
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "NIGERIA"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "companyName": "Bright Studios"
+    }
+  }
+}

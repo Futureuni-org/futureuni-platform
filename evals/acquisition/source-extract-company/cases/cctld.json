@@ -1,0 +1,16 @@
+{
+  "id": "cctld",
+  "description": "A ccTLD in the stated URL implies the country.",
+  "input": {
+    "rawText": "Shop at jollofmart.com.ng — Graphic Designer role",
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "NIGERIA"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "website": "https://jollofmart.com.ng",
+      "country": "NG"
+    }
+  }
+}

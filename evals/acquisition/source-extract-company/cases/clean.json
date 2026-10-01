@@ -1,0 +1,18 @@
+{
+  "id": "clean",
+  "description": "An already-clean name with nothing else to infer.",
+  "input": {
+    "rawText": "Fresh Bakes",
+    "serviceLine": "GRAPHIC_DESIGN",
+    "market": "NIGERIA"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "companyName": "Fresh Bakes",
+      "website": null,
+      "city": null,
+      "country": null
+    }
+  }
+}

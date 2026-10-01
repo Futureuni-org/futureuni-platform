@@ -1,0 +1,19 @@
+{
+  "id": "uiux-positive",
+  "description": "A product designer role.",
+  "input": {
+    "title": "Product Designer",
+    "companyName": "Rivet Health",
+    "location": "London, UK",
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "relevantLine": "UI_UX_DESIGN",
+      "isRecruitmentAgency": false,
+      "isInHouseFullTeam": false
+    }
+  }
+}

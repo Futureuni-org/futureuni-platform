@@ -1,0 +1,16 @@
+{
+  "id": "us-city",
+  "description": "A US city implies the country.",
+  "input": {
+    "rawText": "Brightwave Apps — Houston — hiring UX designer",
+    "serviceLine": "UI_UX_DESIGN",
+    "market": "INTERNATIONAL"
+  },
+  "expectations": {
+    "schemaValid": true,
+    "exactMatch": {
+      "city": "Houston",
+      "country": "US"
+    }
+  }
+}
