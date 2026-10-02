@@ -3,7 +3,9 @@
 import Link from "next/link";
 import { useState, useTransition, type SyntheticEvent } from "react";
 
-import { Field, InfoBanner, PrimaryButton, TextInput } from "../_components/form";
+import { Field } from "@/components/admin";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 import { requestResetAction } from "./actions";
 
@@ -23,9 +25,9 @@ export default function RequestResetForm() {
   if (sent) {
     return (
       <>
-        <InfoBanner>
+        <div className="rounded-md border border-info/40 bg-info-soft px-4 py-3 text-sm text-info">
           If that account exists, we&apos;ve sent a link to reset the password. Check your inbox.
-        </InfoBanner>
+        </div>
         <Link href="/login" className="text-sm font-semibold text-primary hover:underline">
           Back to sign-in
         </Link>
@@ -35,19 +37,14 @@ export default function RequestResetForm() {
 
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
-      <Field label="Email" htmlFor="email">
-        <TextInput
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          required
-          autoFocus
-        />
+      <Field label="Email">
+        {({ id }) => (
+          <Input id={id} name="email" type="email" autoComplete="email" required autoFocus />
+        )}
       </Field>
-      <PrimaryButton type="submit" pending={pending}>
+      <Button type="submit" loading={pending} className="w-full">
         Send reset link
-      </PrimaryButton>
+      </Button>
       <Link href="/login" className="text-sm font-semibold text-primary hover:underline">
         Back to sign-in
       </Link>
