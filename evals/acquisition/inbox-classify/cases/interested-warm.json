@@ -1,0 +1,11 @@
+{
+  "id": "interested-warm",
+  "description": "INTERESTED / NIGERIA — interested-warm",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "originalMessage": { "subject": "Your website on mobile", "text": "Hi, we looked at your site and spotted a few quick wins. Open to a short call?" },
+    "reply": { "fromName": "Sam", "subject": "Re: Your website on mobile", "text": "Thanks for reaching me. We have been meaning to fix the site. What are the next steps?", "receivedAt": "2026-10-01T09:00:00Z", "recipientTimezone": "Africa/Lagos" }
+  },
+  "expectations": { "schemaValid": true, "exactMatch": { "classification": "INTERESTED" } }
+}

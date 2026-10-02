@@ -1,0 +1,14 @@
+{
+  "default": {
+    "classification": "INTERESTED",
+    "confidence": 0.9,
+    "followUpDate": null,
+    "referral": null,
+    "objectionSummary": null,
+    "questions": [],
+    "sentiment": "positive",
+    "language": "en",
+    "summary": "Prospect is open to a short call."
+  },
+  "latencyMs": 15
+}

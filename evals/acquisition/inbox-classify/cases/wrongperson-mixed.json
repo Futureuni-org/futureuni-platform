@@ -1,0 +1,11 @@
+{
+  "id": "wrongperson-mixed",
+  "description": "WRONG_PERSON / INTERNATIONAL — wrongperson-mixed",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "originalMessage": { "subject": "Your website on mobile", "text": "Hi, we looked at your site and spotted a few quick wins. Open to a short call?" },
+    "reply": { "fromName": "Sam", "subject": "Re: Your website on mobile", "text": "Not now, but talk to Sarah (sarah@acme.example) who owns the website.", "receivedAt": "2026-10-01T09:00:00Z", "recipientTimezone": "Africa/Lagos" }
+  },
+  "expectations": { "schemaValid": true, "exactMatch": { "classification": "WRONG_PERSON" } }
+}

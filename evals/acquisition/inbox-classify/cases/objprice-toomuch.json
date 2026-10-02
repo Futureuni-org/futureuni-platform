@@ -1,0 +1,11 @@
+{
+  "id": "objprice-toomuch",
+  "description": "OBJECTION_PRICE / INTERNATIONAL — objprice-toomuch",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "originalMessage": { "subject": "Your website on mobile", "text": "Hi, we looked at your site and spotted a few quick wins. Open to a short call?" },
+    "reply": { "fromName": "Sam", "subject": "Re: Your website on mobile", "text": "Honestly that is likely out of our budget, we are a tiny team.", "receivedAt": "2026-10-01T09:00:00Z", "recipientTimezone": "Africa/Lagos" }
+  },
+  "expectations": { "schemaValid": true, "exactMatch": { "classification": "OBJECTION_PRICE" } }
+}
