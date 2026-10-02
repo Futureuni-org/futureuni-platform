@@ -8,7 +8,10 @@
  * delimited data blocks each SKILL.md defines; it is data, never instructions (INV-24).
  */
 
-import { registerTask } from "@/platform/ai";
+// `registerTask` from `@/platform/ai/registry` (never the `@/platform/ai` barrel), because the
+// manifest imports this file and the barrel boots the registry at load — that would form a
+// manifest ↔ registry import cycle (mirrors pipeline/tasks.ts).
+import { registerTask } from "@/platform/ai/registry";
 import { defineTask } from "@/platform/ai/define";
 import type { Market, ServiceLine } from "@/contracts/common";
 

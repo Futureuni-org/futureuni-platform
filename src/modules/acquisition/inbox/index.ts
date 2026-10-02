@@ -44,4 +44,3 @@ export { inboxJobs } from "./jobs";
 export { inboxSchedules } from "./schedules";
 export { inboxSettings, INBOX_SETTING_KEYS, getInboxSetting } from "./settings";
 export { inboxNotifications, INBOX_NOTIFICATION_TYPES } from "./notifications";
-export { inboxSubscribers } from "./subscribers";

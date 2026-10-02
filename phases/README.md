@@ -111,6 +111,8 @@ Then remove the batch's worktrees (`pnpm phase remove <nn>`).
 | 11 | Scoring, qualification, briefs, cross-sell and capacity throttling | 2026-10-01 | Batch B4. Merge commit `dd414d3` (branch `phase/11-scoring`); `phases/11/REQUESTS.md` applied at B4 integration (no schema/transition requests). See `phases/11/SUMMARY.md`. |
 | 12 | Outreach engine | 2026-10-01 | Batch B4. Merge commit `6f9ed2c` (branch `phase/12-outreach`); `phases/12/REQUESTS.md` applied. See `phases/12/SUMMARY.md`. |
 | 14 | Pipeline, meetings, proposals and won/lost | 2026-10-01 | Batch B4. Merge commit `cdffb84` (branch `phase/14-pipeline`); `phases/14/REQUESTS.md` applied (`@react-pdf/renderer` added). See `phases/14/SUMMARY.md` and `phases/batch-b4-integration/SUMMARY.md`. |
+| 13 | Reply inbox | 2026-10-02 | Batch B5. Branch `phase/13-inbox`; `phases/13/REQUESTS.md` applied at B5 integration (manifest wiring; `reply.interested`/`reply.needs-action` already platform types + routed by Phase 6, so not redeclared; redundant inbox subscriber removed). No schema change. See `phases/13/SUMMARY.md` and `phases/wave-3-integration/SUMMARY.md`. |
+| 18 | Admin and settings screens | 2026-10-02 | Batch B5 (Wave 4 phase). Branch `phase/18-admin-settings`; `phases/18/REQUESTS.md` deferred (interim repos stay; `SEAM-LINE-CONTEXT` wired at B6). See `phases/18/SUMMARY.md` and `phases/wave-3-integration/SUMMARY.md`. |
 
 ## Where things are
 

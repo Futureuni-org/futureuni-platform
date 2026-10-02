@@ -1,37 +1,20 @@
 /**
- * Inbox notification types (Phase 13), matching docs/contracts/events.md §3a. Registered on the
- * acquisition manifest by Phase 19 through `phases/13/REQUESTS.md`.
+ * Inbox notification types (Phase 13), matching docs/contracts/events.md §3a. `reply.interested` and
+ * `reply.needs-action` are already platform types (`src/platform/notifications/types.ts`) and are
+ * routed from `reply.classified` by the Phase 6 notification-router, so they are NOT redeclared here;
+ * only the SLA and nurture types below are new. Registered on the acquisition manifest by Phase 19
+ * through `phases/13/REQUESTS.md`.
  */
 
 import type { NotificationTypeDefinition } from "@/contracts/module-manifest";
 
 export const INBOX_NOTIFICATION_TYPES = {
-  interested: "reply.interested",
-  needsAction: "reply.needs-action",
   slaWarning: "reply.sla-warning",
   slaBreached: "reply.sla-breached",
   nurtureFollowUpDue: "nurture.follow-up-due",
 } as const;
 
 export const inboxNotifications: NotificationTypeDefinition[] = [
-  {
-    id: INBOX_NOTIFICATION_TYPES.interested,
-    label: "Interested reply",
-    description: "A prospect replied with interest and needs a prompt response.",
-    category: "product",
-    defaultChannels: ["IN_APP", "EMAIL"],
-    critical: true,
-    digestible: false,
-  },
-  {
-    id: INBOX_NOTIFICATION_TYPES.needsAction,
-    label: "Reply needs action",
-    description: "A prospect reply (a question, objection or unclear message) needs a human response.",
-    category: "product",
-    defaultChannels: ["IN_APP", "EMAIL"],
-    critical: false,
-    digestible: false,
-  },
   {
     id: INBOX_NOTIFICATION_TYPES.slaWarning,
     label: "Reply SLA at 75%",

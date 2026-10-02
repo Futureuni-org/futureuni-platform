@@ -43,6 +43,11 @@ import { pipelineNotificationTypes } from "./pipeline/notifications";
 import { pipelineSchedules } from "./pipeline/schedules";
 import { pipelineSettings } from "./pipeline/settings";
 import { pipelineTasks } from "./pipeline/tasks";
+import { inboxJobs } from "./inbox/jobs";
+import { inboxNotifications } from "./inbox/notifications";
+import { inboxSchedules } from "./inbox/schedules";
+import { inboxSettings } from "./inbox/settings";
+import { inboxAiTasks } from "./inbox/tasks";
 
 /** The four line tabs and their URL slugs (module spec §6). */
 const LINES = [
@@ -282,8 +287,9 @@ export default defineModule({
     ...scoringJobs,
     ...outreachJobs,
     ...pipelineJobs,
+    ...inboxJobs,
   ],
-  schedules: [...scoringSchedules, ...outreachSchedules, ...pipelineSchedules],
+  schedules: [...scoringSchedules, ...outreachSchedules, ...pipelineSchedules, ...inboxSchedules],
   dynamicSchedules: getSourcingDynamicSchedules,
   settings: [
     ...profilesSettings,
@@ -294,6 +300,7 @@ export default defineModule({
     ...scoringSettings,
     ...outreachSettings,
     ...pipelineSettings,
+    ...inboxSettings,
   ],
   settingsPanels: [],
   subscribers: [...complianceSubscribers, ...scoringSubscribers, ...outreachSubscribers],
@@ -305,6 +312,7 @@ export default defineModule({
     ...scoringTasks,
     ...outreachAiTasks,
     ...pipelineTasks,
+    ...inboxAiTasks,
   ],
   homeWidgets: [
     {
@@ -334,6 +342,7 @@ export default defineModule({
     ...scoringNotificationTypes,
     ...outreachNotifications,
     ...pipelineNotificationTypes,
+    ...inboxNotifications,
   ],
   commands: [],
 });
