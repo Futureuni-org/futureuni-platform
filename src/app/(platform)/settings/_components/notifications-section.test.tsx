@@ -6,7 +6,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { NotificationsSection, type NotificationTypeRow } from "./notifications-section";
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-const updateMock = vi.fn(() => Promise.resolve({ ok: true as const, data: { ok: true as const } }));
+const updateMock = vi.fn<(updates: unknown) => Promise<{ ok: true; data: { ok: true } }>>(() =>
+  Promise.resolve({ ok: true as const, data: { ok: true as const } }),
+);
 vi.mock("../actions", () => ({
   updateNotificationPreferencesAction: (updates: unknown) => updateMock(updates),
 }));
