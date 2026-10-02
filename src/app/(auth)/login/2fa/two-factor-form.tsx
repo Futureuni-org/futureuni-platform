@@ -3,7 +3,9 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition, type SyntheticEvent } from "react";
 
-import { ErrorBanner, Field, PrimaryButton, TextInput } from "../../_components/form";
+import { Field } from "@/components/admin";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 import { verifyBackupAction, verifyTotpAction } from "./actions";
 
@@ -18,8 +20,7 @@ export default function TwoFactorForm({ next }: { next: string | null }) {
     setError(null);
     const data = new FormData(event.currentTarget);
     startTransition(async () => {
-      const result =
-        mode === "totp" ? await verifyTotpAction(data) : await verifyBackupAction(data);
+      const result = mode === "totp" ? await verifyTotpAction(data) : await verifyBackupAction(data);
       if (!result.ok) {
         setError(result.error.message);
         return;
@@ -32,28 +33,36 @@ export default function TwoFactorForm({ next }: { next: string | null }) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-5" noValidate>
       <input type="hidden" name="next" value={next ?? ""} />
-      <ErrorBanner message={error} />
+      {error !== null && (
+        <div role="alert" aria-live="polite" className="rounded-md border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
+          {error}
+        </div>
+      )}
       {mode === "totp" ? (
-        <Field label="Verification code" htmlFor="code">
-          <TextInput
-            id="code"
-            name="code"
-            inputMode="numeric"
-            pattern="\d{6}"
-            autoComplete="one-time-code"
-            required
-            maxLength={6}
-            autoFocus
-          />
+        <Field label="Verification code">
+          {({ id }) => (
+            <Input
+              id={id}
+              name="code"
+              inputMode="numeric"
+              pattern="\d{6}"
+              autoComplete="one-time-code"
+              required
+              maxLength={6}
+              autoFocus
+            />
+          )}
         </Field>
       ) : (
-        <Field label="Backup code" htmlFor="code">
-          <TextInput id="code" name="code" autoComplete="one-time-code" required autoFocus />
+        <Field label="Backup code">
+          {({ id }) => (
+            <Input id={id} name="code" autoComplete="one-time-code" required autoFocus />
+          )}
         </Field>
       )}
-      <PrimaryButton type="submit" pending={pending}>
+      <Button type="submit" loading={pending} className="w-full">
         Verify
-      </PrimaryButton>
+      </Button>
       <button
         type="button"
         onClick={() => {
