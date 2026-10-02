@@ -1,0 +1,11 @@
+{
+  "id": "question-unoffered",
+  "description": "QUESTION / INTERNATIONAL — question-unoffered",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "originalMessage": { "subject": "Your website on mobile", "text": "Hi, we looked at your site and spotted a few quick wins. Open to a short call?" },
+    "reply": { "fromName": "Sam", "subject": "Re: Your website on mobile", "text": "Do you also handle paid Google ads management every month?", "receivedAt": "2026-10-01T09:00:00Z", "recipientTimezone": "Africa/Lagos" }
+  },
+  "expectations": { "schemaValid": true, "exactMatch": { "classification": "QUESTION" } }
+}

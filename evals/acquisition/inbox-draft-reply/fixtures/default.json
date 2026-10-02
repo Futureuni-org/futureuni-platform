@@ -1,0 +1,10 @@
+{
+  "default": {
+    "subject": null,
+    "body": "Hi there,\n\nThanks for coming back to me. You asked what a basic site would involve __CITE1__, so here is the short version: a fast, mobile-friendly site with the pages you need and a clear way for customers to reach you.\n\nIf it helps, I can walk you through a couple of options on a short call.\n\nBest,\nTolu",
+    "citedFindingIds": [],
+    "needsPricingApproval": false,
+    "notes": "Answered the scope question; owner to confirm a call time."
+  },
+  "latencyMs": 20
+}

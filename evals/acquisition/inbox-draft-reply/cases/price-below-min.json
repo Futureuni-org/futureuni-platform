@@ -1,0 +1,25 @@
+{
+  "id": "price-below-min",
+  "description": "OBJECTION_PRICE / NIGERIA — price-below-min",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "NIGERIA",
+    "classification": "OBJECTION_PRICE",
+    "ownerName": "Tolu Adeyemi",
+    "leadBrief": "A small NIGERIA retailer with a slow, dated website and no clear way for customers to enquire.",
+    "thread": [
+      { "direction": "OUTBOUND", "subject": "Your website on mobile", "text": "Hi, your homepage was slow to load on mobile in our test. Open to a short call?" },
+      { "direction": "INBOUND", "subject": "Re: Your website on mobile", "text": "I only get fifty thousand naira for this, abeg." }
+    ],
+    "objectionSummary": "Budget is well below the smallest package minimum.",
+    "questions": ["I only get fifty thousand naira for this, abeg."],
+    "findings": [
+      { "id": "cmockfindingwebperf00000001", "label": "web.perf.lcp", "detail": "Homepage takes over 6 seconds to become interactive on a mid-range phone.", "sourceUrl": "https://example.com/report" }
+    ],
+    "packages": [
+      { "id": "starter_site", "name": "Starter site", "minMinor": 45000000, "maxMinor": 120000000, "currency": "NGN" }
+    ],
+    "bookingLink": null
+  },
+  "expectations": { "schemaValid": true, "mustNotMention": ["!"], "bannedPhrases": ["world-class", "cutting-edge", "synergy", "supercharge"], "exactMatch": { "needsPricingApproval": true } }
+}

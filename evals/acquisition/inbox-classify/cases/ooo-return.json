@@ -1,0 +1,11 @@
+{
+  "id": "ooo-return",
+  "description": "OUT_OF_OFFICE / INTERNATIONAL — ooo-return",
+  "input": {
+    "serviceLine": "WEB_DEVELOPMENT",
+    "market": "INTERNATIONAL",
+    "originalMessage": { "subject": "Your website on mobile", "text": "Hi, we looked at your site and spotted a few quick wins. Open to a short call?" },
+    "reply": { "fromName": "Sam", "subject": "Re: Your website on mobile", "text": "Automatic reply: I am on leave and will be back on October 14. For urgent matters contact reception.", "receivedAt": "2026-10-01T09:00:00Z", "recipientTimezone": "Africa/Lagos" }
+  },
+  "expectations": { "schemaValid": true, "exactMatch": { "classification": "OUT_OF_OFFICE" } }
+}
