@@ -1,0 +1,20 @@
+{
+  "id": "reply-jump-ng-web",
+  "description": "Web Development Nigeria reply rate rose on a healthy sample",
+  "input": {
+    "weekLabel": "week of 28 Sep 2026",
+    "previousWeekLabel": "week of 21 Sep 2026",
+    "cells": [
+      {
+        "serviceLine": "WEB_DEVELOPMENT",
+        "market": "NIGERIA",
+        "metrics": [
+          { "id": "leads_found", "label": "leads_found", "current": "120", "previous": "110", "sampleSize": 120 },
+          { "id": "reply_rate", "label": "reply_rate", "current": "28%", "previous": "19%", "sampleSize": 120 },
+          { "id": "meetings_booked", "label": "meetings_booked", "current": "9", "previous": "6", "sampleSize": 120 }
+        ]
+      }
+    ]
+  },
+  "expectations": { "schemaValid": true, "mustMention": ["reply"] }
+}

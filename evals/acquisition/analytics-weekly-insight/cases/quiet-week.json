@@ -1,0 +1,24 @@
+{
+  "id": "quiet-week",
+  "description": "Nothing moved — the insight should say so plainly, not manufacture a story",
+  "input": {
+    "weekLabel": "week of 28 Sep 2026",
+    "previousWeekLabel": "week of 21 Sep 2026",
+    "cells": [
+      {
+        "serviceLine": "WEB_DEVELOPMENT",
+        "market": "NIGERIA",
+        "metrics": [
+          { "id": "leads_found", "label": "leads_found", "current": "80", "previous": "80", "sampleSize": 80 },
+          { "id": "reply_rate", "label": "reply_rate", "current": "20%", "previous": "20%", "sampleSize": 80 },
+          { "id": "meetings_booked", "label": "meetings_booked", "current": "5", "previous": "5", "sampleSize": 80 }
+        ]
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "mustMention": ["steady"],
+    "rubric": "The headline should convey that little changed; the insight must not invent a trend from flat numbers."
+  }
+}

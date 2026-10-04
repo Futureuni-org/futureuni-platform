@@ -1,0 +1,23 @@
+{
+  "id": "number-fidelity",
+  "description": "Every number in the insight must equal an input value — no computed deltas or rounding (AC-43.1)",
+  "input": {
+    "weekLabel": "week of 28 Sep 2026",
+    "previousWeekLabel": "week of 21 Sep 2026",
+    "cells": [
+      {
+        "serviceLine": "UI_UX_DESIGN",
+        "market": "NIGERIA",
+        "metrics": [
+          { "id": "leads_found", "label": "leads_found", "current": "70", "previous": "50", "sampleSize": 70 },
+          { "id": "reply_rate", "label": "reply_rate", "current": "24%", "previous": "21%", "sampleSize": 70 }
+        ]
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "mustNotMention": ["40%", "3 points", "20 more"],
+    "rubric": "Every number stated must be one of the input display values (70, 50, 24%, 21%). The insight must not compute a difference such as '20 more leads' or '3 points'."
+  }
+}

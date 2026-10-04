@@ -1,0 +1,30 @@
+{
+  "id": "mixed-lines",
+  "description": "One line up, one down — the insight should surface both, not average them away",
+  "input": {
+    "weekLabel": "week of 28 Sep 2026",
+    "previousWeekLabel": "week of 21 Sep 2026",
+    "cells": [
+      {
+        "serviceLine": "WEB_DEVELOPMENT",
+        "market": "NIGERIA",
+        "metrics": [
+          { "id": "reply_rate", "label": "reply_rate", "current": "30%", "previous": "18%", "sampleSize": 100 },
+          { "id": "meetings_booked", "label": "meetings_booked", "current": "10", "previous": "5", "sampleSize": 100 }
+        ]
+      },
+      {
+        "serviceLine": "GRAPHIC_DESIGN",
+        "market": "NIGERIA",
+        "metrics": [
+          { "id": "reply_rate", "label": "reply_rate", "current": "9%", "previous": "17%", "sampleSize": 100 },
+          { "id": "meetings_booked", "label": "meetings_booked", "current": "2", "previous": "6", "sampleSize": 100 }
+        ]
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "rubric": "The insight should note both the Web Development rise and the Graphic Design fall, not a single blended direction."
+  }
+}

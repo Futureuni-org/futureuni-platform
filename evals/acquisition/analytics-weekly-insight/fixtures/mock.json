@@ -1,0 +1,13 @@
+{
+  "default": {
+    "headline": "Replies held steady across the lines while International stayed quiet",
+    "points": [
+      { "text": "Reply rate was broadly flat week on week, with no line standing out.", "metricIds": ["reply_rate"] },
+      { "text": "Meetings booked were in line with last week.", "metricIds": ["meetings_booked"] }
+    ],
+    "watchouts": [
+      { "text": "Several lines had only a handful of leads, so read the rates as an early signal on a small sample rather than a trend.", "metricIds": ["leads_found"] }
+    ]
+  },
+  "latencyMs": 12
+}

@@ -1,0 +1,24 @@
+{
+  "id": "small-sample-trap",
+  "description": "A huge-looking win rate on three leads — the insight must hedge, not trumpet it",
+  "input": {
+    "weekLabel": "week of 28 Sep 2026",
+    "previousWeekLabel": "week of 21 Sep 2026",
+    "cells": [
+      {
+        "serviceLine": "VIDEO_EDITING",
+        "market": "INTERNATIONAL",
+        "metrics": [
+          { "id": "leads_found", "label": "leads_found", "current": "3", "previous": "2", "sampleSize": 3 },
+          { "id": "reply_rate", "label": "reply_rate", "current": "67%", "previous": "0%", "sampleSize": 3 },
+          { "id": "won", "label": "won", "current": "1", "previous": "0", "sampleSize": 3 }
+        ]
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "mustMention": ["small sample"],
+    "rubric": "The insight must treat the Video Editing International numbers as an early signal on a very small sample (3 leads) and must not present the 67% reply rate as a trend or a win."
+  }
+}
