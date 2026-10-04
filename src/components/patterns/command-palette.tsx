@@ -212,15 +212,26 @@ function subscribeRecent(listener: () => void): () => void {
   };
 }
 
+// Cached so getSnapshot returns a stable reference between changes (an uncached new array every
+// call makes useSyncExternalStore loop forever — React #185).
+let recentSnapshot: string[] = [];
 function readRecent(): string[] {
   try {
     const raw = window.localStorage.getItem(RECENT_KEY);
-    return raw === null ? [] : (JSON.parse(raw) as string[]);
+    const parsed: string[] = raw === null ? [] : (JSON.parse(raw) as string[]);
+    if (
+      parsed.length === recentSnapshot.length &&
+      parsed.every((entry, index) => entry === recentSnapshot[index])
+    ) {
+      return recentSnapshot;
+    }
+    recentSnapshot = parsed;
+    return recentSnapshot;
   } catch {
-    return [];
+    return recentSnapshot;
   }
 }
 
 function useRecent(): string[] {
-  return useSyncExternalStore(subscribeRecent, readRecent, () => []);
+  return useSyncExternalStore(subscribeRecent, readRecent, () => recentSnapshot);
 }
