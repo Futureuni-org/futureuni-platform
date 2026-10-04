@@ -24,6 +24,9 @@ interface Registration {
 type Listener = () => void;
 const registry = new Map<string, Registration>();
 const listeners = new Set<Listener>();
+// Cached so getSnapshot returns a stable reference between changes (an uncached Array.from(...) is a
+// new array every call and makes useSyncExternalStore loop forever — React #185).
+let registrySnapshot: Registration[] = [];
 
 function subscribe(listener: Listener): () => void {
   listeners.add(listener);
@@ -33,6 +36,7 @@ function subscribe(listener: Listener): () => void {
 }
 
 function emit(): void {
+  registrySnapshot = Array.from(registry.values());
   for (const listener of listeners) listener();
 }
 
@@ -50,8 +54,8 @@ function register(entry: Registration): () => void {
 export function useRegisteredShortcuts(): Registration[] {
   return useSyncExternalStore(
     subscribe,
-    () => Array.from(registry.values()),
-    () => [],
+    () => registrySnapshot,
+    () => registrySnapshot,
   );
 }
 
@@ -163,6 +167,11 @@ interface Command {
 }
 const commandRegistry = new Map<string, Command>();
 const commandListeners = new Set<Listener>();
+let commandSnapshot: Command[] = [];
+function emitCommands(): void {
+  commandSnapshot = Array.from(commandRegistry.values());
+  for (const listener of commandListeners) listener();
+}
 
 function subscribeCommands(listener: Listener): () => void {
   commandListeners.add(listener);
@@ -174,8 +183,8 @@ function subscribeCommands(listener: Listener): () => void {
 export function useCommandRegistry(): Command[] {
   return useSyncExternalStore(
     subscribeCommands,
-    () => Array.from(commandRegistry.values()),
-    () => [],
+    () => commandSnapshot,
+    () => commandSnapshot,
   );
 }
 
@@ -186,10 +195,10 @@ export function useCommand(command: Command): void {
   }, [command]);
   useEffect(() => {
     commandRegistry.set(command.id, ref.current);
-    for (const listener of commandListeners) listener();
+    emitCommands();
     return () => {
       commandRegistry.delete(command.id);
-      for (const listener of commandListeners) listener();
+      emitCommands();
     };
   }, [command.id]);
 }
@@ -197,10 +206,10 @@ export function useCommand(command: Command): void {
 /** Convenience registration outside the React tree (module-level commands, if ever). */
 export function registerCommand(command: Command): () => void {
   commandRegistry.set(command.id, command);
-  for (const listener of commandListeners) listener();
+  emitCommands();
   return () => {
     commandRegistry.delete(command.id);
-    for (const listener of commandListeners) listener();
+    emitCommands();
   };
 }
 
