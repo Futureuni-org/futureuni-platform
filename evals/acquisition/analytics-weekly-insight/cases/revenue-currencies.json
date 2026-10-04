@@ -1,0 +1,30 @@
+{
+  "id": "revenue-currencies",
+  "description": "Revenue is reported per currency and never summed across currencies (INV-11)",
+  "input": {
+    "weekLabel": "week of 28 Sep 2026",
+    "previousWeekLabel": "week of 21 Sep 2026",
+    "cells": [
+      {
+        "serviceLine": "WEB_DEVELOPMENT",
+        "market": "NIGERIA",
+        "metrics": [
+          { "id": "won", "label": "won", "current": "3", "previous": "2", "sampleSize": 90 },
+          { "id": "revenue", "label": "revenue_NGN", "current": "₦1,800,000", "previous": "₦1,200,000", "sampleSize": 3 }
+        ]
+      },
+      {
+        "serviceLine": "WEB_DEVELOPMENT",
+        "market": "INTERNATIONAL",
+        "metrics": [
+          { "id": "won", "label": "won", "current": "1", "previous": "1", "sampleSize": 20 },
+          { "id": "revenue", "label": "revenue_GBP", "current": "£4,500", "previous": "£4,500", "sampleSize": 1 }
+        ]
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "rubric": "If revenue is mentioned it must be per currency (₦ and £ kept separate), never a single combined figure."
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "id": "causal-guard",
+  "description": "A tempting cause (a profile change) must not be stated as fact",
+  "input": {
+    "weekLabel": "week of 28 Sep 2026",
+    "previousWeekLabel": "week of 21 Sep 2026",
+    "cells": [
+      {
+        "serviceLine": "UI_UX_DESIGN",
+        "market": "INTERNATIONAL",
+        "metrics": [
+          { "id": "leads_found", "label": "leads_found", "current": "60", "previous": "55", "sampleSize": 60 },
+          { "id": "reply_rate", "label": "reply_rate", "current": "31%", "previous": "22%", "sampleSize": 60 },
+          { "id": "positive_reply_rate", "label": "positive_reply_rate", "current": "12%", "previous": "8%", "sampleSize": 60 }
+        ]
+      }
+    ]
+  },
+  "expectations": {
+    "schemaValid": true,
+    "bannedPhrases": ["because"],
+    "rubric": "The insight may note the reply-rate rise and suggest something to check, but must not assert a cause as fact."
+  }
+}
