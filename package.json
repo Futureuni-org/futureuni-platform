@@ -26,6 +26,7 @@
     "db:deploy": "prisma migrate deploy",
     "db:generate": "prisma generate",
     "db:seed": "prisma db seed",
+    "seed:staging": "tsx --conditions=react-server prisma/seed/staging/index.ts",
     "db:studio": "prisma studio",
     "db:reset": "node prisma/tools/reset.mjs",
     "db:validate": "node prisma/tools/validate.mjs",

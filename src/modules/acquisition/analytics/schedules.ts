@@ -10,8 +10,8 @@ export const analyticsSchedules: readonly CronSchedule[] = [
   {
     id: "analytics-weekly-report",
     job: "acquisition.analytics.weekly-report",
-    cron: "0 8 * * 1",
+    cron: "30 8 * * 1",
     timezone: "Africa/Lagos",
-    description: "Monday at 08:00: email managers and admins the weekly insight and headline metrics.",
+    description: "Monday at 08:30: email managers and admins the weekly insight and headline metrics.",
   },
 ];

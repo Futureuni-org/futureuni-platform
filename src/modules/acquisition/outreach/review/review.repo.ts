@@ -34,12 +34,43 @@ export type ReviewQueueRow = Prisma.MessageGetPayload<{ include: typeof QUEUE_IN
 
 export interface ReviewQueueFilter {
   serviceLine?: string;
+  serviceLines?: readonly string[];
   market?: string;
   ownerId?: string;
   needsHumanReview?: boolean;
   complianceReview?: boolean;
   cursor?: string;
   limit: number;
+}
+
+/** Scope for an aggregate review-queue count (home widget / nav badge). */
+export interface ReviewQueueCountScope {
+  serviceLine?: string;
+  serviceLines?: readonly string[];
+  market?: string;
+  ownerId?: string;
+  needsHumanReview?: boolean;
+  complianceReview?: boolean;
+}
+
+/** Count the draft messages waiting in the review queue for a scope (no pagination). */
+export async function countReviewQueue(
+  tx: Tx | null,
+  scope: ReviewQueueCountScope,
+): Promise<number> {
+  const leadWhere: Prisma.LeadWhereInput = {
+    ...(scope.serviceLine === undefined ? {} : { serviceLine: scope.serviceLine as never }),
+    ...(scope.serviceLines === undefined
+      ? {}
+      : { serviceLine: { in: scope.serviceLines as never } }),
+    ...(scope.market === undefined ? {} : { market: scope.market as never }),
+    ...(scope.ownerId === undefined ? {} : { ownerId: scope.ownerId }),
+    ...(scope.needsHumanReview === undefined ? {} : { needsHumanReview: scope.needsHumanReview }),
+    ...(scope.complianceReview === undefined ? {} : { complianceReview: scope.complianceReview }),
+  };
+  return dbOr(tx).message.count({
+    where: { status: { in: ["DRAFT", "NEEDS_EDIT"] }, lead: leadWhere },
+  });
 }
 
 export async function queryReviewQueue(
@@ -50,6 +81,9 @@ export async function queryReviewQueue(
     status: { in: ["DRAFT", "NEEDS_EDIT"] },
     lead: {
       ...(filter.serviceLine === undefined ? {} : { serviceLine: filter.serviceLine as never }),
+      ...(filter.serviceLines === undefined
+        ? {}
+        : { serviceLine: { in: filter.serviceLines as never } }),
       ...(filter.market === undefined ? {} : { market: filter.market as never }),
       ...(filter.ownerId === undefined ? {} : { ownerId: filter.ownerId }),
       ...(filter.needsHumanReview === undefined ? {} : { needsHumanReview: filter.needsHumanReview }),

@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 
 import type { CurrentUser } from "@/platform/auth";
 
-import { AcquisitionInboxWidget } from "./widgets/acquisition-inbox";
-import { AcquisitionPipelineValueWidget } from "./widgets/acquisition-pipeline-value";
-import { AcquisitionReviewQueueWidget } from "./widgets/acquisition-review-queue";
+import {
+  AcquisitionInboxWidget,
+  AcquisitionPipelineValueWidget,
+  AcquisitionReviewQueueWidget,
+} from "@/modules/acquisition/ui/widgets";
 
 export interface WidgetProps {
   user: CurrentUser;
@@ -15,9 +17,9 @@ export interface WidgetProps {
 }
 
 /**
- * Widget id → server renderer. Phase 4 ships placeholders for the three acquisition widgets that
- * `docs/specs/platform.md` §3.15 names ("My review queue", "My inbox", "Pipeline value"). Phase 7
- * re-registers them at merge with real acquisition service reads.
+ * Widget id → server renderer. The three acquisition widgets that `docs/specs/platform.md` §3.15
+ * names ("My review queue", "My inbox", "Pipeline value") are owned by the acquisition module
+ * (`src/modules/acquisition/ui/widgets/`) and fed by real services (Phase 19).
  */
 export const WIDGET_REGISTRY: Record<string, (props: WidgetProps) => Promise<ReactNode>> = {
   "acquisition.my-review-queue": AcquisitionReviewQueueWidget,

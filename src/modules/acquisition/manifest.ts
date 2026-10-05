@@ -20,6 +20,12 @@ import { profilesAiTasks, profilesSettings } from "./profiles";
 import { auditJobs } from "./audits/jobs";
 import { auditSettings } from "./audits/settings";
 import { auditTasks } from "./audits/tasks";
+import { complianceSchedules } from "./compliance/schedules";
+import { workflowJobs } from "./workflows/jobs";
+import { workflowSchedules } from "./workflows/schedules";
+import { workflowSettings } from "./workflows/settings";
+import { workflowSubscribers } from "./workflows/subscribers";
+import { workflowNotifications } from "./workflows/notifications";
 import { sourcingJobs } from "./sourcing/jobs";
 import { sourcingNotificationTypes } from "./sourcing/notifications";
 import { getSourcingDynamicSchedules } from "./sourcing/schedules";
@@ -136,6 +142,54 @@ function lineTab(line: (typeof LINES)[number]): NavItem {
         : {}),
     })),
   };
+}
+
+/**
+ * The command-palette entries, declared here so the manifest is the single source (the shell's
+ * `acquisition/layout.tsx` filters these by permission through `getCommands()` + `mayOpen`, rather
+ * than recomputing the list). A "navigate" command per line × section, plus two per-line actions.
+ * Each is gated by its own permission and service line, so the palette shows only reachable entries.
+ */
+function buildCommands(): NonNullable<Parameters<typeof defineModule>[0]["commands"]> {
+  const commands: NonNullable<Parameters<typeof defineModule>[0]["commands"]> = [
+    {
+      id: "acq-nav-overview",
+      label: "Go to Overview",
+      group: "navigate",
+      href: "/acquisition/overview",
+      permission: "acquisition.overview.read",
+    },
+  ];
+  for (const line of LINES) {
+    const resource = { serviceLine: line.serviceLine };
+    for (const section of SECTIONS) {
+      commands.push({
+        id: `acq-nav-${line.slug}-${section.slug}`,
+        label: `Go to ${line.label} › ${section.label}`,
+        group: "navigate",
+        href: `/acquisition/${line.slug}/${section.slug}`,
+        permission: section.permission,
+        resource,
+      });
+    }
+    commands.push({
+      id: `acq-search-${line.slug}`,
+      label: `Run a search in ${line.label}`,
+      group: "actions",
+      href: `/acquisition/${line.slug}/search`,
+      permission: "acquisition.search.read",
+      resource,
+    });
+    commands.push({
+      id: `acq-review-${line.slug}`,
+      label: `Open review queue · ${line.label}`,
+      group: "actions",
+      href: `/acquisition/${line.slug}/review`,
+      permission: "acquisition.review.read",
+      resource,
+    });
+  }
+  return commands;
 }
 
 const EVERYONE = scopes("ALL", "ALL", "ALL", "ALL");
@@ -295,13 +349,16 @@ export default defineModule({
     ...pipelineJobs,
     ...inboxJobs,
     ...analyticsJobs,
+    ...workflowJobs,
   ],
   schedules: [
+    ...complianceSchedules,
     ...scoringSchedules,
     ...outreachSchedules,
     ...pipelineSchedules,
     ...inboxSchedules,
     ...analyticsSchedules,
+    ...workflowSchedules,
   ],
   dynamicSchedules: getSourcingDynamicSchedules,
   settings: [
@@ -315,9 +372,15 @@ export default defineModule({
     ...pipelineSettings,
     ...inboxSettings,
     ...analyticsSettings,
+    ...workflowSettings,
   ],
   settingsPanels: [],
-  subscribers: [...complianceSubscribers, ...scoringSubscribers, ...outreachSubscribers],
+  subscribers: [
+    ...complianceSubscribers,
+    ...scoringSubscribers,
+    ...outreachSubscribers,
+    ...workflowSubscribers,
+  ],
   aiTasks: [
     ...profilesAiTasks,
     ...enrichmentTasks,
@@ -359,6 +422,15 @@ export default defineModule({
     ...pipelineNotificationTypes,
     ...inboxNotifications,
     ...analyticsNotificationTypes,
+    ...workflowNotifications,
   ],
-  commands: [],
+  commands: buildCommands(),
+  badgeResolvers: {
+    // The Review nav badge: the viewer's review-queue count, shared with the "My review queue"
+    // home widget (dynamic import keeps the server/db code out of the codegen import graph).
+    "acquisition.review-count": async ({ userId }) => {
+      const { getReviewCountForUser } = await import("./ui/widgets/review-count");
+      return getReviewCountForUser(userId);
+    },
+  },
 });

@@ -30,6 +30,9 @@ export async function routeEventToNotifications(event: DomainEvent): Promise<voi
     case "capacity.mode.changed":
       await routeCapacity(event);
       break;
+    case "lead.needsAttention":
+      await routeNeedsAttention(event);
+      break;
     case "job.failed":
       await notify({ role: "ADMIN", type: "job.failed", title: `Job failed: ${event.payload.name}`, body: event.payload.errorSummary, dedupeKey: `job.failed:${event.payload.jobRunId}` });
       break;
@@ -92,15 +95,60 @@ async function routeDealClosed(
   event: Extract<DomainEvent, { name: "deal.won" | "deal.lost" }>,
   type: "deal.won" | "deal.lost",
 ): Promise<void> {
-  const lead = await db.lead.findUnique({ where: { id: event.payload.leadId }, select: { ownerId: true } });
-  const recipients = new Set<string>();
-  if (lead?.ownerId != null) recipients.add(lead.ownerId);
+  const lead = await db.lead.findUnique({
+    where: { id: event.payload.leadId },
+    select: { ownerId: true, serviceLine: true },
+  });
+  const title = type === "deal.won" ? "Deal won" : "Deal lost";
+  // The owner and every manager (managers work across all lines).
   await notify({
-    userIds: [...recipients],
+    ...(lead?.ownerId == null ? {} : { userIds: [lead.ownerId] }),
     role: "MANAGER",
     type,
-    title: type === "deal.won" ? "Deal won" : "Deal lost",
+    title,
     dedupeKey: `${type}:${event.payload.dealId}`,
+  });
+  // The line's service leads too (CR-14-07).
+  if (lead != null) {
+    await notify({
+      serviceLine: lead.serviceLine,
+      role: "SERVICE_LEAD",
+      type,
+      title,
+      dedupeKey: `${type}:${event.payload.dealId}:lead`,
+    });
+  }
+}
+
+async function routeNeedsAttention(
+  event: Extract<DomainEvent, { name: "lead.needsAttention" }>,
+): Promise<void> {
+  const lead = await db.lead.findUnique({
+    where: { id: event.payload.leadId },
+    select: { serviceLine: true, ownerId: true },
+  });
+  if (lead === null) return;
+  const key = `lead.needs-attention:${event.payload.leadId}:${String(event.payload.restarts)}`;
+  const link = `/acquisition/leads/${event.payload.leadId}`;
+  // The owner and the line's service leads.
+  await notify({
+    ...(lead.ownerId === null ? {} : { userIds: [lead.ownerId] }),
+    serviceLine: lead.serviceLine,
+    role: "SERVICE_LEAD",
+    type: "lead.needs-attention",
+    title: "A lead needs attention",
+    body: event.payload.reason,
+    link,
+    dedupeKey: key,
+  });
+  // Admins (any line).
+  await notify({
+    role: "ADMIN",
+    type: "lead.needs-attention",
+    title: "A lead needs attention",
+    body: event.payload.reason,
+    link,
+    dedupeKey: `${key}:admin`,
   });
 }
 

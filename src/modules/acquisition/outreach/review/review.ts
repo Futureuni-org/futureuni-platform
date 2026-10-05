@@ -10,7 +10,7 @@ import "server-only";
 
 import type { Actor, ServiceLine } from "@/contracts/common";
 import { AppError } from "@/lib/errors";
-import { assertActorCan } from "@/platform/auth";
+import { assertActorCan, loadSubjectFromUserId } from "@/platform/auth";
 import { audit } from "@/platform/audit-log";
 import { withTransaction, type Tx } from "@/platform/db";
 import { publishAfterCommit } from "@/platform/events";
@@ -27,7 +27,12 @@ import { dismissedCitedFindingIds, loadMessageForSend, updateMessage, type Messa
 import { enroll } from "../sequences/enroll";
 import { createDraft, ensureOutreachTasksRegistered } from "../draft/draft";
 import { validateDraftShape } from "../draft/validators";
-import { queryReviewQueue, type ReviewQueueFilter } from "./review.repo";
+import {
+  countReviewQueue as countReviewQueueRepo,
+  queryReviewQueue,
+  type ReviewQueueFilter,
+  type ReviewQueueRow,
+} from "./review.repo";
 
 const SEND_ACTOR_JOB = "acquisition.outreach.tick";
 
@@ -356,7 +361,12 @@ export async function getReviewQueue(actor: Actor, input: GetReviewQueueInput): 
     ...(input.cursor === undefined ? {} : { cursor: input.cursor }),
   };
   const { rows, nextCursor } = await queryReviewQueue(null, filter);
-  const items: ReviewQueueItem[] = rows.map((row) => ({
+  return { items: rows.map(mapReviewRow), nextCursor };
+}
+
+/** Map a repo row to the public `ReviewQueueItem` shape. */
+function mapReviewRow(row: ReviewQueueRow): ReviewQueueItem {
+  return {
     messageId: row.id,
     status: row.status,
     channel: row.channel,
@@ -377,6 +387,64 @@ export async function getReviewQueue(actor: Actor, input: GetReviewQueueInput): 
     },
     company: { id: row.company.id, name: row.company.name, country: row.company.country, city: row.company.city },
     contact: row.contact === null ? null : { id: row.contact.id, name: row.contact.name, role: row.contact.role },
-  }));
-  return { items, nextCursor };
+  };
+}
+
+/**
+ * The top review-queue items across everything a user may act on, scoped to their role (same scope
+ * rule as `countReviewQueueForUser`). For the "My review queue" home widget.
+ */
+export async function getReviewQueueForUser(userId: string, limit = 3): Promise<ReviewQueueItem[]> {
+  const subject = await loadSubjectFromUserId(userId);
+  if (subject?.status !== "ACTIVE") return [];
+  const seesAll = subject.role === "ADMIN" || subject.role === "MANAGER";
+  if (!seesAll && subject.serviceLines.length === 0) return [];
+  const filter: ReviewQueueFilter = {
+    limit: Math.min(Math.max(limit, 1), 20),
+    ...(seesAll ? {} : { serviceLines: subject.serviceLines }),
+    ...(subject.role === "MEMBER" ? { ownerId: userId } : {}),
+  };
+  const { rows } = await queryReviewQueue(null, filter);
+  return rows.map(mapReviewRow);
+}
+
+/**
+ * The number of drafts waiting in the review queue for a line (CR-15-01: a real count, replacing
+ * the interim `items.length` derivation). Authorized the same way as `getReviewQueue`.
+ */
+export async function countReviewQueue(
+  actor: Actor,
+  input: Omit<GetReviewQueueInput, "cursor" | "limit"> = {},
+): Promise<number> {
+  await assertActorCan(
+    actor,
+    "acquisition.review.read",
+    input.serviceLine === undefined ? undefined : { serviceLine: input.serviceLine },
+  );
+  return countReviewQueueRepo(null, {
+    ...(input.serviceLine === undefined ? {} : { serviceLine: input.serviceLine }),
+    ...(input.market === undefined ? {} : { market: input.market }),
+    ...(input.ownerId === undefined ? {} : { ownerId: input.ownerId }),
+    ...(input.needsHumanReview === undefined ? {} : { needsHumanReview: input.needsHumanReview }),
+    ...(input.complianceReview === undefined ? {} : { complianceReview: input.complianceReview }),
+  });
+}
+
+/**
+ * The review-queue count across everything a user may act on, scoped to their role: ADMIN/MANAGER
+ * see every line, a SERVICE_LEAD their lines, a MEMBER only their own leads in their lines. Used by
+ * the "My review queue" home widget and the `acquisition.review-count` nav badge, so the two always
+ * agree. A missing or inactive user, or one with no lines, counts as 0.
+ */
+export async function countReviewQueueForUser(userId: string): Promise<number> {
+  const subject = await loadSubjectFromUserId(userId);
+  if (subject?.status !== "ACTIVE") return 0;
+  if (subject.role === "ADMIN" || subject.role === "MANAGER") {
+    return countReviewQueueRepo(null, {});
+  }
+  if (subject.serviceLines.length === 0) return 0;
+  return countReviewQueueRepo(null, {
+    serviceLines: subject.serviceLines,
+    ...(subject.role === "MEMBER" ? { ownerId: userId } : {}),
+  });
 }

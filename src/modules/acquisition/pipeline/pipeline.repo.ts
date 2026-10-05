@@ -10,7 +10,6 @@ import "server-only";
 
 import type {
   Currency,
-  EnrollmentStopReason,
   JsonValue,
   LeadStatus,
   LostReason,
@@ -1074,51 +1073,3 @@ export async function markWebhookFailed(id: string, error: string): Promise<void
 }
 
 export { isUniqueViolation } from "@/platform/db";
-
-// ---------------------------------------------------------------------------
-// Seam stand-in support (deleted at integration)
-// ---------------------------------------------------------------------------
-
-/** SEAM-STOP-SEQUENCE stand-in helper: stop ACTIVE/PAUSED enrolments in scope. */
-export async function stopEnrollmentsDirect(
-  client: Tx,
-  scope: { leadId?: string; contactId?: string; companyId?: string },
-  reason: EnrollmentStopReason,
-  at: Date,
-): Promise<number> {
-  const where: Prisma.EnrollmentWhereInput = {
-    status: { in: ["ACTIVE", "PAUSED"] },
-    ...(scope.leadId === undefined ? {} : { leadId: scope.leadId }),
-    ...(scope.contactId === undefined ? {} : { contactId: scope.contactId }),
-    ...(scope.companyId === undefined ? {} : { companyId: scope.companyId }),
-  };
-  const result = await client.enrollment.updateMany({
-    where,
-    data: { status: "STOPPED", stoppedReason: reason, stoppedAt: at },
-  });
-  return result.count;
-}
-
-/** SEAM-SEND-ONEOFF stand-in helper: write a SENT_MOCK one-off email Message. */
-export async function createMockOneOff(
-  client: Tx,
-  input: { leadId: string; companyId: string; contactId: string; subject: string; body: string; sentById: string | null; at: Date },
-): Promise<string> {
-  const row = await client.message.create({
-    data: {
-      leadId: input.leadId,
-      companyId: input.companyId,
-      contactId: input.contactId,
-      kind: "ONE_OFF",
-      channel: "EMAIL",
-      status: "SENT_MOCK",
-      subject: input.subject,
-      body: input.body,
-      humanConfirmedClaims: true,
-      sentById: input.sentById,
-      sentAt: input.at,
-    },
-    select: { id: true },
-  });
-  return row.id;
-}

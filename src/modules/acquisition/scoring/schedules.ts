@@ -16,9 +16,9 @@ export const scoringSchedules: CronSchedule[] = [
   {
     id: "scoring-rescore-nightly",
     job: "acquisition.scoring.rescore-nightly",
-    cron: "0 2 * * *",
+    cron: "0 1 * * *",
     timezone: "Africa/Lagos",
-    description: "Re-score stale SCORED leads overnight.",
+    description: "Re-score stale SCORED leads overnight at 01:00 (clear of the platform 02:00 cleanup).",
   },
   {
     id: "crosssell-detect",
@@ -30,8 +30,8 @@ export const scoringSchedules: CronSchedule[] = [
   {
     id: "capacity-release",
     job: "acquisition.capacity.release",
-    cron: "*/10 * * * *",
+    cron: "5-55/10 * * * *",
     timezone: "Africa/Lagos",
-    description: "Refresh line capacity modes and release held leads.",
+    description: "Refresh line capacity modes and release held leads (staggered off scoring-batch).",
   },
 ];

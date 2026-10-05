@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 
 import { canFromUser, requireUser } from "@/platform/auth";
+import { getCommands, getEnabledModules, mayOpen } from "@/platform/registry";
 import type { ServiceLine } from "@/contracts/common";
 import {
   LINE_SLUGS,
-  SECTIONS,
   lineAccentToken,
   lineHref,
   lineLabel,
@@ -48,7 +48,7 @@ export default async function AcquisitionLayout({
     ? { label: "Overview", href: "/acquisition/overview" }
     : null;
 
-  const commands = buildCommands(user, visibleLines);
+  const commands = await buildCommands(user);
 
   return (
     <div className="flex min-w-0 flex-col gap-6">
@@ -64,38 +64,31 @@ export default async function AcquisitionLayout({
   );
 }
 
-function buildCommands(
+/**
+ * The command-palette entries the viewer can reach, derived from the module manifest (the single
+ * source, `src/modules/acquisition/manifest.ts`) and filtered by permission with `mayOpen`. A
+ * disabled module contributes nothing (CR-02-21: `getCommands` is scoped to the enabled modules).
+ */
+async function buildCommands(
   user: Awaited<ReturnType<typeof requireUser>>,
-  visibleLines: ServiceLine[],
-): ShellCommand[] {
-  const commands: ShellCommand[] = [];
-  for (const line of visibleLines) {
-    const label = lineLabel(line);
-    for (const section of SECTIONS) {
-      if (!canFromUser(user, section.action, { serviceLine: line })) continue;
-      commands.push({
-        id: `acq-nav-${LINE_SLUGS[line]}-${section.segment}`,
-        label: `Go to ${label} › ${section.label}`,
-        group: "Navigate",
-        href: lineHref(line, section.segment),
-      });
+): Promise<ShellCommand[]> {
+  const modules = await getEnabledModules();
+  const navUser = {
+    id: user.id,
+    can: (action: string, resource?: object): boolean => canFromUser(user, action, resource),
+  };
+  return getCommands(modules).flatMap((command): ShellCommand[] => {
+    if (command.module !== "acquisition" || command.href === undefined) return [];
+    if (command.permission !== undefined && !mayOpen(navUser, command.permission, command.resource)) {
+      return [];
     }
-    if (canFromUser(user, "acquisition.search.read", { serviceLine: line })) {
-      commands.push({
-        id: `acq-search-${LINE_SLUGS[line]}`,
-        label: `Run a search in ${label}`,
-        group: "Actions",
-        href: lineHref(line, "search"),
-      });
-    }
-    if (canFromUser(user, "acquisition.review.read", { serviceLine: line })) {
-      commands.push({
-        id: `acq-review-${LINE_SLUGS[line]}`,
-        label: `Open review queue · ${label}`,
-        group: "Actions",
-        href: lineHref(line, "review"),
-      });
-    }
-  }
-  return commands;
+    return [
+      {
+        id: command.id,
+        label: command.label,
+        group: command.group === "navigate" ? "Navigate" : "Actions",
+        href: command.href,
+      },
+    ];
+  });
 }

@@ -13,7 +13,14 @@ export {
   requirePermission,
   canFromUser,
 } from "./session";
-export { can, assertCan, assertActorCan, explainCan, actorOf } from "./permissions";
+export {
+  can,
+  assertCan,
+  assertActorCan,
+  explainCan,
+  actorOf,
+  loadSubjectFromUserId,
+} from "./permissions";
 export { auth } from "./auth";
 export { safeNext } from "./redirect";
 export { checkPassword, PASSWORD_MIN_LENGTH } from "./password";
