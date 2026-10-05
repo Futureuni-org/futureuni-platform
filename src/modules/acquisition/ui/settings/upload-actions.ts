@@ -12,7 +12,7 @@ import { AppError } from "@/lib/errors";
 import { ok, err, type ActionResult } from "@/lib/result";
 import { assertCan, requireUser } from "@/platform/auth";
 import { getSignedUrl, putFile } from "@/platform/storage";
-import { resolveLine } from "@/modules/acquisition/ui/settings/_seams";
+import { resolveLine } from "@/modules/acquisition/ui/shell";
 
 export async function uploadPortfolioMediaAction(
   slug: string,

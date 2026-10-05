@@ -6,7 +6,7 @@ import { PermissionState } from "@/components/patterns/states";
 import { Money } from "@/components/ui/money";
 import { IdSchema, type LeadStatus } from "@/contracts/common";
 import { actorOf, canFromUser, requireUser } from "@/platform/auth";
-import { lineHref, resolveLine } from "@/modules/acquisition/ui/leads/_seams";
+import { lineHref, resolveLine } from "@/modules/acquisition/ui/shell";
 import { loadLineOwners } from "@/modules/acquisition/ui/leads/owners";
 import { withPerson } from "@/modules/acquisition/ui/leads/select-options";
 import {

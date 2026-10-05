@@ -247,11 +247,14 @@ describe("batch B1 acceptance", () => {
       // The Wave 1 platform jobs are registered:
       expect(jobNames.length).toBeGreaterThanOrEqual(1);
 
+      // Each schedule points at a job registered by some enabled module. Schedules come from every
+      // module, not just the platform core (acquisition registers scoring, outreach, pipeline, inbox
+      // and analytics schedules), so check the schedule's job against all enabled modules' jobs.
+      const allJobNames = modules.flatMap((module) => module.jobs.map((job) => job.name));
       const schedules = getCronSchedules(modules);
       expect(schedules.length).toBeGreaterThanOrEqual(1);
-      // Each schedule points at a registered job.
       for (const schedule of schedules) {
-        expect(jobNames).toContain(schedule.job);
+        expect(allJobNames).toContain(schedule.job);
       }
     });
   });

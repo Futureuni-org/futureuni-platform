@@ -47,6 +47,13 @@ const MESSAGE_FOR_SEND_INCLUDE = {
   enrollment: { select: { id: true, mailboxId: true, currentStepIndex: true, status: true } },
   mailbox: true,
   citations: { select: { id: true, findingId: true, signalId: true } },
+  // The attached files (a proposal PDF, say), so the send path puts them on the outbound email.
+  attachments: {
+    select: {
+      filename: true,
+      fileObject: { select: { key: true, contentType: true } },
+    },
+  },
 } satisfies Prisma.MessageInclude;
 
 export type MessageForSend = Prisma.MessageGetPayload<{ include: typeof MESSAGE_FOR_SEND_INCLUDE }>;

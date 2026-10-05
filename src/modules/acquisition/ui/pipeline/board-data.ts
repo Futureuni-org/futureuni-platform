@@ -28,7 +28,7 @@ import {
   type PipelineColumn,
 } from "@/modules/acquisition/pipeline";
 
-import { lineHref } from "../leads/_seams";
+import { lineHref } from "@/modules/acquisition/ui/shell";
 import { enumLabel } from "../leads/format";
 import { getLeadHeader } from "../leads/lead-detail.repo";
 import { getFindingClaims } from "../leads/lead-pipeline.repo";

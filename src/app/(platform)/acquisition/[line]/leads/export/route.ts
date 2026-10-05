@@ -2,7 +2,7 @@ import { formatInTimeZone } from "date-fns-tz";
 
 import { AppError, errorResponse } from "@/lib/errors";
 import { getCurrentUser, canFromUser } from "@/platform/auth";
-import { resolveLine } from "@/modules/acquisition/ui/leads/_seams";
+import { resolveLine } from "@/modules/acquisition/ui/shell";
 import { parseLeadFilters } from "@/modules/acquisition/ui/leads/lead-filters";
 import {
   EXPORT_ROW_LIMIT,

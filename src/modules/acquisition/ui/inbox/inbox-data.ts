@@ -17,7 +17,7 @@ import {
 import { AppError } from "@/lib/errors";
 import { getUnmatchedReplies, listThreads } from "@/modules/acquisition/inbox";
 
-import { lineHref } from "../leads/_seams";
+import { lineHref } from "@/modules/acquisition/ui/shell";
 import { getLeadHeader, getLeadScope } from "../leads/lead-detail.repo";
 import {
   newestFirst,

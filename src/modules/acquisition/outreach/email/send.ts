@@ -225,6 +225,11 @@ export async function sendEmailMessage(messageId: string, opts: SendOptions = {}
     inReplyTo: threading.inReplyTo,
     references: threading.references,
     providerThreadId: threading.providerThreadId,
+    attachments: message.attachments.map((attachment) => ({
+      filename: attachment.filename,
+      contentType: attachment.fileObject.contentType,
+      fileKey: attachment.fileObject.key,
+    })),
   });
 
   // 9. Reserve one send against today's cap (atomic; INV-8).

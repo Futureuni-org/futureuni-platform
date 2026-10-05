@@ -2,7 +2,7 @@ import "server-only";
 
 import type { ServiceLine } from "@/contracts/common";
 
-import { LINE_SLUGS } from "./_seams";
+import { LINE_SLUGS } from "@/modules/acquisition/ui/shell";
 import type { LeadListRow } from "./leads-list.repo";
 import type { LeadRowView } from "./leads-table";
 

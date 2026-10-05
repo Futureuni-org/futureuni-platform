@@ -48,6 +48,12 @@ import { inboxNotifications } from "./inbox/notifications";
 import { inboxSchedules } from "./inbox/schedules";
 import { inboxSettings } from "./inbox/settings";
 import { inboxAiTasks } from "./inbox/tasks";
+// Wave 4 (batch B6): analytics (17), imported from leaf files for the same reason.
+import { analyticsJobs } from "./analytics/jobs";
+import { analyticsNotificationTypes } from "./analytics/notifications";
+import { analyticsSchedules } from "./analytics/schedules";
+import { analyticsSettings } from "./analytics/settings";
+import { analyticsTasks } from "./analytics/tasks";
 
 /** The four line tabs and their URL slugs (module spec §6). */
 const LINES = [
@@ -288,8 +294,15 @@ export default defineModule({
     ...outreachJobs,
     ...pipelineJobs,
     ...inboxJobs,
+    ...analyticsJobs,
   ],
-  schedules: [...scoringSchedules, ...outreachSchedules, ...pipelineSchedules, ...inboxSchedules],
+  schedules: [
+    ...scoringSchedules,
+    ...outreachSchedules,
+    ...pipelineSchedules,
+    ...inboxSchedules,
+    ...analyticsSchedules,
+  ],
   dynamicSchedules: getSourcingDynamicSchedules,
   settings: [
     ...profilesSettings,
@@ -301,6 +314,7 @@ export default defineModule({
     ...outreachSettings,
     ...pipelineSettings,
     ...inboxSettings,
+    ...analyticsSettings,
   ],
   settingsPanels: [],
   subscribers: [...complianceSubscribers, ...scoringSubscribers, ...outreachSubscribers],
@@ -313,6 +327,7 @@ export default defineModule({
     ...outreachAiTasks,
     ...pipelineTasks,
     ...inboxAiTasks,
+    ...analyticsTasks,
   ],
   homeWidgets: [
     {
@@ -343,6 +358,7 @@ export default defineModule({
     ...outreachNotifications,
     ...pipelineNotificationTypes,
     ...inboxNotifications,
+    ...analyticsNotificationTypes,
   ],
   commands: [],
 });

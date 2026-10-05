@@ -11,7 +11,7 @@ import {
 } from "@/modules/acquisition/profiles";
 import { getThrottleStatus } from "@/modules/acquisition/scoring";
 import { actorFromCurrentUser, getLineCapacity, listTeam } from "@/platform/team";
-import { resolveLine } from "@/modules/acquisition/ui/settings/_seams";
+import { resolveLine } from "@/modules/acquisition/ui/shell";
 import { countNurtureHeld } from "@/modules/acquisition/ui/settings/sample-leads.repo";
 import { ProfileEditor } from "@/modules/acquisition/ui/settings/profile-editor";
 import type { CapacitySummary } from "@/modules/acquisition/ui/settings/capacity-panel";

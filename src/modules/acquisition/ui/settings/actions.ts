@@ -30,7 +30,7 @@ import {
   type ProfileDiff,
 } from "@/modules/acquisition/profiles";
 import { scoreLead } from "@/modules/acquisition/scoring";
-import { resolveLine } from "@/modules/acquisition/ui/settings/_seams";
+import { resolveLine } from "@/modules/acquisition/ui/shell";
 import { getSampleLeadsForLine } from "@/modules/acquisition/ui/settings/sample-leads.repo";
 
 import { discardDraft } from "./profile-draft.repo";

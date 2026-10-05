@@ -41,7 +41,7 @@ import {
   type ThreadView,
 } from "@/modules/acquisition/ui/inbox/thread-types";
 import { UnmatchedList } from "@/modules/acquisition/ui/inbox/unmatched-list";
-import { lineHref, resolveLine } from "@/modules/acquisition/ui/leads/_seams";
+import { lineHref, resolveLine } from "@/modules/acquisition/ui/shell";
 import { loadLineOwners } from "@/modules/acquisition/ui/leads/owners";
 
 export const metadata: Metadata = { title: "Inbox" };

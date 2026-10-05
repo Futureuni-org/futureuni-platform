@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/patterns/page-header";
 import { PermissionState } from "@/components/patterns/states";
 import { canFromUser, requireUser } from "@/platform/auth";
-import { resolveLine, lineHref } from "@/modules/acquisition/ui/leads/_seams";
+import { resolveLine, lineHref } from "@/modules/acquisition/ui/shell";
 import { ButtonLink, DownloadLink } from "@/modules/acquisition/ui/leads/button-link";
 import { loadLineOwners } from "@/modules/acquisition/ui/leads/owners";
 import {

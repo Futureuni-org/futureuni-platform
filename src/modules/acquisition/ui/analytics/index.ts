@@ -4,7 +4,7 @@
  * `@/modules/acquisition/ui/shell` at Wave 4 integration.
  */
 
-export { resolveLine, lineHref, LINE_SLUGS, type LineContext } from "./_seams";
+export { resolveLine, lineHref, LINE_SLUGS, type LineContext } from "@/modules/acquisition/ui/shell";
 export { AnalyticsFilterBar } from "./filters/analytics-filter-bar";
 export { InfoTooltip } from "./info-tooltip";
 export { CsvExportButton } from "./csv/export-button";

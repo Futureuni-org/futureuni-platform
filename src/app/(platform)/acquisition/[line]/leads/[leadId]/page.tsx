@@ -14,7 +14,7 @@ import { actorOf, canFromUser, requireUser } from "@/platform/auth";
 import { getBookingLink } from "@/modules/acquisition/pipeline";
 import { loadThread } from "@/modules/acquisition/ui/inbox/thread-data";
 import { conversationOnly } from "@/modules/acquisition/ui/inbox/thread-types";
-import { lineHref, resolveLine } from "@/modules/acquisition/ui/leads/_seams";
+import { lineHref, resolveLine } from "@/modules/acquisition/ui/shell";
 import { ActivityTab, parseActivityKind } from "@/modules/acquisition/ui/leads/activity-tab";
 import { ConversationTab } from "@/modules/acquisition/ui/leads/conversation-tab";
 import { DealPanel } from "@/modules/acquisition/ui/leads/deal-panel";

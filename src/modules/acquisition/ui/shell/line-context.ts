@@ -61,6 +61,9 @@ export interface LineContext {
 
 /** Resolve a URL slug to its line context, or `null` for an unknown slug (caller `notFound()`s). */
 export function resolveLine(slug: string): LineContext | null {
+  // `Object.hasOwn` guards against inherited keys: a slug like "constructor" or "toString" would
+  // otherwise read a function off `Object.prototype` and resolve to a bogus line (a 500 downstream).
+  if (!Object.hasOwn(SLUG_TO_LINE, slug)) return null;
   const line = SLUG_TO_LINE[slug];
   if (line === undefined) return null;
   return { line, slug, label: LINE_LABELS[line], accentToken: LINE_ACCENT_TOKEN[line] };
