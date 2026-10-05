@@ -36,7 +36,9 @@ export function buildCsp(nonce: string, isDev: boolean): string {
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' blob: data:`,
     `font-src 'self'`,
-    `connect-src 'self'`,
+    // 'self' for same-origin fetches + server actions; Sentry ingest (ADR-030) and Vercel Speed
+    // Insights need their hosts, or the browser SDKs are blocked in production.
+    `connect-src 'self' https://*.ingest.sentry.io https://*.sentry.io https://vitals.vercel-insights.com`,
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,

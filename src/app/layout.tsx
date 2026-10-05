@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeScript } from "@/lib/theme";
@@ -15,12 +16,16 @@ export const metadata: Metadata = {
   icons: { icon: "/brand/futureuni-mark.png" },
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // The CSP nonce set by src/proxy.ts, so the inline ThemeScript isn't blocked by the strict
+  // `script-src` in production (Phase 20 SEC-2). Reading it opts the layout into dynamic rendering,
+  // which a nonce-based CSP requires.
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
   return (
     // data-theme is replaced before paint by ThemeScript; suppressHydrationWarning covers that change.
     <html lang="en" data-theme="light" className={fontVariables} suppressHydrationWarning>
       <head>
-        <ThemeScript />
+        <ThemeScript {...(nonce === undefined ? {} : { nonce })} />
       </head>
       <body>
         {children}
