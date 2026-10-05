@@ -28,6 +28,7 @@
     "db:seed": "prisma db seed",
     "seed:staging": "tsx --conditions=react-server prisma/seed/staging/index.ts",
     "bootstrap:admin": "tsx --conditions=react-server scripts/bootstrap-admin.ts",
+    "create-admin": "tsx --conditions=react-server scripts/create-admin.ts",
     "db:studio": "prisma studio",
     "db:reset": "node prisma/tools/reset.mjs",
     "db:validate": "node prisma/tools/validate.mjs",

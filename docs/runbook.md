@@ -16,6 +16,12 @@ Operating the FUTUREUNI platform in production. Pair with `docs/launch-checklist
 - **Migration compatibility (saas-data):** follow expand → migrate → contract, so a migration is compatible with the code currently serving. Never ship a destructive migration in the same deploy as the code that needs the new shape.
 - **Preview branches** migrate their own Neon branch: the preview build runs `pnpm db:deploy` against the preview `DIRECT_URL`.
 
+## First admin (after the first deploy)
+Sign-up is invite-only and the first invite has no inviter, so bootstrap the first ADMIN directly, then switch to invites for everyone else.
+1. `pnpm bootstrap:admin` — sets the launch-safety defaults (kill switch ON, low first-touch caps). Idempotent; production-only unless `BOOTSTRAP_CONFIRM=1`.
+2. `ADMIN_EMAIL=you@… ADMIN_PASSWORD='<12+ chars>' pnpm create-admin` — creates/updates the first ADMIN with a credential login (Better Auth's hasher), matching `acceptInvite`. Run it with the **production** `DATABASE_URL`/`DIRECT_URL` in your shell. The password is read from the env, never a CLI arg. Optional: `ADMIN_NAME`, and `ADMIN_SKIP_2FA=1` to skip the forced 2FA setup (don't skip for real launch).
+3. Sign in at `/login`; unless you skipped it, first sign-in walks you through 2FA setup (have an authenticator app ready). Then invite the rest of the team from `/admin/users`.
+
 ## Scheduler (the 5-minute tick)
 The whole engine (lead-advance sweeper, outreach tick, inbox poll, mailbox health, digests — everything in `docs/schedules.md`) is driven by one endpoint, `GET /api/cron/tick`, which asks the dispatcher which manifest schedules are due in the current 5-minute slot. The slot key makes a double-delivery a no-op (INV-22), so a scheduler that occasionally fires twice or late is safe.
 

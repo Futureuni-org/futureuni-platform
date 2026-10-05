@@ -12,7 +12,7 @@ Everything needed to own and run the FUTUREUNI Internal Platform after the build
 
 ## Admin guide (quick)
 - Admin screens: `/admin/{users,team,integrations,mailboxes,suppression,data-requests,prompts,ai-usage,jobs,audit,platform}`.
-- First run after deploy: `pnpm bootstrap:admin` (sets the kill switch ON + low caps), then create the first admin and set 2FA.
+- First run after deploy: `pnpm bootstrap:admin` (sets the kill switch ON + low caps), then `pnpm create-admin` (first ADMIN with a login — see the runbook "First admin"), then sign in and set 2FA.
 - The **global outreach kill switch** is `acquisition.outreach.globalPause` in `/admin/platform` — on until launch, and your fastest "stop everything" control.
 - Jobs + schedules: `/admin/jobs` and `docs/schedules.md`. One cron tick drives everything.
 
