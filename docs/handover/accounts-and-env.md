@@ -2,6 +2,20 @@
 
 **Names only — never paste secret values here or in chat.** Secrets go directly into the Vercel dashboard (per environment) or the platform's `/admin/integrations` credentials screen. Monthly costs are estimates from `docs/cost-model.md`; confirm on signup.
 
+## As provisioned (2026-10-05, Hobby interim)
+The first live bring-up runs on **Vercel Hobby** (non-commercial — move to Pro before real commercial use; see `docs/runbook.md` Hobby caveats). Concrete resources:
+
+| Resource | Identity |
+|---|---|
+| GitHub repo | `Futureuni-org/futureuni-platform` (private) |
+| Vercel team | **freelancer-prince** (`team_nw52uMh78uLfNOHf44N3h2e6`) |
+| Vercel project | **futureuni-platform** (`prj_z3UlhHuCHTkz8Xx3PSbcgpFhJQwZ`), region `iad1` |
+| Neon project | **futureuni-platform-prod** (`shy-haze-64077894`), `aws-us-east-1`, PG 17, branch `production`, db `futureuni`, role `futureuni_app`, PITR 6h |
+| Vercel Blob | **futureuni-blob** (`store_0poXteogghFl5h6i`), private, `iad1` |
+| Scheduler | cron-job.org → `GET /api/cron/tick` every 5 min (Hobby has no usable Vercel Cron) |
+
+Already set (non-secret): `MOCKS=true` (bring-up; flip to `false` after provider keys), `STORAGE_DRIVER=vercel-blob`, `BLOB_READ_WRITE_TOKEN` (from the Blob store).
+
 ## Accounts (FUTUREUNI company accounts, not personal)
 | Account | Purpose | Plan/tier | Est. monthly | Owner |
 |---|---|---|---|---|
