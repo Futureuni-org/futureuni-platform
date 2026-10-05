@@ -1,0 +1,62 @@
+# Nightly logical backup (Phase 21, saas-ship, Step 6).
+#
+# `pg_dump` against the production DIRECT (unpooled) URL, encrypted at rest with age (a public-key
+# recipient, so CI never holds the decryption key), kept as a retained encrypted artifact. Neon's
+# point-in-time restore is the primary recovery path (window recorded in docs/runbook.md); this
+# logical dump is the belt-and-braces off-platform copy. For longer retention / true offsite,
+# upgrade the upload step to private Vercel Blob or S3 (see docs/runbook.md "Backups"). Restore
+# drill: see docs/runbook.md.
+#
+# Required secrets (GitHub "production" environment): PRODUCTION_DIRECT_URL, BACKUP_AGE_RECIPIENT
+# (an age public key — the private key lives only in the password manager).
+
+name: Nightly database backup
+
+on:
+  schedule:
+    # 02:30 UTC daily (03:30 WAT) — staggered off the app's own retention jobs.
+    - cron: "30 2 * * *"
+  workflow_dispatch: {}
+
+concurrency:
+  group: db-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    name: pg_dump → encrypt → private Blob
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install PostgreSQL 18 client + age
+        run: |
+          sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/keyrings/pgdg.gpg
+          sudo sed -i 's#deb #deb [signed-by=/usr/share/keyrings/pgdg.gpg] #' /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-18 age
+      - name: Dump and encrypt
+        id: dump
+        env:
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          AGE_RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
+        run: |
+          set -euo pipefail
+          STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
+          FILE="futureuni-${STAMP}.sql.age"
+          pg_dump --no-owner --no-privileges --format=custom "$DIRECT_URL" \
+            | age -r "$AGE_RECIPIENT" -o "$FILE"
+          echo "file=$FILE" >> "$GITHUB_OUTPUT"
+      - name: Store the encrypted dump (retention policy)
+        uses: actions/upload-artifact@v7
+        with:
+          name: db-backup-${{ steps.dump.outputs.file }}
+          path: ${{ steps.dump.outputs.file }}
+          retention-days: 30
+      # Longer / true-offsite retention: replace the step above with an upload to private Vercel
+      # Blob or S3 (keep the age-encrypted file; credentials stay in CI secrets). See the runbook.
