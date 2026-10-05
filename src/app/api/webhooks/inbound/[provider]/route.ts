@@ -9,12 +9,22 @@
 
 import "server-only";
 
+import { createHash, timingSafeEqual } from "node:crypto";
+
 import { env } from "@/env";
 import { errorResponse } from "@/lib/errors";
 import { resolveProviderKey } from "@/platform/credentials";
 import { enqueueJob } from "@/platform/jobs";
 
 export const dynamic = "force-dynamic";
+
+/** Constant-time string compare (SEC-3): hash both to a fixed length so neither value nor length leaks. */
+export function tokenMatches(token: string | null, expected: string): boolean {
+  if (token === null) return false;
+  const a = createHash("sha256").update(token).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
+}
 
 interface RouteContext {
   params: Promise<{ provider: string }>;
@@ -38,7 +48,7 @@ export async function POST(request: Request, ctx: RouteContext): Promise<Respons
     if (expected !== null) {
       const auth = request.headers.get("authorization") ?? "";
       const token = auth.startsWith("Bearer ") ? auth.slice(7) : new URL(request.url).searchParams.get("token");
-      if (token !== expected) {
+      if (!tokenMatches(token, expected)) {
         return Response.json({ error: { code: "UNAUTHENTICATED", message: "Bad token." } }, { status: 401 });
       }
     } else if (!env.MOCKS) {

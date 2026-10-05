@@ -14,6 +14,7 @@ import type {
   JobLogger,
   JobProgress,
 } from "@/contracts/jobs";
+import { redactLogData } from "@/platform/audit-log/redact";
 import { db, toJsonInput, type Tx } from "@/platform/db";
 
 const DEFAULT_CLOCK: Clock = { now: () => new Date() };
@@ -21,7 +22,10 @@ const DEFAULT_CLOCK: Clock = { now: () => new Date() };
 export function makeLogger(jobRunId: string, name: string): JobLogger {
   const base = { jobRunId, name };
   const write = (level: "info" | "warn" | "error", msg: string, data?: Record<string, unknown>): void => {
-    const line = JSON.stringify({ level, ...base, msg, ...(data ?? {}) });
+    // SEC-5: a safety net so personal data a caller passed is never written to the logs.
+    const safeMsg = redactLogData(msg);
+    const safeData = redactLogData(data ?? {});
+    const line = JSON.stringify({ level, ...base, msg: safeMsg, ...safeData });
     if (level === "error") console.error(line);
     else console.warn(line);
   };

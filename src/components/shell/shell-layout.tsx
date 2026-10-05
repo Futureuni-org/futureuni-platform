@@ -7,9 +7,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { canFromUser, getCurrentUser } from "@/platform/auth";
 import { listForUser, markRead, unreadCount } from "@/platform/notifications";
 import { getEnabledModules, getNavigation } from "@/platform/registry";
+import { getSetting } from "@/platform/settings";
 import type { ModuleManifest, NavItem } from "@/contracts/module-manifest";
 
 import { MobileNav } from "./mobile-nav";
+import { OutreachPausedBanner } from "./outreach-paused-banner";
 import type { NavigationGroup, NavigationEntry } from "./nav-tree";
 import type { ShellNotification } from "./notification-bell";
 import { Sidebar } from "./sidebar";
@@ -35,9 +37,11 @@ export async function ShellLayout({ children }: { children: ReactNode }) {
   const navigation = await getNavigation(navUser, { modules });
   const groups = buildGroups(modules, navigation);
   const flatNav = flattenNavigation(groups);
-  const [notifPage, unread] = await Promise.all([
+  const [notifPage, unread, outreachPaused] = await Promise.all([
     listForUser(user.id, { limit: 10 }),
     unreadCount(user.id),
+    // The global outreach kill switch (COMP-3); default false if the setting isn't readable.
+    getSetting<boolean>("acquisition.outreach.globalPause").catch(() => false),
   ]);
   const notifications = notifPage.items.map(toShellNotification);
 
@@ -70,6 +74,7 @@ export async function ShellLayout({ children }: { children: ReactNode }) {
             navigate={flatNav}
             markAllReadAction={markAllReadAction}
           />
+          <OutreachPausedBanner paused={outreachPaused} />
           <main className="flex-1 pb-20 md:pb-8">
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-8 sm:px-6 lg:px-8">
               {children}
