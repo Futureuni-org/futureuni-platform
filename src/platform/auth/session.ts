@@ -15,7 +15,6 @@ import "server-only";
 import { cache } from "react";
 
 import { headers } from "next/headers";
-import { redirect } from "next/navigation";
 
 import type { PermissionAction, PermissionResource } from "@/contracts/permissions";
 import type { Role, ServiceLine } from "@/contracts/common";
@@ -91,7 +90,14 @@ export async function requireUser(): Promise<CurrentUser> {
   if (user !== null) return user;
   const path = await currentPathForNext();
   const next = path === null ? "" : `?next=${encodeURIComponent(path)}`;
-  redirect(`/login${next}`);
+  // Lazy import so `@/platform/auth` (imported by nearly every service, and thus by the module
+  // manifest's graph) never statically pulls next/navigation's client build. Under tsx
+  // `--conditions=react-server` (the eval runner + codegen) that static edge loaded the client
+  // navigation module, whose `createContext` throws on the server build. `redirect()` throws
+  // internally and never returns.
+  const { redirect } = await import("next/navigation");
+  // `redirect` returns `never` (throws internally); returning it marks this path terminal for TS.
+  return redirect(`/login${next}`);
 }
 
 async function currentPathForNext(): Promise<string | null> {

@@ -20,7 +20,7 @@ Everything needed to own and run the FUTUREUNI Internal Platform after the build
 - **Phase 19:** the full end-to-end Playwright suite (8 journeys, branches, role matrix, `@smoke`) was not authored, and the eval-runner crash (below) was not fixed. See `phases/19/SUMMARY.md`.
 - **Phase 20:** security hardening (SEC-1…5), the kill-switch banner, the INV traceability matrix, and the cost model are done; the DSR/retention, AI-quota, chaos and red-team **tests** and several INV-gap tests are feasible follow-ups; the browser/perf/accessibility/dependency-scan/live-eval steps are **environment-gated** (listed in `docs/hardening-report.md` §7). See `phases/20/SUMMARY.md`.
 - **Phase 21:** this prep package is authored; the **live go-live is owner-executed** per the launch checklist (accounts, domains/DNS, secrets, deploys, provider switch-on, warm-up, monitoring, restore drill, launch gates).
-- **Eval-runner:** `pnpm evals` crashes under tsx `--conditions=react-server` because a UI module reachable from the manifest statically imports `next/navigation` (client). Root cause + fix (make that edge lazy) are in `docs/hardening-report.md` §5. A real `next build` is unaffected.
+- **Eval-runner:** fixed post-review — `@/platform/auth/session.ts` now lazy-imports `redirect`, so `pnpm evals` boots and runs (it had crashed under tsx `--conditions=react-server` because the static `next/navigation` client import was reachable from the manifest). See `docs/hardening-report.md` §5.
 - **Transports (go-live):** the SMTP + IMAP fallbacks are stubs; production uses the Gmail API path (ADR-016). Inbound webhook OIDC and the Cal.com/font-bundling items are tracked for go-live (see the phase REQUESTS indexes).
 
 ## Repo + commands
