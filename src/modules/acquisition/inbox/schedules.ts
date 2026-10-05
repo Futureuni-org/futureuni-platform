@@ -9,5 +9,5 @@ import type { CronSchedule } from "@/contracts/jobs";
 export const inboxSchedules: readonly CronSchedule[] = [
   { id: "inbox-poll", job: "acquisition.inbox.poll", cron: "*/5 * * * *", timezone: "Africa/Lagos", description: "Poll outreach mailboxes for replies." },
   { id: "inbox-sla-check", job: "acquisition.inbox.sla-check", cron: "*/15 * * * *", timezone: "Africa/Lagos", description: "Warn and escalate reply SLAs." },
-  { id: "inbox-nurture-reminders", job: "acquisition.inbox.nurture-reminders", cron: "0 7 * * *", timezone: "Africa/Lagos", description: "Daily NOT_NOW follow-up reminders." },
+  { id: "inbox-nurture-reminders", job: "acquisition.inbox.nurture-reminders", cron: "5 7 * * *", timezone: "Africa/Lagos", description: "Daily at 07:05: NOT_NOW follow-up reminders." },
 ];

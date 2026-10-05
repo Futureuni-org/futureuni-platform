@@ -15,8 +15,11 @@ export { outreachAiTasks, outreachDraftTask, outreachDraftEditTask } from "./dra
 export {
   approveMessage,
   autoApproveIfEligible,
+  countReviewQueue,
+  countReviewQueueForUser,
   editMessage,
   getReviewQueue,
+  getReviewQueueForUser,
   regenerateMessage,
   rejectMessage,
   snoozeLead,

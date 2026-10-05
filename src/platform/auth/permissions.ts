@@ -144,7 +144,12 @@ export function assertCan(
   }
 }
 
-async function loadSubjectFromUserId(userId: string): Promise<PermissionSubject | null> {
+/**
+ * Load a user's permission subject (role, status, service lines, canApprove) by id. Exposed for
+ * services that must scope a cross-line aggregate to a user (home widgets, nav badges) without a
+ * session. Returns null when the user is missing. Phase 19.
+ */
+export async function loadSubjectFromUserId(userId: string): Promise<PermissionSubject | null> {
   const user = await db.user.findUnique({
     where: { id: userId },
     select: {

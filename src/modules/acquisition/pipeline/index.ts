@@ -67,6 +67,9 @@ export {
   type MarkLostInput,
 } from "./deals/deals";
 
+// Home-widget data (Phase 19)
+export { getPipelineWidgetData, type PipelineWidgetData } from "./widget";
+
 // Revenue data (Phase 17)
 export {
   getRevenueSummary,

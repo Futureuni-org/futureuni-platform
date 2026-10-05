@@ -182,9 +182,17 @@ describe("registry", () => {
     ]);
   });
 
-  it("returns no badge count until a module registers a resolver", async () => {
+  it("resolves the acquisition review-count badge, and null for an unknown source", async () => {
+    // A registered resolver: an unknown user has nothing in review, so 0 (not null).
     expect(
       await resolveBadge("acquisition.review-count", {
+        userId: "cuser0000000000000000001",
+        clock: { now: () => new Date() },
+      }),
+    ).toBe(0);
+    // A source no module registers still returns null.
+    expect(
+      await resolveBadge("acquisition.nonexistent-badge", {
         userId: "cuser0000000000000000001",
         clock: { now: () => new Date() },
       }),

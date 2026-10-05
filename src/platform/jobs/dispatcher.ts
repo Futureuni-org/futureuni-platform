@@ -14,7 +14,7 @@ import "server-only";
 import { Cron } from "croner";
 
 import type { CronSchedule, DynamicSchedule, JobName } from "@/contracts/jobs";
-import { getCronSchedules, getDynamicScheduleProviders } from "@/platform/registry";
+import { getCronSchedules, getDynamicScheduleProviders, getEnabledModules } from "@/platform/registry";
 import { getSetting } from "@/platform/settings";
 
 import { enqueueJob } from "./enqueue";
@@ -65,9 +65,11 @@ export async function runDispatch(now: Date): Promise<DispatchResult> {
   const enqueued: DispatchResult["enqueued"] = [];
   const skipped: DispatchResult["skipped"] = [];
 
+  // Only enabled modules contribute schedules; a disabled module's crons stop (CR-02-21, rule 4).
+  const enabledModules = await getEnabledModules();
   const staticSchedules: (CronSchedule & { module: string })[] = [
     ...platformSchedules.map((s) => ({ ...s, module: "platform" })),
-    ...getCronSchedules(),
+    ...getCronSchedules(enabledModules),
   ];
 
   for (const schedule of staticSchedules) {
@@ -84,7 +86,7 @@ export async function runDispatch(now: Date): Promise<DispatchResult> {
     enqueued.push({ job: schedule.job, idempotencyKey: key, deduplicated, kind: "static" });
   }
 
-  for (const { provider } of getDynamicScheduleProviders()) {
+  for (const { provider } of getDynamicScheduleProviders(enabledModules)) {
     const dynamic: DynamicSchedule[] = await provider({ clock: { now: () => now } });
     for (const schedule of dynamic) {
       if (!isScheduleDue(schedule, now)) continue;
