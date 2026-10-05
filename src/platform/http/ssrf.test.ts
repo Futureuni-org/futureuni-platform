@@ -47,6 +47,10 @@ describe("SSRF guard", () => {
     expect(await guardUrl("http://127.0.0.1/")).toMatchObject({ ok: false });
     expect(await guardUrl("http://[::1]/")).toMatchObject({ ok: false });
     expect(await guardUrl("http://169.254.169.254/latest/meta-data/")).toMatchObject({ ok: false });
+    // SEC-4: IPv6 metadata / IPv4-mapped metadata must also be blocked (DNS-rebinding redirects
+    // re-run this guard on each hop, so a public→private rebind is caught here too).
+    expect(await guardUrl("http://[fd00:ec2::254]/latest/meta-data/")).toMatchObject({ ok: false });
+    expect(await guardUrl("http://[::ffff:169.254.169.254]/")).toMatchObject({ ok: false });
   });
 
   it("guardUrl accepts a public IPv4 and IPv6 literal", async () => {
