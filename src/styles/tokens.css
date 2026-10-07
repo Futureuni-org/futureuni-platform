@@ -25,6 +25,11 @@
   --muted: #5d6486;
   --subtle: #7c81a0;
 
+  /* Sidebar: a fixed brand-navy rail in BOTH themes (not a theme-flipping surface). In light
+     it's the dark rail on a light page; in dark it sits a step above the near-black page. */
+  --sidebar: #0c1148;
+  --sidebar-foreground: #ffffff;
+
   /* Brand */
   --primary: #5342cc;
   --primary-foreground: #ffffff;
@@ -119,6 +124,10 @@
   --heading: #ffffff;
   --muted: #a9adcc;
   --subtle: #8186ae;
+
+  /* Sidebar stays navy in dark too — a step above the #060925 page, not an inverted white rail. */
+  --sidebar: #0c1148;
+  --sidebar-foreground: #ffffff;
 
   --primary: #a89df5;
   --primary-foreground: #0c1148;

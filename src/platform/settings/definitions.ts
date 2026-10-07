@@ -200,7 +200,7 @@ export const PLATFORM_SETTINGS: SettingDefinition[] = [
     key: "user.theme",
     scope: "USER",
     schema: z.enum(["light", "dark", "system"]),
-    default: "system",
+    default: "light",
     label: "Theme",
     description: "Light, dark or follow OS.",
     sensitive: false,

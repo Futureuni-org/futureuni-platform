@@ -70,7 +70,8 @@ export async function getSetting<T = unknown>(
 ): Promise<T> {
   const def = requireDefinition(key);
   const cache = cacheStore.getStore();
-  const cacheKey = def.scope === "USER" && opts.userId !== undefined ? `${key}:${opts.userId}` : key;
+  const cacheKey =
+    def.scope === "USER" && opts.userId !== undefined ? `${key}:${opts.userId}` : key;
   if (cache?.has(cacheKey) === true) return cache.get(cacheKey) as T;
 
   const row = await db.setting.findFirst({
@@ -103,7 +104,10 @@ export async function setSetting(
     throw new AppError("VALIDATION_FAILED", `Invalid value for setting "${key}".`, { details });
   }
   // User-scope: only the target user (or the SELF actor themselves).
-  const userId = def.scope === "USER" ? (opts.userId ?? (actor.type === "USER" ? actor.userId : undefined)) : undefined;
+  const userId =
+    def.scope === "USER"
+      ? (opts.userId ?? (actor.type === "USER" ? actor.userId : undefined))
+      : undefined;
   if (def.scope === "USER" && userId === undefined) {
     throw new AppError("VALIDATION_FAILED", "User-scope settings need a userId.");
   }
@@ -119,14 +123,25 @@ export async function setSetting(
   });
 
   if (def.scope === "USER") {
-    if (userId === undefined) throw new AppError("VALIDATION_FAILED", "User-scope settings need a userId.");
-    await db.setting.upsert({
-      where: {
-        key_scope_userId: { key, scope: "USER", userId },
-      },
-      create: { key, scope: "USER", userId, value: toJsonInput(parsed.data), updatedById },
-      update: { value: toJsonInput(parsed.data), updatedById },
+    if (userId === undefined)
+      throw new AppError("VALIDATION_FAILED", "User-scope settings need a userId.");
+    // Prisma can't upsert through the partial unique index on (key, scope, userId) — it is
+    // `WHERE userId IS NOT NULL`, which Postgres won't use for ON CONFLICT — so find-then-write,
+    // exactly as the PLATFORM/MODULE branch below does.
+    const existing = await db.setting.findFirst({
+      where: { key, scope: "USER", userId },
+      select: { id: true },
     });
+    if (existing === null) {
+      await db.setting.create({
+        data: { key, scope: "USER", userId, value: toJsonInput(parsed.data), updatedById },
+      });
+    } else {
+      await db.setting.update({
+        where: { id: existing.id },
+        data: { value: toJsonInput(parsed.data), updatedById },
+      });
+    }
   } else {
     // For PLATFORM/MODULE scope, `userId` is null. Since Prisma can't upsert through a partial
     // unique index (project-rules §Stack), find-then-write.
@@ -139,7 +154,7 @@ export async function setSetting(
         data: {
           key,
           scope: def.scope,
-          module: def.scope === "MODULE" ? key.split(".")[0] ?? null : null,
+          module: def.scope === "MODULE" ? (key.split(".")[0] ?? null) : null,
           value: toJsonInput(parsed.data),
           updatedById,
         },
@@ -152,7 +167,9 @@ export async function setSetting(
     }
   }
 
-  cacheStore.getStore()?.delete(def.scope === "USER" && userId !== undefined ? `${key}:${userId}` : key);
+  cacheStore
+    .getStore()
+    ?.delete(def.scope === "USER" && userId !== undefined ? `${key}:${userId}` : key);
 
   await audit.record(null, {
     actor,
@@ -183,11 +200,13 @@ export interface SettingListItem {
   isDefault: boolean;
 }
 
-export async function listSettings(opts: {
-  scope?: "PLATFORM" | "MODULE" | "USER";
-  module?: string;
-  userId?: string;
-} = {}): Promise<SettingListItem[]> {
+export async function listSettings(
+  opts: {
+    scope?: "PLATFORM" | "MODULE" | "USER";
+    module?: string;
+    userId?: string;
+  } = {},
+): Promise<SettingListItem[]> {
   const defs = [...definitions().values()].filter((d) => {
     if (opts.scope !== undefined && d.scope !== opts.scope) return false;
     if (opts.module !== undefined && !d.key.startsWith(`${opts.module}.`)) return false;

@@ -40,6 +40,10 @@
   --color-muted: var(--muted);
   --color-subtle: var(--subtle);
 
+  /* Sidebar (fixed navy rail, both themes) */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+
   /* Brand */
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);

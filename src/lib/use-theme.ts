@@ -28,10 +28,10 @@ function readPreference(): ThemePreference {
   if (unsavedPreference !== null) return unsavedPreference;
   try {
     const saved = window.localStorage.getItem(THEME_STORAGE_KEY);
-    return isThemePreference(saved) ? saved : "system";
+    return isThemePreference(saved) ? saved : "light";
   } catch {
-    // Storage can't be read: follow the OS preference.
-    return "system";
+    // Storage can't be read: fall back to the platform default, light.
+    return "light";
   }
 }
 
@@ -89,15 +89,16 @@ export interface UseThemeResult {
   setPreference: (next: ThemePreference) => void;
 }
 
-/** Reads and changes the theme. The server render assumes the defaults (system, light). */
+/** Reads and changes the theme. The server render assumes the defaults (light, light). */
 export function useTheme(): UseThemeResult {
-  const preference = useSyncExternalStore(subscribe, preferenceSnapshot, () => "system" as const);
+  const preference = useSyncExternalStore(subscribe, preferenceSnapshot, () => "light" as const);
   const theme = useSyncExternalStore(subscribe, themeSnapshot, () => "light" as const);
 
   const setPreference = useCallback((next: ThemePreference) => {
     try {
-      if (next === "system") window.localStorage.removeItem(THEME_STORAGE_KEY);
-      else window.localStorage.setItem(THEME_STORAGE_KEY, next);
+      // Store every choice explicitly, "system" included, so an absent key means "no choice
+      // yet" and resolves to the light default rather than silently following the OS.
+      window.localStorage.setItem(THEME_STORAGE_KEY, next);
       unsavedPreference = null;
     } catch {
       // Storage unavailable: keep the choice for this page, so the controls stay truthful.
