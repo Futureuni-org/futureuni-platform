@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { QRCodeSVG } from "qrcode.react";
 import { useState, useTransition, type SyntheticEvent } from "react";
 
 import { Field } from "@/components/admin";
@@ -26,7 +27,11 @@ function Notice({ children }: { children: React.ReactNode }) {
 function ErrorText({ error }: { error: string | null }) {
   if (error === null) return null;
   return (
-    <div role="alert" aria-live="polite" className="rounded-md border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
+    <div
+      role="alert"
+      aria-live="polite"
+      className="rounded-md border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger"
+    >
       {error}
     </div>
   );
@@ -41,8 +46,8 @@ export default function SetupForm({ alreadyEnabled }: { alreadyEnabled: boolean 
   if (alreadyEnabled && stage.kind === "password") {
     return (
       <Notice>
-        Two-factor authentication is already enabled. Ask an administrator to reset it if you need to
-        change devices.
+        Two-factor authentication is already enabled. Ask an administrator to reset it if you need
+        to change devices.
       </Notice>
     );
   }
@@ -88,7 +93,14 @@ export default function SetupForm({ alreadyEnabled }: { alreadyEnabled: boolean 
         <ErrorText error={error} />
         <Field label="Confirm your password">
           {({ id }) => (
-            <Input id={id} name="password" type="password" autoComplete="current-password" required autoFocus />
+            <Input
+              id={id}
+              name="password"
+              type="password"
+              autoComplete="current-password"
+              required
+              autoFocus
+            />
           )}
         </Field>
         <Button type="submit" loading={pending} className="w-full">
@@ -101,18 +113,37 @@ export default function SetupForm({ alreadyEnabled }: { alreadyEnabled: boolean 
   if (stage.kind === "verify") {
     return (
       <form onSubmit={onVerifySubmit} className="flex flex-col gap-5" noValidate>
-        <div className="flex flex-col items-start gap-3 rounded-md border border-border bg-surface p-4">
-          <p className="text-sm text-muted">
-            Add this account to your authenticator app (Google Authenticator, 1Password, etc.). Tap or
-            copy the setup link, or enter the code manually.
+        <div className="flex flex-col items-center gap-4 rounded-md border border-border bg-surface p-4">
+          <p className="w-full text-sm text-muted">
+            Scan this QR code with your authenticator app (Google Authenticator, 1Password, etc.).
           </p>
-          <a
-            href={stage.totpUri}
-            className="w-full break-all font-mono text-xs text-primary underline decoration-dotted"
-          >
-            {stage.totpUri}
-          </a>
-          <p className="w-full break-all font-mono text-xs text-muted">Manual code: {stage.secret}</p>
+          {/* QR renders black-on-white (qrcode.react defaults) with a 4-module quiet zone so it
+              scans reliably on any theme; its own white background is not a themeable surface. */}
+          <div className="overflow-hidden rounded-lg">
+            <QRCodeSVG
+              value={stage.totpUri}
+              size={180}
+              level="M"
+              marginSize={4}
+              title="Two-factor setup QR code"
+            />
+          </div>
+          <details className="w-full">
+            <summary className="cursor-pointer text-xs text-muted hover:text-foreground">
+              Can&apos;t scan? Enter the key manually
+            </summary>
+            <div className="mt-3 flex flex-col gap-2">
+              <p className="w-full font-mono text-xs break-all text-muted">
+                Key: <span className="text-foreground">{stage.secret}</span>
+              </p>
+              <a
+                href={stage.totpUri}
+                className="w-full font-mono text-xs break-all text-primary underline decoration-dotted"
+              >
+                {stage.totpUri}
+              </a>
+            </div>
+          </details>
         </div>
         <ErrorText error={error} />
         <Field label="Enter the 6-digit code">
