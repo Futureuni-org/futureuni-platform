@@ -14,9 +14,11 @@ export default function PipelineLoading() {
         <Skeleton className="h-12 w-40" />
         <Skeleton className="h-12 w-36" />
       </div>
+      {/* Columns are 85% of the row, never `vw` — viewport-unit widths here make mobile Chrome
+          expand the layout viewport (the page loads zoomed out). */}
       <div className="flex gap-4 overflow-hidden">
         {Array.from({ length: 5 }).map((_, index) => (
-          <div key={index} className="flex w-[85vw] shrink-0 flex-col gap-3 sm:w-72">
+          <div key={index} className="flex w-[85%] shrink-0 flex-col gap-3 sm:w-72">
             <Skeleton className="h-12 w-32" />
             <Skeleton className="h-28 w-full" />
             <Skeleton className="h-28 w-full" />

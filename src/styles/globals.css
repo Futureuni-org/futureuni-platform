@@ -115,6 +115,14 @@
   html {
     background-color: var(--background);
     color: var(--foreground);
+    /*
+     * Horizontal overflow is a bug at every width (saas-ui). `clip` (not `hidden`) keeps the
+     * document from ever growing a horizontal scroll area without creating a scroll container,
+     * so `position: sticky` still works. Without this, any transiently-wide descendant makes
+     * mobile Chrome expand the layout viewport: the page loads zoomed out and `fixed` elements
+     * (the bottom navigation) stretch to the expanded width.
+     */
+    overflow-x: clip;
   }
 
   body {
@@ -124,6 +132,7 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
   }
 
   /* Display face for display text and H1–H2; headings use the heading colour. */

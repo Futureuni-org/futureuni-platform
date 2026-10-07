@@ -67,7 +67,10 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   );
 });
 
-/** Icon-only button. Requires `aria-label` for the icon's meaning. */
+/**
+ * Icon-only button. Requires `aria-label` for the icon's meaning. On touch devices an invisible
+ * pseudo-element widens the 40px visual to a 48px tap target (project-rules: 48px touch targets).
+ */
 export const IconButton = forwardRef<
   HTMLButtonElement,
   Omit<ButtonProps, "size"> & { "aria-label": string }
@@ -77,7 +80,13 @@ export const IconButton = forwardRef<
       ref={ref}
       variant={variant}
       size="icon"
-      className={cn("size-10 min-h-10", className)}
+      className={cn(
+        // 44px on touch screens (48px effective with the hit-area extension below), 40px with
+        // a mouse where space is tighter and precision higher.
+        "relative size-10 min-h-10 pointer-coarse:size-11 pointer-coarse:min-h-11",
+        "pointer-coarse:after:absolute pointer-coarse:after:-inset-1 pointer-coarse:after:content-['']",
+        className,
+      )}
       {...props}
     >
       {children}

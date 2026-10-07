@@ -241,6 +241,7 @@ export function PipelineBoard({
         {/* Always back on the placeholder, so the same stage can be chosen twice in a row. */}
         <Select
           aria-label="Jump to a stage"
+          name="jumpToStage"
           value=""
           placeholder="Jump to a stage"
           options={columns.map((column) => ({

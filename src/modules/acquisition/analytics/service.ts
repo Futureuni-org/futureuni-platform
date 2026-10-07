@@ -237,7 +237,7 @@ export async function getLineAnalytics(
       value,
       previous,
       delta: delta(value, previous),
-      sparkline: seriesKey === undefined ? [] : buckets.map((b) => trend[seriesKey].get(b) ?? 0),
+      sparkline: seriesKey === undefined ? [] : buckets.map((b) => trend[seriesKey][b] ?? 0),
     };
   }
 
@@ -273,9 +273,9 @@ export async function getLineAnalytics(
   };
 }
 
-function sortedBuckets(trend: Record<string, Map<string, number>>): string[] {
+function sortedBuckets(trend: Record<string, Record<string, number>>): string[] {
   const all = new Set<string>();
-  for (const map of Object.values(trend)) for (const key of map.keys()) all.add(key);
+  for (const series of Object.values(trend)) for (const key of Object.keys(series)) all.add(key);
   return [...all].sort();
 }
 
@@ -322,7 +322,7 @@ export async function getTimeSeries(
     points: buckets.map((bucket) => ({
       bucket,
       values: Object.fromEntries(
-        wanted.map((id) => [id, trend[id as keyof typeof trend].get(bucket) ?? 0]),
+        wanted.map((id) => [id, trend[id as keyof typeof trend][bucket] ?? 0]),
       ),
     })),
   };

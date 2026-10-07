@@ -192,15 +192,19 @@ export async function WhatConvertsSection({ actor, filters, line }: { actor: Act
         <Labelled title="By signal">
           <ConversionBars
             data={bySignal}
-            hrefFor={(row) =>
-              row.key === "(none)" ? null : lineHref(line, "leads", drilldownQuery(filters, { signal: row.key }))
-            }
+            hrefs={Object.fromEntries(
+              bySignal.rows
+                .filter((row) => row.key !== "(none)")
+                .map((row) => [row.key, lineHref(line, "leads", drilldownQuery(filters, { signal: row.key }))]),
+            )}
           />
         </Labelled>
         <Labelled title="By source">
           <ConversionBars
             data={bySource}
-            hrefFor={(row) => lineHref(line, "leads", drilldownQuery(filters, { source: row.key }))}
+            hrefs={Object.fromEntries(
+              bySource.rows.map((row) => [row.key, lineHref(line, "leads", drilldownQuery(filters, { source: row.key }))]),
+            )}
           />
         </Labelled>
         <Labelled title="By pitch angle">

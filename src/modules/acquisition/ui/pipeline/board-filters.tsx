@@ -44,6 +44,7 @@ function AmountInput({
       key={current}
       inputMode="decimal"
       aria-label={label}
+      name={paramKey}
       placeholder={placeholder}
       defaultValue={current}
       onBlur={(e) => {
@@ -72,6 +73,7 @@ function ValueRange() {
         <div className="w-full sm:w-36">
           <Select
             aria-label="Value currency"
+            name="valueCurrency"
             value={currency}
             options={VALUE_CURRENCY_OPTIONS}
             onChange={(e) => {

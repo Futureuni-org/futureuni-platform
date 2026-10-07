@@ -129,6 +129,7 @@ export function UrlSelect({
       <span className="text-xs font-medium text-muted">{label}</span>
       <Select
         aria-label={label}
+        name={paramKey}
         value={current}
         options={[{ value: "", label: allLabel }, ...options]}
         onChange={(e) => { setParam(paramKey, e.target.value || null); }}

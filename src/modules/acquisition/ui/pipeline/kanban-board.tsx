@@ -188,11 +188,14 @@ function KanbanColumnView<T extends { id: string }>({
     );
   }
 
+  // Column width is 85% of the scroll container, never `vw`: viewport units here couple the
+  // column width to the layout viewport, which makes mobile Chrome expand it and load the page
+  // zoomed out.
   return (
     <section
       id={`kanban-col-${column.id}`}
       aria-labelledby={headingId}
-      className="flex w-[85vw] shrink-0 snap-start flex-col gap-3 sm:w-72"
+      className="flex w-[85%] shrink-0 snap-start flex-col gap-3 sm:w-72"
     >
       <header className="flex flex-col gap-1 px-1">
         {/* The same height with or without the collapse button, so every column's cards line up. */}

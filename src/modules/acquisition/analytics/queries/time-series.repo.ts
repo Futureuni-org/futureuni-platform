@@ -38,19 +38,21 @@ function lineMarketFilter(scope: CohortScope): Prisma.Sql {
 
 export type SeriesKey = "leads_found" | "sent" | "reply_rate" | "meetings_booked";
 
-async function bucketCounts(sql: Prisma.Sql): Promise<Map<string, number>> {
+async function bucketCounts(sql: Prisma.Sql): Promise<Record<string, number>> {
   const rows = await db.$queryRaw<{ bucket: string; n: bigint }[]>(sql);
-  return new Map(rows.map((r) => [r.bucket, Number(r.n)]));
+  return Object.fromEntries(rows.map((r) => [r.bucket, Number(r.n)]));
 }
 
 /**
- * The four trend series as maps of bucket → count. The service aligns them onto a shared set of
- * buckets. `reply_rate` here is the count of genuine replies (the UI shows it as a replies trend).
+ * The four trend series as plain records of bucket → count. The service aligns them onto a shared
+ * set of buckets. `reply_rate` here is the count of genuine replies (the UI shows it as a replies
+ * trend). Plain objects, not Maps: this result goes through `unstable_cache`, which serialises to
+ * JSON — a Map would come back as `{}` on every cache hit.
  */
 export async function getTrendSeries(
   scope: CohortScope,
   granularity: Granularity,
-): Promise<Record<SeriesKey, Map<string, number>>> {
+): Promise<Record<SeriesKey, Record<string, number>>> {
   const leadBucket = truncExpr(granularity, Prisma.sql`l."createdAt"`);
   const [leadsFound, sent, replies, meetings] = await Promise.all([
     bucketCounts(Prisma.sql`

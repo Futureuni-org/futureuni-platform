@@ -36,10 +36,14 @@ export function RelativeTime({
   const absolute = formatInTimeZone(date, timezone, "d MMM yyyy, HH:mm zzz");
 
   return (
+    // suppressHydrationWarning: the relative label is derived from the clock, so the server's
+    // text can lawfully differ from the client's by the time hydration runs ("in 6 hours" vs
+    // "in 5 hours"). React's documented pattern for timestamps; the client value wins.
     <time
       dateTime={date.toISOString()}
       title={absolute}
       className={cn("text-muted", className)}
+      suppressHydrationWarning
     >
       {rel}
     </time>

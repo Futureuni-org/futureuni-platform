@@ -22,26 +22,30 @@ export async function NeedsYou({ user }: { user: CurrentUser }) {
     getOverdueNextActions(actor),
   ]);
 
+  // Negative margin + padding keeps the number visually in place while the tap target reaches
+  // the 48px touch rule.
+  const statLink =
+    "inline-block rounded-md -m-2 p-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
   const stats: Stat[] = [
     {
       id: "review",
       label: "Review queue",
-      value: <Link href="/acquisition" className="hover:underline">{reviewQueue}</Link>,
+      value: <Link href="/acquisition" className={statLink}>{reviewQueue}</Link>,
     },
     {
       id: "replies",
       label: "Replies to action",
-      value: <Link href="/acquisition" className="hover:underline">{inbox.totalActionable}</Link>,
+      value: <Link href="/acquisition" className={statLink}>{inbox.totalActionable}</Link>,
     },
     {
       id: "meetings",
       label: "Meetings today",
-      value: <Link href="/acquisition" className="hover:underline">{pipeline.meetingsToday}</Link>,
+      value: <Link href="/acquisition" className={statLink}>{pipeline.meetingsToday}</Link>,
     },
     {
       id: "followups",
       label: "Overdue follow-ups",
-      value: <Link href="/acquisition" className="hover:underline">{overdue.length}</Link>,
+      value: <Link href="/acquisition" className={statLink}>{overdue.length}</Link>,
     },
   ];
 

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 
 import { Toaster } from "@/components/ui/toaster";
@@ -6,6 +6,18 @@ import { ThemeScript } from "@/lib/theme";
 import { fontVariables } from "@/styles/fonts";
 
 import "@/styles/globals.css";
+
+// `viewport-fit=cover` lets the mobile bottom navigation pad itself with
+// `env(safe-area-inset-bottom)` on notched phones instead of sitting under the home indicator.
+// `minimumScale: 1` stops Chromium's mobile auto-zoom-out: with a wide inner scroller (the
+// pipeline board), it otherwise expands the layout viewport until the page fits and the page
+// loads zoomed out with stretched full-width bars. Zooming in is still allowed.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+  viewportFit: "cover",
+};
 
 export const metadata: Metadata = {
   title: { default: "FUTUREUNI", template: "%s · FUTUREUNI" },

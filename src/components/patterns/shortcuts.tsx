@@ -66,11 +66,18 @@ function isEditableTarget(target: EventTarget | null): boolean {
   return target.isContentEditable;
 }
 
+/** Single characters compare case-insensitively: `event.key` is "k" for Ctrl+K but "K" with
+ * Shift held, while registrations are written as "Control+K". Without this, Ctrl+K never matched. */
+function canonicalKey(key: string): string {
+  return key.length === 1 ? key.toUpperCase() : key;
+}
+
 function normaliseChord(chord: string): string {
   return chord
     .split("+")
     .map((token) => token.trim())
     .filter((token) => token.length > 0)
+    .map(canonicalKey)
     .join("+");
 }
 
@@ -80,7 +87,7 @@ function chordFromEvent(event: KeyboardEvent): string {
   if (event.ctrlKey) parts.push("Control");
   if (event.altKey) parts.push("Alt");
   if (event.shiftKey && event.key.length > 1) parts.push("Shift");
-  parts.push(event.key);
+  parts.push(canonicalKey(event.key));
   return parts.join("+");
 }
 

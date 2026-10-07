@@ -35,7 +35,13 @@ export function LineTabs({
   const activeRef = useRef<HTMLAnchorElement | null>(null);
 
   useEffect(() => {
-    activeRef.current?.scrollIntoView({ block: "nearest", inline: "center" });
+    // Scroll the strip itself, never `scrollIntoView`: scrollIntoView walks ancestor scrollers
+    // (including the viewport), which scrolls the page on load and, under mobile Chrome,
+    // triggers a zoom-out that expands the layout viewport (the stretched-bottom-nav bug).
+    const tab = activeRef.current;
+    const strip = tab?.closest("ul");
+    if (tab == null || strip == null) return;
+    strip.scrollLeft = tab.offsetLeft - (strip.clientWidth - tab.offsetWidth) / 2;
   }, [segment]);
 
   return (

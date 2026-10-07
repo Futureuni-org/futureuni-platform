@@ -6,19 +6,21 @@ import { ChartFrame } from "@/components/charts";
 import { cn } from "@/lib/cn";
 
 import { formatCount, formatPercent } from "../format";
-import type { BreakdownResult, BreakdownRow } from "@/modules/acquisition/analytics";
+import type { BreakdownResult } from "@/modules/acquisition/analytics";
 
 /**
  * Sorted horizontal conversion bars for a breakdown (Phase 17 "what converts"). Each row shows the
  * rate, a bar and the sample size; low-sample rows are visually muted with a "low sample" note. A
- * row links to the filtered leads list when `hrefFor` returns a path (M17-AC5).
+ * row links to the filtered leads list when `hrefs` has a path for its key (M17-AC5). `hrefs` is a
+ * plain record, not a callback: the server sections render this client component, and a function
+ * prop can't cross that boundary.
  */
 export function ConversionBars({
   data,
-  hrefFor,
+  hrefs,
 }: {
   data: BreakdownResult;
-  hrefFor?: (row: BreakdownRow) => string | null;
+  hrefs?: Record<string, string>;
 }) {
   const max = Math.max(0, ...data.rows.map((r) => r.rate ?? 0)) || 1;
   const columns = ["Group", "Reply rate", "Replies", "Sample"];
@@ -40,7 +42,7 @@ export function ConversionBars({
     >
       <ul className="flex h-full flex-col gap-2 overflow-y-auto">
         {data.rows.map((row) => {
-          const href = hrefFor?.(row) ?? null;
+          const href = hrefs?.[row.key] ?? null;
           const widthPct = Math.max(2, Math.round(((row.rate ?? 0) / max) * 100));
           const body = (
             <div className={cn("flex items-center gap-3", row.lowSample && "opacity-55")}>

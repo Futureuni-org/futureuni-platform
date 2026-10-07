@@ -30,26 +30,37 @@ export function FunnelChart({ data, showMarkets }: { data: FunnelResult; showMar
       rows={rows}
       height={data.stages.length * 44}
       empty={data.cohortSize === 0}
+      // The per-market breakdown goes in the footer, not the chart box: the box has a fixed,
+      // clipped height sized for the main stage list, and the breakdown's own height depends
+      // on the viewport (it stacks one-column on phones). Inside the box it painted over the
+      // section that follows.
+      footer={
+        showMarkets === true ? (
+          <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {data.byMarket.map((m) => (
+              <div key={m.market} className="flex flex-col gap-1">
+                <p className="text-xs font-medium text-muted">
+                  {m.market === "NIGERIA" ? "Nigeria" : "International"}
+                </p>
+                {m.stages.map((stage) => (
+                  <StageBar
+                    key={stage.key}
+                    stage={stage}
+                    cohort={Math.max(1, m.stages[0]?.count ?? 0)}
+                    compact
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        ) : undefined
+      }
     >
       <div className="flex h-full flex-col justify-between gap-1">
         {data.stages.map((stage) => (
           <StageBar key={stage.key} stage={stage} cohort={cohort} />
         ))}
       </div>
-      {showMarkets === true && (
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {data.byMarket.map((m) => (
-            <div key={m.market} className="flex flex-col gap-1">
-              <p className="text-xs font-medium text-muted">
-                {m.market === "NIGERIA" ? "Nigeria" : "International"}
-              </p>
-              {m.stages.map((stage) => (
-                <StageBar key={stage.key} stage={stage} cohort={Math.max(1, m.stages[0]?.count ?? 0)} compact />
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
     </ChartFrame>
   );
 }

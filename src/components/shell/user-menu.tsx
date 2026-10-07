@@ -43,8 +43,9 @@ export function UserMenu({ user, className }: { user: ShellUser; className?: str
     <DropdownMenu>
       <DropdownMenuTrigger
         className={cn(
-          "inline-flex items-center gap-2 rounded-full p-1 pr-3 text-sm hover:bg-primary-soft",
+          "relative inline-flex min-h-10 items-center gap-2 rounded-full p-1 pr-3 text-sm hover:bg-primary-soft",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+          "pointer-coarse:after:absolute pointer-coarse:after:-inset-1 pointer-coarse:after:content-['']",
           className,
         )}
         aria-label={`Account menu for ${user.name}`}

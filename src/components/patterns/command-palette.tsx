@@ -24,6 +24,16 @@ interface Props {
 }
 
 /**
+ * Eyebrow styling scoped to cmdk's own heading node. `text-transform` and `letter-spacing`
+ * inherit, so putting `uppercase tracking-wide` on the Group itself turns every item into
+ * shouting capitals (the project bans uppercase outside eyebrow labels).
+ */
+const GROUP_CLASS =
+  "[&_[cmdk-group-heading]]:px-3 [&_[cmdk-group-heading]]:py-1.5 [&_[cmdk-group-heading]]:text-xs " +
+  "[&_[cmdk-group-heading]]:font-semibold [&_[cmdk-group-heading]]:uppercase " +
+  "[&_[cmdk-group-heading]]:tracking-wide [&_[cmdk-group-heading]]:text-muted";
+
+/**
  * CommandPalette — Cmd/Ctrl+K opens; groups: Navigate, Actions, Recent, Theme (project-rules
  * §3.5). Navigate items come from `getNavigation()` (flattened, filtered). Actions come from
  * `getCommands()` from the registry and any client-registered commands via `useCommand()`.
@@ -83,7 +93,7 @@ export function CommandPalette({ navigate }: Props) {
             </CommandPrimitive.Empty>
 
             {navigate.length > 0 && (
-              <CommandPrimitive.Group heading="Navigate" className="text-xs font-semibold uppercase tracking-wide text-muted">
+              <CommandPrimitive.Group heading="Navigate" className={GROUP_CLASS}>
                 {navigate.map((item) => (
                   <CommandItem
                     key={item.id}
@@ -103,7 +113,7 @@ export function CommandPalette({ navigate }: Props) {
             )}
 
             {commands.length > 0 && (
-              <CommandPrimitive.Group heading="Actions" className="text-xs font-semibold uppercase tracking-wide text-muted">
+              <CommandPrimitive.Group heading="Actions" className={GROUP_CLASS}>
                 {commands.map((command) => (
                   <CommandItem
                     key={command.id}
@@ -120,7 +130,7 @@ export function CommandPalette({ navigate }: Props) {
             )}
 
             {recent.length > 0 && (
-              <CommandPrimitive.Group heading="Recent" className="text-xs font-semibold uppercase tracking-wide text-muted">
+              <CommandPrimitive.Group heading="Recent" className={GROUP_CLASS}>
                 {recent.map((entry) => {
                   const target =
                     navigate.find((item) => item.id === entry) ??
@@ -142,7 +152,7 @@ export function CommandPalette({ navigate }: Props) {
               </CommandPrimitive.Group>
             )}
 
-            <CommandPrimitive.Group heading="Theme" className="text-xs font-semibold uppercase tracking-wide text-muted">
+            <CommandPrimitive.Group heading="Theme" className={GROUP_CLASS}>
               {themeOptions.map((option) => (
                 <CommandItem
                   key={option.id}

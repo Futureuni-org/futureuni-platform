@@ -26,6 +26,13 @@ export interface ChartFrameProps {
   empty?: boolean;
   className?: string | undefined;
   children: ReactNode;
+  /**
+   * Content rendered below the fixed-height chart box, inside the figure: breakdowns and
+   * legends whose height depends on the viewport. The box itself is height-clamped and
+   * clipped, so anything put inside `children` beyond `height` is cut off — a footer grows
+   * the figure instead of painting over the section that follows.
+   */
+  footer?: ReactNode;
 }
 
 export function ChartFrame({
@@ -38,6 +45,7 @@ export function ChartFrame({
   empty,
   className,
   children,
+  footer,
 }: ChartFrameProps) {
   return (
     <figure className={cn("flex flex-col gap-2", className)}>
@@ -48,7 +56,7 @@ export function ChartFrame({
         role="img"
         aria-label={`${title}. ${summary}`}
         style={{ height }}
-        className={cn("relative w-full", loading === true && "animate-pulse")}
+        className={cn("relative w-full overflow-hidden", loading === true && "animate-pulse")}
       >
         {empty === true ? (
           <p className="flex h-full items-center justify-center text-sm text-muted">
@@ -58,6 +66,7 @@ export function ChartFrame({
           children
         )}
       </div>
+      {empty !== true && footer}
       <details className="text-xs text-muted">
         <summary className="cursor-pointer">Show data table</summary>
         <table className="mt-2 w-full border-collapse font-mono text-xs">

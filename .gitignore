@@ -31,6 +31,9 @@ src/generated/
 # Playwright MCP output (screenshots and traces from visual checks)
 .playwright-mcp/
 
+# Audit walkthrough screenshots (local review material; the repo is public)
+.walkthrough/
+
 # Prisma
 prisma/*.db
 prisma/*.db-journal

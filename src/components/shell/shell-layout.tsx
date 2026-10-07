@@ -29,6 +29,13 @@ export async function ShellLayout({ children }: { children: ReactNode }) {
   const user = await getCurrentUser();
   if (user === null) redirect("/login");
 
+  // Required 2FA is enforced here, not only at sign-in: without this, navigating straight to
+  // a platform URL after the login redirect reaches a full session with no second factor.
+  // Mirrors the sign-in rule (admins always; anyone flagged by an invite or a role change).
+  if (user.mustSetUp2fa || (user.role === "ADMIN" && !user.twoFactorEnabled)) {
+    redirect("/setup-2fa");
+  }
+
   const navUser = {
     id: user.id,
     can: (action: string, resource?: object) => canFromUser(user, action, resource),
@@ -75,13 +82,15 @@ export async function ShellLayout({ children }: { children: ReactNode }) {
             markAllReadAction={markAllReadAction}
           />
           <OutreachPausedBanner paused={outreachPaused} />
-          <main className="flex-1 pb-20 md:pb-8">
+          <main className="flex-1 pb-8">
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-8 sm:px-6 lg:px-8">
               {children}
             </div>
           </main>
+          {/* Inside the layout column (not a fixed overlay) so it can never outgrow the screen;
+              it sticks to the viewport bottom and takes real layout space below `main`. */}
+          <MobileNav navigation={groups} />
         </div>
-        <MobileNav navigation={groups} />
       </div>
     </TooltipProvider>
   );
