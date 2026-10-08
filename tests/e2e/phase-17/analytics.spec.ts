@@ -29,7 +29,9 @@ test.describe("line analytics @smoke", () => {
     await expect(page).toHaveURL(/range=7d/);
 
     // Market → URL.
-    await page.getByLabel("Market").selectOption("NIGERIA");
+    // Exact: the conversion chart's own description ("Conversion by market...") is an
+    // accessible label too, and a substring match would find both.
+    await page.getByLabel("Market", { exact: true }).selectOption("NIGERIA");
     await expect(page).toHaveURL(/market=NIGERIA/);
 
     // Compare toggle → URL.
@@ -53,7 +55,9 @@ test.describe("line analytics @smoke", () => {
   test("a member sees the no-permission state on a line that isn't theirs (AC-38.4)", async ({ page }) => {
     await signIn(page, "kelechi@futureuni.local"); // MEMBER of Web + Graphic, not Video
     await page.goto("/acquisition/video-editing/analytics");
-    await expect(page.getByText(/don't have access/i)).toBeVisible();
+    // The line layout refuses first (it gates on acquisition.lead.read), so its own
+    // no-permission state is what renders; the analytics page never runs.
+    await expect(page.getByText(/no access to this line|don't have access/i)).toBeVisible();
   });
 });
 

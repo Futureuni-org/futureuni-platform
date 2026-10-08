@@ -44,12 +44,17 @@ async function signIn(page: Page, email: string): Promise<void> {
   await page.waitForURL((url) => !url.pathname.startsWith("/login"), { timeout: 15_000 });
 }
 
-/** A resolved in-shell page shows the sidebar and never the global 404 heading. */
+/** A resolved in-shell page shows the shell navigation and never the global 404 heading. */
 async function expectResolvedShellPage(page: Page, path: string): Promise<void> {
   await expect(page.getByRole("heading", { name: NOT_FOUND_HEADING })).toHaveCount(0);
+  // Which navigation renders depends on the viewport: the "Sidebar" tree on desktop, the "Primary"
+  // bottom bar below md. Either one proves the page rendered inside the shell.
+  const shellNav = page
+    .getByRole("navigation", { name: /sidebar|primary/i })
+    .filter({ visible: true });
   await expect(
-    page.getByRole("navigation", { name: /sidebar/i }),
-    `sidebar missing on ${path} (page did not render inside the shell)`,
+    shellNav.first(),
+    `shell navigation missing on ${path} (page did not render inside the shell)`,
   ).toBeVisible();
 }
 
