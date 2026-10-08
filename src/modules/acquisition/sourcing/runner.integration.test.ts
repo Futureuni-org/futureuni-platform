@@ -18,6 +18,17 @@ import { runSearch } from "./runner";
 import { createSavedSearch } from "./saved-search";
 import { skipScheduledRunIfAtCapacity } from "./schedules";
 
+/*
+ * Phase 19 starts the advance workflow from `lead.created`, and in tests an enqueued job runs
+ * inline (src/platform/jobs/enqueue.ts), so a search would enrich and audit its own new leads
+ * before this file can assert they are still NEW. Stubbing the starter keeps sourcing under test
+ * on its own; whether it advances afterwards is Phase 19's concern.
+ */
+vi.mock("@/modules/acquisition/workflows/start", () => ({
+  tryStartAdvance: () => Promise.resolve({ started: false, reason: "not-advanceable" }),
+  requeueAdvance: () => Promise.resolve({ started: false }),
+}));
+
 // Every test here purges, writes and reads real rows through the adapters, which outgrows the 5s
 // default on a loaded machine. A test that times out keeps running, so its writes land in the next
 // test's purge and break it on a foreign key; the other integration suites allow 30s for the same
