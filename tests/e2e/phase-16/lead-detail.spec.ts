@@ -10,7 +10,7 @@ import { expect, test, type Page } from "@playwright/test";
  * build and send a proposal, mark won) is the Wave 4 integration spec.
  */
 
-const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "change-me-local-only";
+const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "changeme-local-only-12";
 const LEADS_PATH = "/acquisition/web-development/leads";
 const TABS = ["evidence", "conversation", "meetings", "proposals", "activity", "notes"] as const;
 

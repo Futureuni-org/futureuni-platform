@@ -146,6 +146,12 @@ jobs:
         if: hashFiles('prisma/schema/**') != ''
         run: pnpm db:deploy
 
+      # The smoke tests sign in as seeded users, so the database needs them. Without this every
+      # sign-in fails with "User not found" and each test times out waiting for the redirect.
+      - name: Seed the CI database
+        if: hashFiles('prisma/seed/**') != ''
+        run: pnpm db:seed
+
       - name: Install Chromium
         run: pnpm exec playwright install --with-deps chromium
 

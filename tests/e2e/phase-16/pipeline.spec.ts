@@ -13,7 +13,7 @@ import { expect, test, type Page } from "@playwright/test";
  * keyboard-accessible route; this keeps the spec deterministic on both desktop and mobile.
  */
 
-const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "change-me-local-only";
+const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "changeme-local-only-12";
 const BOARD_PATH = "/acquisition/web-development/pipeline";
 
 async function signIn(page: Page, email: string): Promise<void> {

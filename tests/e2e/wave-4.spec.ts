@@ -17,7 +17,7 @@ import { expect, test, type Page } from "@playwright/test";
  * and sees all 29 routes.
  */
 
-const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "change-me-local-only";
+const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "changeme-local-only-12";
 
 const MANAGER = "manager@futureuni.local";
 const WEB_LEAD = "web.lead@futureuni.local"; // SERVICE_LEAD, Web Development only

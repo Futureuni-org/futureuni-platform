@@ -9,7 +9,7 @@ import { expect, test, type Page } from "@playwright/test";
  * cross-screen journey lives in the Wave 4 integration spec.
  */
 
-const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "change-me-local-only";
+const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "changeme-local-only-12";
 const LEADS_PATH = "/acquisition/web-development/leads";
 
 async function signIn(page: Page, email: string): Promise<void> {

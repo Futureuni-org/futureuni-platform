@@ -14,7 +14,7 @@ import { expect, test, type Page } from "@playwright/test";
  * Wave 4 integration spec.
  */
 
-const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "change-me-local-only";
+const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "changeme-local-only-12";
 const INBOX_PATH = "/acquisition/web-development/inbox";
 const SERVICE_LEAD = "web.lead@futureuni.local";
 const MANAGER = "manager@futureuni.local";

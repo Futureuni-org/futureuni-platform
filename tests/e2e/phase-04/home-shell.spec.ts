@@ -5,7 +5,7 @@ import { expect, test } from "@playwright/test";
  * desktop, greeting rendered), and every gallery page loads without horizontal overflow.
  */
 
-const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "change-me-local-only";
+const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "changeme-local-only-12";
 
 test.describe("shell + home @smoke", () => {
   test("admin signs in and lands on the platform home", async ({ page }) => {

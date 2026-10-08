@@ -9,7 +9,7 @@ import { expect, test } from "@playwright/test";
  * proposal flow). Those get covered by their own e2e suites when those phases merge.
  */
 
-const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "change-me-local-only";
+const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "changeme-local-only-12";
 
 test.describe("wave 1 acceptance @smoke", () => {
   test("admin signs in, lands on the shell, sees notifications and role-filtered nav", async ({

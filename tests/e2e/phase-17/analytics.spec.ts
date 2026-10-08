@@ -7,7 +7,7 @@ import { expect, test, type Page } from "@playwright/test";
  * asserted in the Wave 4 integration suite (Phase 16 isn't merged in this worktree).
  */
 
-const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "change-me-local-only";
+const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "changeme-local-only-12";
 
 async function signIn(page: Page, email: string): Promise<void> {
   await page.goto("/login");
