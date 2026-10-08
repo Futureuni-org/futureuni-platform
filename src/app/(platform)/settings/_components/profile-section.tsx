@@ -11,6 +11,43 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { removeAvatarAction, updateOwnProfileAction, uploadAvatarAction } from "../actions";
 
+/** The longest edge an avatar is stored at, and the ceiling the action will accept. */
+const AVATAR_MAX_EDGE = 512;
+const AVATAR_MAX_BYTES = 3 * 1024 * 1024;
+
+/**
+ * Shrinks the chosen photo in the browser before it is uploaded. A phone photo is several
+ * megabytes, which a Server Action refuses outright, and an avatar is never shown above 512px.
+ * Falls back to the original file when the browser cannot decode or encode it.
+ */
+async function toAvatarFile(file: File): Promise<File> {
+  if (typeof createImageBitmap !== "function") return file;
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file);
+  } catch {
+    return file;
+  }
+  try {
+    const scale = Math.min(1, AVATAR_MAX_EDGE / Math.max(bitmap.width, bitmap.height));
+    const width = Math.max(1, Math.round(bitmap.width * scale));
+    const height = Math.max(1, Math.round(bitmap.height * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const context = canvas.getContext("2d");
+    if (context === null) return file;
+    context.drawImage(bitmap, 0, 0, width, height);
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((result) => { resolve(result); }, "image/webp", 0.85);
+    });
+    if (blob === null || blob.size === 0) return file;
+    return new File([blob], "avatar.webp", { type: "image/webp" });
+  } finally {
+    bitmap.close();
+  }
+}
+
 const COMMON_TIMEZONES = [
   "Africa/Lagos",
   "Europe/London",
@@ -58,9 +95,18 @@ export function ProfileSection({
 
   function upload(file: File | undefined) {
     if (file === undefined) return;
-    const fd = new FormData();
-    fd.append("file", file);
+    if (!file.type.startsWith("image/")) {
+      toast.error("Choose an image file.");
+      return;
+    }
     startUpload(async () => {
+      const prepared = await toAvatarFile(file);
+      if (prepared.size > AVATAR_MAX_BYTES) {
+        toast.error("That image is too large. Choose one under 3MB.");
+        return;
+      }
+      const fd = new FormData();
+      fd.append("file", prepared);
       const result = await uploadAvatarAction(fd);
       if (result.ok) {
         setImage(result.data.url);

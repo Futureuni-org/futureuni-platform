@@ -233,6 +233,12 @@ const serverSchema = serverObject.superRefine((values, ctx) => {
     });
   }
 
+  // Without the token the Blob SDK only fails at the first upload, as an unexplained 500. Fail at
+  // start-up instead, where the message says what is missing.
+  if (values.STORAGE_DRIVER === "vercel-blob") {
+    missing("BLOB_READ_WRITE_TOKEN", 'when STORAGE_DRIVER="vercel-blob"');
+  }
+
   if (values.VERCEL_ENV === "production" && !values.MOCKS) {
     const why = "in production (VERCEL_ENV=production) when MOCKS=false";
     for (const key of PRODUCTION_PROVIDER_KEYS) missing(key, why);

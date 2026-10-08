@@ -75,6 +75,7 @@ describe("parseEnv", () => {
     VERCEL: "1",
     VERCEL_ENV: "production",
     STORAGE_DRIVER: "vercel-blob",
+    BLOB_READ_WRITE_TOKEN: "vercel_blob_rw_test_token",
   };
 
   it("keeps provider keys optional while MOCKS=true, even in production", () => {
@@ -92,6 +93,13 @@ describe("parseEnv", () => {
 
   it("keeps provider keys optional in a local production build when MOCKS=false", () => {
     expect(() => parseEnv({ ...valid, NODE_ENV: "production", MOCKS: "false" })).not.toThrow();
+  });
+
+  it("requires the Blob token whenever the Blob driver is selected", () => {
+    const message = messageOf({ ...valid, ...vercelProduction, BLOB_READ_WRITE_TOKEN: "" });
+    expect(message).toContain(
+      'BLOB_READ_WRITE_TOKEN: is required when STORAGE_DRIVER="vercel-blob"',
+    );
   });
 
   it("rejects the local storage driver on Vercel", () => {

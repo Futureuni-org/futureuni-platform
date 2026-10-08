@@ -10,25 +10,30 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
-import { AppError, isAppError } from "@/lib/errors";
+import { AppError } from "@/lib/errors";
 import { ok, err, type ActionResult } from "@/lib/result";
+import { failedAction } from "@/lib/action-error";
 import { actorOf, auth, requireUser } from "@/platform/auth";
 import { checkPassword } from "@/platform/auth/password";
 import { setSetting } from "@/platform/settings";
 import { updatePreferences } from "@/platform/notifications";
-import { getSignedUrl, putFile } from "@/platform/storage";
+import { putFile } from "@/platform/storage";
 import { db } from "@/platform/db";
 
 import { updateOwnProfile } from "./profile.repo";
+
+/** Avatars are stored under the extension their real content type implies. */
+const EXTENSION_BY_TYPE: Record<string, string> = {
+  "image/webp": "webp",
+  "image/png": "png",
+  "image/jpeg": "jpg",
+  "image/gif": "gif",
+};
 
 function fail(issues: unknown): AppError {
   return new AppError("VALIDATION_FAILED", "Please check the value and try again.", {
     details: { issues },
   });
-}
-
-function toApp(error: unknown): AppError {
-  return isAppError(error) ? error : new AppError("INTERNAL");
 }
 
 // ---- Appearance (user-scope settings) --------------------------------------------------------
@@ -47,7 +52,7 @@ export async function updateUserSettingAction(
     revalidatePath("/settings");
     return ok({ ok: true });
   } catch (error) {
-    return err(error);
+    return failedAction(error, { action: "updateUserSettingAction" });
   }
 }
 
@@ -70,7 +75,7 @@ export async function updateNotificationPreferencesAction(
     revalidatePath("/settings");
     return ok({ ok: true });
   } catch (error) {
-    return err(error);
+    return failedAction(error, { action: "updateNotificationPreferencesAction" });
   }
 }
 
@@ -95,7 +100,7 @@ export async function updateOwnProfileAction(
     revalidatePath("/settings");
     return ok({ ok: true });
   } catch (error) {
-    return err(error);
+    return failedAction(error, { action: "updateOwnProfileAction" });
   }
 }
 
@@ -104,24 +109,30 @@ export async function uploadAvatarAction(formData: FormData): Promise<ActionResu
     const user = await requireUser();
     const file = formData.get("file");
     if (!(file instanceof File)) return err(new AppError("VALIDATION_FAILED", "No file provided."));
-    const ext = file.name.includes(".") ? (file.name.split(".").pop() ?? "png") : "png";
-    const key = `avatars/${user.id}.${ext}`;
+    const contentType = file.type.length > 0 ? file.type : "image/png";
+    if (!contentType.startsWith("image/")) {
+      return err(new AppError("UNSUPPORTED_MEDIA_TYPE", "Choose an image file."));
+    }
+    // The extension comes from the content type, never the client filename: the key decides what
+    // the blob is served as, and a wrong extension would outlive the upload.
+    const key = `avatars/${user.id}.${EXTENSION_BY_TYPE[contentType] ?? "png"}`;
     const body = Buffer.from(await file.arrayBuffer());
     const saved = await putFile({
       key,
       body,
-      contentType: file.type.length > 0 ? file.type : "image/png",
+      contentType,
       access: "PUBLIC",
       purpose: "AVATAR",
       uploaderId: user.id,
       originalFilename: file.name,
     });
-    const url = await getSignedUrl(saved.key, 60 * 60 * 24 * 365);
-    await updateOwnProfile(actorOf(user), user.id, { image: url });
+    // A public object is readable at the URL `put` returns. Signing it would issue a *private*
+    // presigned URL that expires, which is both wrong for an avatar and an extra call that can fail.
+    await updateOwnProfile(actorOf(user), user.id, { image: saved.url });
     revalidatePath("/settings");
-    return ok({ url });
+    return ok({ url: saved.url });
   } catch (error) {
-    return err(error);
+    return failedAction(error, { action: "uploadAvatarAction" });
   }
 }
 
@@ -132,7 +143,7 @@ export async function removeAvatarAction(): Promise<ActionResult<{ ok: true }>> 
     revalidatePath("/settings");
     return ok({ ok: true });
   } catch (error) {
-    return err(error);
+    return failedAction(error, { action: "removeAvatarAction" });
   }
 }
 
@@ -158,7 +169,7 @@ export async function changePasswordAction(
     }
     return ok({ ok: true });
   } catch (error) {
-    return err(toApp(error));
+    return failedAction(error, { action: "changePasswordAction" });
   }
 }
 
@@ -190,7 +201,7 @@ export async function start2faAction(password: string): Promise<ActionResult<Ena
       backupCodes: bodyJson.backupCodes ?? [],
     });
   } catch (error) {
-    return err(toApp(error));
+    return failedAction(error, { action: "start2faAction" });
   }
 }
 
@@ -212,7 +223,7 @@ export async function verify2faAction(code: string): Promise<ActionResult<{ ok: 
     revalidatePath("/settings");
     return ok({ ok: true });
   } catch (error) {
-    return err(toApp(error));
+    return failedAction(error, { action: "verify2faAction" });
   }
 }
 
@@ -230,7 +241,7 @@ export async function regenerateBackupCodesAction(
     const bodyJson = (await response.clone().json()) as { backupCodes?: string[] };
     return ok({ backupCodes: bodyJson.backupCodes ?? [] });
   } catch (error) {
-    return err(toApp(error));
+    return failedAction(error, { action: "regenerateBackupCodesAction" });
   }
 }
 
@@ -250,7 +261,7 @@ export async function disable2faAction(password: string): Promise<ActionResult<{
     revalidatePath("/settings");
     return ok({ ok: true });
   } catch (error) {
-    return err(toApp(error));
+    return failedAction(error, { action: "disable2faAction" });
   }
 }
 
@@ -268,7 +279,7 @@ export async function revokeSessionAction(token: string): Promise<ActionResult<{
     revalidatePath("/settings");
     return ok({ ok: true });
   } catch (error) {
-    return err(toApp(error));
+    return failedAction(error, { action: "revokeSessionAction" });
   }
 }
 
@@ -283,6 +294,6 @@ export async function revokeOtherSessionsAction(): Promise<ActionResult<{ ok: tr
     revalidatePath("/settings");
     return ok({ ok: true });
   } catch (error) {
-    return err(toApp(error));
+    return failedAction(error, { action: "revokeOtherSessionsAction" });
   }
 }

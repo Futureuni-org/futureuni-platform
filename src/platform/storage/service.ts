@@ -80,8 +80,12 @@ export async function putFile(input: PutFileInput): Promise<{ id: string; key: s
     access: input.access ?? "PRIVATE",
   });
 
-  const row = await db.fileObject.create({
-    data: {
+  // The adapter overwrites a blob at the same key, so the row must follow it rather than clash on
+  // the unique key: an avatar re-uploaded under the same name would otherwise fail on P2002.
+  // `key` is a plain unique column (not a partial index), so `upsert` is safe here.
+  const row = await db.fileObject.upsert({
+    where: { key: input.key },
+    create: {
       key: input.key,
       purpose: input.purpose,
       access: input.access ?? "PRIVATE",
@@ -91,6 +95,18 @@ export async function putFile(input: PutFileInput): Promise<{ id: string; key: s
       uploadedById: input.uploaderId ?? null,
       module: input.module ?? null,
       retentionUntil: input.retentionUntil ?? null,
+    },
+    update: {
+      purpose: input.purpose,
+      access: input.access ?? "PRIVATE",
+      contentType: declared,
+      sizeBytes: result.size,
+      originalFilename: input.originalFilename ?? null,
+      uploadedById: input.uploaderId ?? null,
+      module: input.module ?? null,
+      retentionUntil: input.retentionUntil ?? null,
+      // The key holds fresh content again, so an earlier soft delete no longer applies.
+      deletedAt: null,
     },
     select: { id: true, key: true },
   });
