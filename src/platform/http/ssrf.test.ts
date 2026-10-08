@@ -54,7 +54,15 @@ describe("SSRF guard", () => {
   });
 
   it("guardUrl accepts a public IPv4 and IPv6 literal", async () => {
-    expect(await guardUrl("http://1.1.1.1/")).toMatchObject({ ok: true });
-    expect(await guardUrl("https://[2606:4700:4700::1111]/")).toMatchObject({ ok: true });
+    expect(await guardUrl("http://1.1.1.1/")).toMatchObject({
+      ok: true,
+      resolvedIps: ["1.1.1.1"],
+    });
+    // The bracketed IPv6 host must be checked as a literal, never sent to the resolver: a
+    // resolver that refuses the brackets would wrongly refuse every public IPv6 address.
+    expect(await guardUrl("https://[2606:4700:4700::1111]/")).toMatchObject({
+      ok: true,
+      resolvedIps: ["2606:4700:4700::1111"],
+    });
   });
 });

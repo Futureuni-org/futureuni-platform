@@ -99,7 +99,10 @@ export async function guardUrl(url: string): Promise<SsrfCheckOk | SsrfCheckErro
   if (!Number.isFinite(port) || !allowedPorts.has(port)) {
     return { ok: false, reason: "ssrf", message: `Port not allowed: ${String(port)}` };
   }
-  const hostname = parsed.hostname;
+  // A WHATWG URL keeps the brackets on an IPv6 host ("[::1]"), which `isIP` rejects. Strip them, or
+  // every IPv6 literal goes to the resolver instead of being checked here: glibc refuses the
+  // bracketed name (so a public literal is wrongly refused), while the Windows resolver accepts it.
+  const hostname = unbracketIpv6(parsed.hostname);
   if (hostname === "") return { ok: false, reason: "ssrf", message: "Missing hostname." };
 
   if (trustedHostnames.has(hostname.toLowerCase())) {
@@ -127,6 +130,11 @@ export async function guardUrl(url: string): Promise<SsrfCheckOk | SsrfCheckErro
     }
   }
   return { ok: true, resolvedIps: ips };
+}
+
+/** `[::1]` → `::1`; any other host is returned unchanged. */
+function unbracketIpv6(hostname: string): string {
+  return hostname.startsWith("[") && hostname.endsWith("]") ? hostname.slice(1, -1) : hostname;
 }
 
 /** Exposed for tests: true when the given IP literal is a non-public address. */
