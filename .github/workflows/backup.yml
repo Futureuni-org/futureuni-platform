@@ -49,7 +49,9 @@ jobs:
           set -euo pipefail
           STAMP="$(date -u +%Y%m%dT%H%M%SZ)"
           FILE="futureuni-${STAMP}.sql.age"
-          pg_dump --no-owner --no-privileges --format=custom "$DIRECT_URL" \
+          # By absolute path: the runner ships its own postgresql-client and Debian's /usr/bin wrapper
+          # picks that one, so a bare `pg_dump` is v16 and refuses the v17 Neon server.
+          /usr/lib/postgresql/18/bin/pg_dump --no-owner --no-privileges --format=custom "$DIRECT_URL" \
             | age -r "$AGE_RECIPIENT" -o "$FILE"
           echo "file=$FILE" >> "$GITHUB_OUTPUT"
       - name: Store the encrypted dump (retention policy)

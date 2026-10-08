@@ -150,6 +150,10 @@ jobs:
       # sign-in fails with "User not found" and each test times out waiting for the redirect.
       - name: Seed the CI database
         if: hashFiles('prisma/seed/**') != ''
+        # The service container answers on localhost but reports its own container address, which
+        # the seed's "is this server local?" check rejects. The production guards still apply.
+        env:
+          SEED_ALLOW_REMOTE: "1"
         run: pnpm db:seed
 
       - name: Install Chromium
