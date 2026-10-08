@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import type { Actor, Market, ServiceLine } from "@/contracts/common";
 import { AppError } from "@/lib/errors";
@@ -31,15 +31,116 @@ const SETTINGS: InboxSettingsBundle = { slaBusinessHours: 4, defaultNurtureDays:
 let manager: Actor;
 let ownerId: string;
 
+// Everything this file commits, so afterAll restores the shared test database. Files run serially
+// (vitest.config.ts `fileParallelism: false`), so anything left behind is seen by every later file:
+// a suppressed domain blocks its contacts, and a line without an active profile breaks scoring.
+const userIds = new Set<string>();
+const companyIds = new Set<string>();
+const mailboxIds = new Set<string>();
+const sendingDomainIds = new Set<string>();
+const profileVersionIds = new Set<string>();
+const deactivatedProfileVersionIds = new Set<string>();
+
 beforeAll(async () => {
   ensureInboxTasksRegistered();
+  // This file needs its own active profile, so switch off whatever is active and put it back in
+  // afterAll: the line must keep exactly one active version (INV-16).
+  const alreadyActive = await db.serviceLineProfileVersion.findMany({
+    where: { serviceLine: "WEB_DEVELOPMENT", isActive: true },
+    select: { id: true },
+  });
+  for (const p of alreadyActive) deactivatedProfileVersionIds.add(p.id);
   await db.serviceLineProfileVersion.updateMany({ where: { serviceLine: "WEB_DEVELOPMENT", isActive: true }, data: { isActive: false } });
   const creator = await createTeamMember(db, { role: "ADMIN", serviceLines: ["WEB_DEVELOPMENT"] });
-  await createProfileVersion(db, { serviceLine: "WEB_DEVELOPMENT", isActive: true, status: "PUBLISHED", createdById: creator.user.id });
+  userIds.add(creator.user.id);
+  const version = await createProfileVersion(db, { serviceLine: "WEB_DEVELOPMENT", isActive: true, status: "PUBLISHED", createdById: creator.user.id });
+  profileVersionIds.add(version.id);
   const mgr = await createTeamMember(db, { role: "MANAGER", serviceLines: ["WEB_DEVELOPMENT"] });
+  userIds.add(mgr.user.id);
   manager = actorOf({ id: mgr.user.id, role: "MANAGER" });
   const owner = await createTeamMember(db, { role: "SERVICE_LEAD", serviceLines: ["WEB_DEVELOPMENT"] });
+  userIds.add(owner.user.id);
   ownerId = owner.user.id;
+});
+
+afterAll(async () => {
+  const cids = [...companyIds];
+  const mids = [...mailboxIds];
+  if (cids.length > 0) {
+    // A reply classified UNSUBSCRIBE suppresses the address and (COMPANY scope) its domain (INV-3).
+    // Read the addresses before the contacts go, then clear both forms.
+    const contacts = await db.contact.findMany({ where: { companyId: { in: cids } }, select: { email: true } });
+    const values = new Set<string>();
+    for (const { email } of contacts) {
+      if (email === null || email === "") continue;
+      const address = email.toLowerCase();
+      values.add(address);
+      values.add(address.slice(address.indexOf("@") + 1));
+    }
+    const companies = await db.company.findMany({ where: { id: { in: cids } }, select: { normalizedDomain: true } });
+    for (const { normalizedDomain } of companies) {
+      if (normalizedDomain !== null) values.add(normalizedDomain.toLowerCase());
+    }
+    if (values.size > 0) await db.suppression.deleteMany({ where: { value: { in: [...values] } } });
+  }
+  // createEnrollment builds a sequence when none is passed, and createSequence builds a profile
+  // version to hold it, so those rows belong to this file too. Collect them before the enrolments go.
+  const sequenceIds = new Set<string>();
+  if (cids.length > 0) {
+    const enrollments = await db.enrollment.findMany({
+      where: { companyId: { in: cids } },
+      select: { sequenceId: true },
+    });
+    for (const { sequenceId } of enrollments) sequenceIds.add(sequenceId);
+  }
+  // Replies first: their corrections cascade, and a correction's actor blocks deleting that user.
+  if (cids.length > 0 || mids.length > 0) {
+    await db.reply.deleteMany({
+      where: { OR: [{ companyId: { in: cids } }, { mailboxId: { in: mids } }] },
+    });
+  }
+  if (cids.length > 0) {
+    await db.messageAttachment.deleteMany({ where: { message: { companyId: { in: cids } } } });
+    await db.message.deleteMany({ where: { companyId: { in: cids } } });
+    await db.enrollment.deleteMany({ where: { companyId: { in: cids } } });
+    await db.leadEvent.deleteMany({ where: { lead: { companyId: { in: cids } } } });
+    await db.lead.deleteMany({ where: { companyId: { in: cids } } });
+    await db.contact.deleteMany({ where: { companyId: { in: cids } } });
+    await db.company.deleteMany({ where: { id: { in: cids } } });
+  }
+  // A sequence restricts deleting its profile version, so the sequence goes first; an active
+  // version is never touched, in case a sequence was built on the one this file installed.
+  if (sequenceIds.size > 0) {
+    const sequences = await db.sequence.findMany({
+      where: { id: { in: [...sequenceIds] } },
+      select: { profileVersionId: true },
+    });
+    await db.sequenceStep.deleteMany({ where: { sequenceId: { in: [...sequenceIds] } } });
+    await db.sequence.deleteMany({ where: { id: { in: [...sequenceIds] } } });
+    const versionIds = sequences.map((s) => s.profileVersionId);
+    if (versionIds.length > 0) {
+      await db.serviceLineProfileVersion.deleteMany({
+        where: { id: { in: versionIds }, isActive: false },
+      });
+    }
+  }
+  if (mids.length > 0) await db.mailbox.deleteMany({ where: { id: { in: mids } } });
+  if (sendingDomainIds.size > 0) await db.sendingDomain.deleteMany({ where: { id: { in: [...sendingDomainIds] } } });
+  if (profileVersionIds.size > 0) {
+    await db.sequence.deleteMany({ where: { profileVersionId: { in: [...profileVersionIds] } } });
+    await db.serviceLineProfileVersion.deleteMany({ where: { id: { in: [...profileVersionIds] } } });
+  }
+  // Only once this file's own active version is gone, so the line never has two active at once.
+  if (deactivatedProfileVersionIds.size > 0) {
+    await db.serviceLineProfileVersion.updateMany({
+      where: { id: { in: [...deactivatedProfileVersionIds] } },
+      data: { isActive: true },
+    });
+  }
+  if (userIds.size > 0) {
+    await db.teamProfile.deleteMany({ where: { userId: { in: [...userIds] } } });
+    await db.user.deleteMany({ where: { id: { in: [...userIds] } } });
+  }
 });
 
 interface Conversation {
@@ -57,10 +158,13 @@ interface Conversation {
 async function seedConversation(status: "CONTACTED" | "REPLIED" = "CONTACTED", market: Market = "NIGERIA"): Promise<Conversation> {
   const serviceLine: ServiceLine = "WEB_DEVELOPMENT";
   const lead = await createLeadInStatus(db, status, { serviceLine, market, ownerId });
+  companyIds.add(lead.companyId);
   const email = uniqueEmail("prospect");
   const contact = await createContact(db, { companyId: lead.companyId, email, emailStatus: "VALID" });
   await db.lead.update({ where: { id: lead.id }, data: { primaryContactId: contact.id } });
   const mailbox = await createMailbox(db);
+  mailboxIds.add(mailbox.id);
+  sendingDomainIds.add(mailbox.sendingDomainId);
   const rfcMessageId = `<${Math.random().toString(36).slice(2)}@outreach.example>`;
   const providerThreadId = `thread-${Math.random().toString(36).slice(2)}`;
   const message = await createMessage(db, {
@@ -291,6 +395,7 @@ describe("permissions", () => {
   it("a member outside the line cannot read the thread", async () => {
     const c = await seedConversation();
     const other = await createTeamMember(db, { role: "MEMBER", serviceLines: ["GRAPHIC_DESIGN"] });
+    userIds.add(other.user.id);
     const otherActor = actorOf({ id: other.user.id, role: "MEMBER" });
     const { getThread } = await import("./services");
     await expect(getThread(otherActor, c.leadId)).rejects.toBeInstanceOf(AppError);

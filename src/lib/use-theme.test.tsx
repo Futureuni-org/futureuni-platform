@@ -88,13 +88,16 @@ describe("useTheme", () => {
 
     await user.click(screen.getByRole("button", { name: "System" }));
 
-    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
+    // Every choice is saved explicitly, "system" included: an absent key means "no choice yet"
+    // and resolves to the light default instead of silently following the OS.
+    expect(window.localStorage.getItem(THEME_STORAGE_KEY)).toBe("system");
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(screen.getByText("Preference system, showing dark")).toBeInTheDocument();
   });
 
   it("follows an OS change while set to system", () => {
     const os = mockSystemTheme(false);
+    window.localStorage.setItem(THEME_STORAGE_KEY, "system");
     render(<ThemeButtons />);
 
     act(() => {
@@ -103,6 +106,18 @@ describe("useTheme", () => {
 
     expect(document.documentElement.dataset.theme).toBe("dark");
     expect(screen.getByText("Preference system, showing dark")).toBeInTheDocument();
+  });
+
+  it("ignores the OS preference when no choice has been made", () => {
+    const os = mockSystemTheme(true);
+    render(<ThemeButtons />);
+
+    act(() => {
+      os.change(true);
+    });
+
+    expect(document.documentElement.dataset.theme).toBe("light");
+    expect(screen.getByText("Preference light, showing light")).toBeInTheDocument();
   });
 
   it("keeps the choice for the page when storage can't save it", async () => {
@@ -137,22 +152,24 @@ describe("THEME_SCRIPT (runs before the first paint)", () => {
     expect(document.documentElement.dataset.theme).toBe("dark");
   });
 
-  it("falls back to the OS preference, then light", () => {
+  it("follows the OS for a saved system choice, and light without a choice", () => {
     mockSystemTheme(true);
+    window.localStorage.setItem(THEME_STORAGE_KEY, "system");
     runScript();
     expect(document.documentElement.dataset.theme).toBe("dark");
 
-    mockSystemTheme(false);
+    // No saved choice is the platform default, light, even while the OS prefers dark.
+    window.localStorage.removeItem(THEME_STORAGE_KEY);
     runScript();
     expect(document.documentElement.dataset.theme).toBe("light");
   });
 
-  it("still follows the OS preference when storage is blocked", () => {
+  it("falls back to light when storage is blocked", () => {
     mockSystemTheme(true);
     vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
       throw new Error("storage blocked");
     });
     runScript();
-    expect(document.documentElement.dataset.theme).toBe("dark");
+    expect(document.documentElement.dataset.theme).toBe("light");
   });
 });

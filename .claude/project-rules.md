@@ -198,7 +198,7 @@ Chosen in ADR-014. Loaded with `next/font/google` and exposed as CSS variables.
 ### Theme
 - **Default theme:** light. Dark is first-class: layered navy depth (page → surface → elevated gets lighter), not an inversion.
 - **Toggle:** light / dark / system, in the user menu and `/settings`, stored as the user setting `user.theme`.
-- **Mechanism:** a `data-theme` attribute on `<html>`, set before paint by an inline script (Phase 1's `ThemeScript`). The source order is the saved choice, then the OS preference, then light.
+- **Mechanism:** a `data-theme` attribute on `<html>`, set before paint by an inline script (Phase 1's `ThemeScript`). Every choice is saved explicitly, `system` included: `light` and `dark` win, `system` follows the OS, and no saved choice is light. The OS preference is never followed until the user asks for it with `system`.
 
 ### Logo assets
 The mark's own colour is `#6C63E1` (sampled from the supplied PNG). That's a lighter violet than the primary token `#5342CC`, and logo files keep it. It reaches 4.66:1 on white and 3.79:1 on the navy surface. Vector drafts of every asset below are in `docs/brand/drafts/` (see its README), **pending Prince's approval**. Until they're approved, the PNG and live-text wordmark are what's used.

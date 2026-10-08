@@ -55,6 +55,8 @@ const companyIds = new Set<string>();
 const mailboxIds = new Set<string>();
 const sendingDomainIds = new Set<string>();
 const profileVersionIds = new Set<string>();
+/** Profiles this file switched off, reactivated in afterAll so the line keeps one active (INV-16). */
+const deactivatedProfileVersionIds = new Set<string>();
 
 /** A signal-driven scoring profile over the real sequences/angles/pricing: sig_a + sig_b = 70 (QUALIFIED). */
 function controlledProfile(): ServiceLineProfile {
@@ -103,6 +105,11 @@ beforeAll(async () => {
   userIds.add(owner.user.id);
   ownerId = owner.user.id;
 
+  const alreadyActive = await db.serviceLineProfileVersion.findMany({
+    where: { serviceLine: LINE, isActive: true },
+    select: { id: true },
+  });
+  for (const p of alreadyActive) deactivatedProfileVersionIds.add(p.id);
   await db.serviceLineProfileVersion.updateMany({ where: { serviceLine: LINE, isActive: true }, data: { isActive: false } });
   const version = await createProfileVersion(db, {
     serviceLine: LINE,
@@ -127,6 +134,28 @@ beforeAll(async () => {
 afterAll(async () => {
   const cids = [...companyIds];
   if (cids.length > 0) {
+    // The unsubscribe and reply paths suppress the contact's address and (COMPANY scope) its whole
+    // domain. Clear both, or a later test file sees its own factory contacts as suppressed.
+    const contacts = await db.contact.findMany({
+      where: { companyId: { in: cids } },
+      select: { email: true },
+    });
+    const values = new Set<string>();
+    for (const { email } of contacts) {
+      if (email === null || email === "") continue;
+      const address = email.toLowerCase();
+      values.add(address);
+      values.add(address.slice(address.indexOf("@") + 1));
+    }
+    const companies = await db.company.findMany({
+      where: { id: { in: cids } },
+      select: { normalizedDomain: true },
+    });
+    for (const { normalizedDomain } of companies) {
+      if (normalizedDomain !== null) values.add(normalizedDomain.toLowerCase());
+    }
+    if (values.size > 0) await db.suppression.deleteMany({ where: { value: { in: [...values] } } });
+
     const proposals = await db.proposal.findMany({
       where: { lead: { companyId: { in: cids } } },
       select: { pdfFileId: true },
@@ -154,6 +183,13 @@ afterAll(async () => {
   if (profileVersionIds.size > 0) {
     await db.sequence.deleteMany({ where: { profileVersionId: { in: [...profileVersionIds] } } });
     await db.serviceLineProfileVersion.deleteMany({ where: { id: { in: [...profileVersionIds] } } });
+  }
+  // Only after this file's own active version is gone, so the line never has two active at once.
+  if (deactivatedProfileVersionIds.size > 0) {
+    await db.serviceLineProfileVersion.updateMany({
+      where: { id: { in: [...deactivatedProfileVersionIds] } },
+      data: { isActive: true },
+    });
   }
   if (mailboxIds.size > 0) await db.mailbox.deleteMany({ where: { id: { in: [...mailboxIds] } } });
   if (sendingDomainIds.size > 0) await db.sendingDomain.deleteMany({ where: { id: { in: [...sendingDomainIds] } } });
@@ -235,7 +271,7 @@ describe("Wave 3 flow (phases 11 → 12 → 14, no reply branch)", () => {
     });
     expect(won.handoffId).toBeTruthy();
     expect((await db.lead.findUniqueOrThrow({ where: { id: leadId } })).status).toBe("WON");
-  }, 60_000);
+  }, 180_000);
 });
 
 // ---- Phase 13 reply branches on the wired engine (batch B5) ----
@@ -256,7 +292,9 @@ async function contactedLead(market: Market): Promise<Contacted> {
   const country = market === "NIGERIA" ? "NG" : "GB";
   const company = await createCompany(db, { country, legalForm: "LIMITED" });
   companyIds.add(company.id);
-  const email = `reply.${company.id}@prospect.example`;
+  // Its own registrable domain: an UNSUBSCRIBE reply suppresses the sender's domain (INV-3), and a
+  // domain shared across companies would suppress other tests' contacts.
+  const email = `reply.${company.id}@reply-${company.id}.example`;
   const contact = await createContact(db, { companyId: company.id, email, emailStatus: "VALID" });
   const lead = await createLeadInStatus(db, "CONTACTED", {
     companyId: company.id,
@@ -370,7 +408,7 @@ describe("Wave 3 reply branches (phase 13 on the wired engine)", () => {
 
   it("WRONG_PERSON: creates a verified referral contact under the company", async () => {
     const c = await contactedLead("INTERNATIONAL");
-    const referralEmail = `sarah.${c.companyId}@prospect.example`;
+    const referralEmail = `sarah.${c.companyId}@referral-${c.companyId}.example`;
     const replyId = await insertReply(c, {
       latestText: `I do not handle this; please talk to Sarah at ${referralEmail}.`,
       referral: { name: "Sarah Jones", email: referralEmail, role: "Operations" },

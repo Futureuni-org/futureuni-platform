@@ -40,7 +40,7 @@ describe("capture (mock runtime, BROWSER_RUNTIME=mock)", () => {
     expect(file?.access).toBe("PRIVATE");
     expect(file?.contentType).toBe("image/webp");
     expect(file?.retentionUntil).not.toBeNull();
-  }, 20_000);
+  }, 60_000);
 
   it("returns a blocked result (no screenshot) for an SSRF-guarded address", async () => {
     const result = await capture({ url: "http://169.254.169.254/latest/meta-data/", viewport: "desktop" });

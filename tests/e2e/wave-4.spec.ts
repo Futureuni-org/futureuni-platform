@@ -12,8 +12,9 @@ import { expect, test, type Page } from "@playwright/test";
  *   - M17-AC5 the analytics drill-downs (`lineHref(line, "leads", { signal, from, to, market })`)
  *     land on the Phase 16 leads list rather than a 404.
  *
- * MANAGER (`manager@futureuni.local`) has every read permission across all lines and — unlike the
- * seeded ADMIN — no `mustSetUp2fa` gate, so it reaches the shell directly and sees all 29 routes.
+ * MANAGER (`manager@futureuni.local`) has every read permission across all lines and — unlike an
+ * ADMIN, who is always forced through 2FA setup — no 2FA gate, so it reaches the shell directly
+ * and sees all 29 routes.
  */
 
 const SEED_PASSWORD = process.env.SEED_USER_PASSWORD ?? "change-me-local-only";

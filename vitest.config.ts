@@ -27,6 +27,11 @@ export default defineConfig({
     // last-active-admin invariant), so test files must not run concurrently or they see each other's
     // committed rows. Serialise files; tests within a file already run in order.
     fileParallelism: false,
+    // Vitest's 5s default suits pure unit tests, but integration tests here migrate, write and read
+    // real rows (and render a PDF), which outgrows it on a loaded or low-memory machine. A test that
+    // times out keeps running, so its writes land in a later test's cleanup and fail it on a foreign
+    // key — a misleading failure far from the cause. Individual slow tests still set their own.
+    testTimeout: 30_000,
     // Applies pending migrations to the test database once, before any test file runs.
     globalSetup: ["./tests/setup/migrate-test-db.ts"],
     setupFiles: ["./tests/setup/test-env.ts", "./tests/setup/msw.ts"],

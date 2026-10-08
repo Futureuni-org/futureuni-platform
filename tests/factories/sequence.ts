@@ -30,9 +30,15 @@ export function uniqueToken(): string {
   return `${RUN}-${String(seq())}`;
 }
 
-/** An address on a reserved test domain that can never be delivered. */
+/**
+ * An address on its own registrable domain under the reserved `.example` TLD, so it can never be
+ * delivered. The domain is unique per address on purpose: a COMPANY-scope unsubscribe or an
+ * UNSUBSCRIBE reply suppresses the sender's whole domain (INV-3), so one domain shared by every
+ * factory address would suppress every other test's contacts in the shared test database.
+ */
 export function uniqueEmail(prefix = "person"): string {
-  return `${prefix}.${uniqueToken()}@example.test`;
+  const token = uniqueToken();
+  return `${prefix}.${token}@${prefix}-${token}.example`;
 }
 
 /** A registrable domain under the reserved .example TLD. */

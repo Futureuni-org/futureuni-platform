@@ -5,7 +5,7 @@
  * in beforeEach), and the suite cleans up its users and saved searches at the end.
  */
 
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Actor } from "@/contracts/common";
 import type { SearchRunCounts, SearchSpec } from "@/contracts/source-adapter";
@@ -17,6 +17,12 @@ import { addManualLead } from "./manual";
 import { runSearch } from "./runner";
 import { createSavedSearch } from "./saved-search";
 import { skipScheduledRunIfAtCapacity } from "./schedules";
+
+// Every test here purges, writes and reads real rows through the adapters, which outgrows the 5s
+// default on a loaded machine. A test that times out keeps running, so its writes land in the next
+// test's purge and break it on a foreign key; the other integration suites allow 30s for the same
+// reason.
+vi.setConfig({ testTimeout: 30_000 });
 
 const SRC_FIRST_SOURCES = [
   "google-places",

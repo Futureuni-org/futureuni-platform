@@ -5,7 +5,7 @@
  * manifest-registered, so their systemActions authorise the services), so no users are committed.
  */
 
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { http, HttpResponse } from "msw";
 
 import type { Actor, ServiceLine } from "@/contracts/common";
@@ -16,6 +16,19 @@ import { runSearch } from "@/modules/acquisition/sourcing";
 import { db, toJsonInput } from "@/platform/db";
 import { configureSsrf } from "@/platform/http";
 import { server } from "@/tests/setup/msw-server";
+
+/*
+ * Phase 19 starts the advance workflow from `lead.created`, and in tests an enqueued job runs
+ * inline (src/platform/jobs/enqueue.ts), so a search would enrich, audit and score every lead
+ * before this file drives those stages itself — the manual calls would then hit an already
+ * advanced lead and fail on INVALID_TRANSITION. Stubbing the starter keeps Wave 2's three stages
+ * under test in isolation. Note the advance workflow itself has no test of its own yet, so nothing
+ * currently asserts that a new lead advances on its own.
+ */
+vi.mock("@/modules/acquisition/workflows/start", () => ({
+  tryStartAdvance: () => Promise.resolve({ started: false, reason: "not-advanceable" }),
+  requeueAdvance: () => Promise.resolve({ started: false }),
+}));
 
 const LINES: ServiceLine[] = ["WEB_DEVELOPMENT", "UI_UX_DESIGN", "GRAPHIC_DESIGN", "VIDEO_EDITING"];
 const SRC = ["google-places", "jobs-serpapi", "youtube-channels", "apple-app-store"];
@@ -48,6 +61,19 @@ async function purge(): Promise<void> {
   await db.suppression.deleteMany({ where: { note: "wave2-test" } });
 }
 
+/**
+ * Clears every profile version. The scope is global by design, because this file seeds the four
+ * code defaults and a line may hold only one active version (INV-16). The rows that point at a
+ * version must go first: an enrolment restricts deleting its sequence, and a sequence cascades its
+ * steps. Without that order another file's leftover sequence breaks this setup on the foreign key
+ * `acq_sequences_profileVersionId_fkey`.
+ */
+async function deleteAllProfileVersions(): Promise<void> {
+  await db.enrollment.deleteMany({});
+  await db.sequence.deleteMany({});
+  await db.serviceLineProfileVersion.deleteMany({});
+}
+
 beforeAll(async () => {
   configureSsrf({ trustHostnames: ["*"] });
   // A permissive stand-in for any website the enrichment crawler visits, so a company that has a
@@ -66,7 +92,7 @@ beforeAll(async () => {
   seedUserId = user.id;
 
   // Seed the four active profiles from the code defaults (INV-16: one active version per line).
-  await db.serviceLineProfileVersion.deleteMany({});
+  await deleteAllProfileVersions();
   for (const line of LINES) {
     await db.serviceLineProfileVersion.create({
       data: {
@@ -91,7 +117,7 @@ afterEach(() => {
 
 afterAll(async () => {
   await purge();
-  await db.serviceLineProfileVersion.deleteMany({});
+  await deleteAllProfileVersions();
   await db.user.deleteMany({ where: { id: seedUserId } });
   configureSsrf();
 });

@@ -10,6 +10,7 @@ import {
   createLeadWithAudit,
   createMailbox,
   createProfileVersion,
+  createTeamMember,
   createUser,
 } from "@/tests/factories";
 
@@ -67,6 +68,15 @@ beforeAll(async () => {
   const manager = await createUser(db, { role: "MANAGER" });
   userIds.add(manager.id);
   managerActor = actorOf(manager);
+  // A lead owner with capacity on both lines this file uses, so the throttle is NORMAL and first
+  // touches may be approved. Without it the line has no capacity at all and every approval fails
+  // with OUTREACH_PAUSED; this file must not depend on a team member another file left behind.
+  const owner = await createTeamMember(db, {
+    role: "SERVICE_LEAD",
+    serviceLines: ["WEB_DEVELOPMENT", "UI_UX_DESIGN"],
+    profile: { weeklyCapacity: 50 },
+  });
+  userIds.add(owner.user.id);
   await ensureActiveProfile("WEB_DEVELOPMENT");
   await ensureActiveProfile("UI_UX_DESIGN");
   // Setting has a partial unique on (key, scope), so find-then-write rather than upsert.
