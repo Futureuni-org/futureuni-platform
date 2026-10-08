@@ -125,6 +125,8 @@ export const auth = betterAuth({
       issuer: "FUTUREUNI",
       backupCodeOptions: { amount: 10, length: 10 },
       totpOptions: { period: 30, digits: 6 },
+      // Trusted devices skip the code challenge; the window refreshes on each sign-in.
+      trustDeviceMaxAge: 60 * 60 * 24 * 30,
     }),
     adminPlugin({ defaultRole: "MEMBER", adminRoles: ["ADMIN"] }),
     nextCookies(),

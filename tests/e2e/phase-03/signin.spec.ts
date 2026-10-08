@@ -6,6 +6,8 @@ import { expect, test } from "@playwright/test";
  *   - /login renders the on-brand form.
  *   - A wrong password shows a generic error and does not enumerate the account.
  *   - Visiting a protected route while signed out redirects with a `next` param.
+ *   - /login/2fa offers "trust this device", ticked by default (the forwarding of the flag is
+ *     unit-tested in src/app/(auth)/login/2fa/actions.test.ts; the 30-day skip is the library's).
  */
 
 test.describe("sign-in @smoke", () => {
@@ -25,5 +27,13 @@ test.describe("sign-in @smoke", () => {
     const response = await page.goto("/settings");
     expect(page.url()).toMatch(/\/login\?next=/);
     expect(response?.status()).toBeLessThan(400);
+  });
+
+  test("AC-5.2: the 2FA screen offers to trust the device, ticked by default", async ({ page }) => {
+    await page.goto("/login/2fa");
+    await expect(page.getByLabel("Verification code")).toBeVisible();
+    const trust = page.getByRole("checkbox", { name: /trust this device for 30 days/i });
+    await expect(trust).toBeVisible();
+    await expect(trust).toBeChecked();
   });
 });

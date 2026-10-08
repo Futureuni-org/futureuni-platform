@@ -60,6 +60,15 @@ export default function TwoFactorForm({ next }: { next: string | null }) {
           )}
         </Field>
       )}
+      <label className="flex items-center gap-2 text-sm text-foreground">
+        <input
+          type="checkbox"
+          name="trustDevice"
+          defaultChecked
+          className="size-5 rounded border-input accent-primary"
+        />
+        Trust this device for 30 days
+      </label>
       <Button type="submit" loading={pending} className="w-full">
         Verify
       </Button>

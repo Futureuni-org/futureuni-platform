@@ -74,7 +74,7 @@ Each capability names the phase that builds it and the contract it implements. F
 - **No public signup.** Accounts exist only by accepting an invite. Invites are single-use, hashed, expire after `auth.inviteExpiryDays` (7), bound to the invited email, and carry a role and service lines.
 - Sessions: secure httpOnly `SameSite=Lax` cookies, `auth.sessionDays` (30) with sliding renewal, rotated on sign-in and on any role or permission change; "sign out of all devices".
 - Passwords: at least 12 characters, strength meter, checked against a common-password list; hashing per the library.
-- 2FA (TOTP) for everyone; **required for `ADMIN`** (forced setup after sign-in); backup codes shown once.
+- 2FA (TOTP) for everyone; **required for `ADMIN`** (forced setup after sign-in); backup codes shown once. At code entry the user may trust the device: a signed trusted-device cookie then skips the code challenge on that browser for 30 days, refreshed on each successful sign-in. A new or untrusted device always requires a code.
 - Rate limits on sign-in, reset, invite acceptance and 2FA verification; non-enumerating messages ("If that account exists, we've sent a link.").
 - The `next` redirect honours same-origin relative paths only.
 
@@ -192,7 +192,7 @@ As a staff member, I want to reset a forgotten password so that I can get back i
 ### US-5: Two-factor authentication
 As an `ADMIN`, I must use 2FA so that the most powerful accounts are protected.
 - **AC-5.1** Given an `ADMIN` without 2FA, when they sign in, then they are sent to `/setup-2fa` and cannot reach any other platform route until 2FA is verified.
-- **AC-5.2** Given any user with 2FA, when they sign in with a correct password, then they must enter a valid TOTP code or an unused backup code on `/login/2fa` before a session is issued.
+- **AC-5.2** Given any user with 2FA, when they sign in with a correct password, then they must enter a valid TOTP code or an unused backup code on `/login/2fa` before a session is issued — unless the browser holds a valid trusted-device cookie (set by ticking "Trust this device for 30 days" at a previous code entry), in which case the challenge is skipped on that device for 30 days.
 - **AC-5.3** Given backup codes generated at setup, when a code is used once, then the same code is refused a second time.
 - **AC-5.4 (negative)** Given an `ADMIN`, when they try to disable their own 2FA in `/settings`, then it is refused.
 

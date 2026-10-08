@@ -196,7 +196,7 @@ Every decision that shapes the build, with its reason. ADR-001 to ADR-012 are fi
   - Prisma adapter on Postgres.
   - Email and password with `disableSignUp: true`. Accounts come only from invites: Phase 3 creates the user inside `acceptInvite`.
   - `minPasswordLength: 12`.
-  - Plugins `twoFactor()` (required for `ADMIN`), `admin()` and `nextCookies()`.
+  - Plugins `twoFactor()` (required for `ADMIN`; `trustDevice` enabled with a 30-day `trustDeviceMaxAge` so a trusted browser skips the code challenge), `admin()` and `nextCookies()`.
   - `rateLimit: { storage: "database" }`, with custom rules for sign-in, password reset, invite acceptance and 2FA.
   - Sessions of 30 days with sliding renewal (`auth.sessionDays`).
   - The admin plugin's string `role` maps to our `Role` enum (`defaultRole: "MEMBER"`). Better Auth is configured so Prisma's `cuid()` generates the IDs.
