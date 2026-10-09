@@ -264,6 +264,7 @@ const serverShape = {
   // Build-time tooling, read by .mcp.json from the shell (never by the app)
   GITHUB_MCP_PAT: optional(text()),
   CONTEXT7_API_KEY: optional(text()),
+  HOSTINGER_API_TOKEN: optional(text()),
 
   // Set by Vercel at build and runtime (not in .env.example)
   VERCEL: optional(z.literal("1")),

@@ -24,6 +24,15 @@
         "X-MCP-Toolsets": "repos,issues,pull_requests,actions"
       }
     },
+    "hostinger-dns": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "-p", "hostinger-api-mcp@2.11.0", "hostinger-dns-mcp"],
+      "env": {
+        "HOSTINGER_API_TOKEN": "${HOSTINGER_API_TOKEN}",
+        "DEBUG": "false"
+      }
+    },
     "vercel": {
       "type": "http",
       "url": "https://mcp.vercel.com"

@@ -70,3 +70,6 @@ desktop.ini
 
 # Sentry
 .sentryclirc
+
+# Vercel CLI link data
+.vercel
