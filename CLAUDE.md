@@ -16,6 +16,15 @@ The FUTUREUNI Internal Platform is one Next.js application, one Postgres databas
 6. `phases/README.md`: waves, batches, dependencies and the "Completed phases" list
 7. The `phases/<nn>/SUMMARY.md` of every completed phase
 
+## Finishing a session: offer to commit, push and deploy
+
+When a session's work is fully done — the task is complete and `pnpm check` (lint, typecheck, tests, build) passes, or the task's own definition of done is met — do not just stop. Proactively offer to commit the session's own work, push to `main` (which deploys to Vercel), and verify it. Then **wait for the user to say okay before committing or pushing**. Never commit or push without that explicit go-ahead; the offer is a prompt, not permission to act.
+
+Once the user says okay:
+- Commit only the files this session changed. Never sweep in another session's uncommitted work (several sessions may share this working tree).
+- Push to `main`. This triggers the CI production deploy (`.github/workflows/deploy.yml`: migrate → `vercel deploy --prod`). A plain push does **not** deploy through Vercel's own Git integration — it is disconnected — so CI is the deploy path; don't assume the push alone deployed.
+- Confirm what production actually serves with `GET /api/health` (its `commit` field is the first 12 characters of the live commit SHA), not just that a workflow turned green.
+
 ## Phase protocol
 
 - Every phase runs in its own git worktree and branch, named `phase/<nn>-<slug>` (`pnpm phase start <nn> <slug>`). Sequential phases use a branch in the main folder.
