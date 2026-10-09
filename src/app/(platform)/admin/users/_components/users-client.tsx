@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { Check, Copy, MoreHorizontal, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { Button, IconButton } from "@/components/ui/button";
@@ -61,7 +61,66 @@ function invitableRoles(inviterRole: string): string[] {
   return [];
 }
 
-export function InviteDialog({ inviterRole }: { inviterRole: string }) {
+function CopyButton({ value, label }: { value: string; label: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <Button
+      variant="secondary"
+      size="sm"
+      className="gap-1"
+      onClick={() => {
+        void navigator.clipboard.writeText(value).then(() => {
+          setCopied(true);
+          setTimeout(() => {
+            setCopied(false);
+          }, 1500);
+        });
+      }}
+    >
+      {copied ? <Check aria-hidden className="size-3" /> : <Copy aria-hidden className="size-3" />}
+      {copied ? "Copied" : label}
+    </Button>
+  );
+}
+
+/**
+ * The invite link, shown after creating or resending. It is the only copy the platform keeps in
+ * plain text: the token is stored hashed, so a link not copied here can only be replaced by
+ * resending.
+ */
+function InviteLinkBlock({ link, emailLive }: { link: string; emailLive: boolean }) {
+  return (
+    <>
+      <p className="text-sm text-muted">
+        {emailLive
+          ? "Invite sent. Share this link if the email doesn't arrive:"
+          : "Email delivery is off in this environment, so no message was sent. Send them this link yourself:"}
+      </p>
+      <code className="rounded-md bg-zone p-2 font-mono text-xs break-all">{link}</code>
+      <div className="flex justify-start">
+        <CopyButton value={link} label="Copy link" />
+      </div>
+    </>
+  );
+}
+
+/** Shown wherever the UI would otherwise imply an email went out. */
+export function EmailMockNotice() {
+  return (
+    <p className="text-sm text-warning">
+      Email delivery is off in this environment. Invites are recorded but no message is sent, so
+      share each invite link yourself.
+    </p>
+  );
+}
+
+export function InviteDialog({
+  inviterRole,
+  emailLive,
+}: {
+  inviterRole: string;
+  emailLive: boolean;
+}) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [email, setEmail] = useState("");
@@ -97,13 +156,25 @@ export function InviteDialog({ inviterRole }: { inviterRole: string }) {
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Invite a user</DialogTitle>
-          <DialogDescription>They&apos;ll get an email with a link to set a password.</DialogDescription>
+          <DialogDescription>
+            {emailLive
+              ? "They'll get an email with a link to set a password."
+              : "Email delivery is off in this environment. You'll get a link to send them yourself."}
+          </DialogDescription>
         </DialogHeader>
         {link === null ? (
           <>
             <Field label="Email">
               {({ id }) => (
-                <Input id={id} type="email" value={email} onChange={(e) => { setEmail(e.target.value); }} placeholder="name@futureuni.local" />
+                <Input
+                  id={id}
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                  }}
+                  placeholder="name@futureuni.local"
+                />
               )}
             </Field>
             <Field label="Role">
@@ -112,23 +183,52 @@ export function InviteDialog({ inviterRole }: { inviterRole: string }) {
                   id={id}
                   value={role}
                   options={roles.map((r) => ({ value: r, label: ROLE_LABEL[r] ?? r }))}
-                  onChange={(e) => { setRole(e.target.value); }}
+                  onChange={(e) => {
+                    setRole(e.target.value);
+                  }}
                 />
               )}
             </Field>
-            <ChipMultiSelect label="Service lines" values={lines} options={LINE_OPTIONS} onChange={setLines} />
-            {error != null && <p role="alert" aria-live="polite" className="text-sm text-danger">{error}</p>}
+            <ChipMultiSelect
+              label="Service lines"
+              values={lines}
+              options={LINE_OPTIONS}
+              onChange={setLines}
+            />
+            {error != null && (
+              <p role="alert" aria-live="polite" className="text-sm text-danger">
+                {error}
+              </p>
+            )}
             <DialogFooter>
-              <Button variant="secondary" onClick={() => { setOpen(false); }} disabled={pending}>Cancel</Button>
-              <Button onClick={submit} loading={pending} disabled={email.trim() === ""}>Send invite</Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setOpen(false);
+                }}
+                disabled={pending}
+              >
+                Cancel
+              </Button>
+              <Button onClick={submit} loading={pending} disabled={email.trim() === ""}>
+                Send invite
+              </Button>
             </DialogFooter>
           </>
         ) : (
           <>
-            <p className="text-sm text-muted">Invite sent. Share this link if the email doesn&apos;t arrive:</p>
-            <code className="break-all rounded-md bg-zone p-2 font-mono text-xs">{link}</code>
+            <InviteLinkBlock link={link} emailLive={emailLive} />
             <DialogFooter>
-              <Button onClick={() => { setOpen(false); setLink(null); setEmail(""); setLines([]); }}>Done</Button>
+              <Button
+                onClick={() => {
+                  setOpen(false);
+                  setLink(null);
+                  setEmail("");
+                  setLines([]);
+                }}
+              >
+                Done
+              </Button>
             </DialogFooter>
           </>
         )}
@@ -151,13 +251,16 @@ export function UserActions({
   caps: UserCapabilities;
 }) {
   const router = useRouter();
-  const [dialog, setDialog] = useState<null | "role" | "deactivate" | "reactivate" | "reset2fa" | "signout">(null);
+  const [dialog, setDialog] = useState<
+    null | "role" | "deactivate" | "reactivate" | "reset2fa" | "signout"
+  >(null);
   const [newRole, setNewRole] = useState(role);
 
   function refresh() {
     router.refresh();
   }
-  const anyAction = caps.canChangeRole || caps.canDeactivate || caps.canReset2fa || caps.canForceSignOut;
+  const anyAction =
+    caps.canChangeRole || caps.canDeactivate || caps.canReset2fa || caps.canForceSignOut;
   if (!anyAction) return null;
 
   return (
@@ -170,26 +273,59 @@ export function UserActions({
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
           {caps.canChangeRole && (
-            <DropdownMenuItem onSelect={() => { setNewRole(role); setDialog("role"); }}>Change role</DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                setNewRole(role);
+                setDialog("role");
+              }}
+            >
+              Change role
+            </DropdownMenuItem>
           )}
           {caps.canDeactivate &&
             (status === "ACTIVE" ? (
-              <DropdownMenuItem onSelect={() => { setDialog("deactivate"); }}>Deactivate</DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  setDialog("deactivate");
+                }}
+              >
+                Deactivate
+              </DropdownMenuItem>
             ) : (
-              <DropdownMenuItem onSelect={() => { setDialog("reactivate"); }}>Reactivate</DropdownMenuItem>
+              <DropdownMenuItem
+                onSelect={() => {
+                  setDialog("reactivate");
+                }}
+              >
+                Reactivate
+              </DropdownMenuItem>
             ))}
           {caps.canReset2fa && (
-            <DropdownMenuItem onSelect={() => { setDialog("reset2fa"); }}>Reset 2FA</DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                setDialog("reset2fa");
+              }}
+            >
+              Reset 2FA
+            </DropdownMenuItem>
           )}
           {caps.canForceSignOut && (
-            <DropdownMenuItem onSelect={() => { setDialog("signout"); }}>Force sign-out</DropdownMenuItem>
+            <DropdownMenuItem
+              onSelect={() => {
+                setDialog("signout");
+              }}
+            >
+              Force sign-out
+            </DropdownMenuItem>
           )}
         </DropdownMenuContent>
       </DropdownMenu>
 
       <ConfirmDialog
         open={dialog === "role"}
-        onOpenChange={(o) => { if (!o) setDialog(null); }}
+        onOpenChange={(o) => {
+          if (!o) setDialog(null);
+        }}
         title={`Change ${userName}'s role`}
         description="Changing a role rotates the user's sessions; they'll need to sign in again."
         confirmLabel="Change role"
@@ -199,64 +335,92 @@ export function UserActions({
             <Select
               aria-label="New role"
               value={newRole}
-              options={Object.keys(ROLE_LABEL).map((r) => ({ value: r, label: ROLE_LABEL[r] ?? r }))}
-              onChange={(e) => { setNewRole(e.target.value); }}
+              options={Object.keys(ROLE_LABEL).map((r) => ({
+                value: r,
+                label: ROLE_LABEL[r] ?? r,
+              }))}
+              onChange={(e) => {
+                setNewRole(e.target.value);
+              }}
             />
           </label>
         }
         onConfirm={async () => {
           const result = await changeRoleAction(userId, newRole);
-          if (result.ok) { toast.success("Role changed."); refresh(); }
+          if (result.ok) {
+            toast.success("Role changed.");
+            refresh();
+          }
           return result;
         }}
       />
 
       <ConfirmDialog
         open={dialog === "deactivate"}
-        onOpenChange={(o) => { if (!o) setDialog(null); }}
+        onOpenChange={(o) => {
+          if (!o) setDialog(null);
+        }}
         tone="danger"
         title={`Deactivate ${userName}`}
         description="They'll be signed out and can't sign in until reactivated."
         confirmLabel="Deactivate"
         onConfirm={async () => {
           const result = await setUserActiveAction(userId, false);
-          if (result.ok) { toast.success("User deactivated."); refresh(); }
+          if (result.ok) {
+            toast.success("User deactivated.");
+            refresh();
+          }
           return result;
         }}
       />
       <ConfirmDialog
         open={dialog === "reactivate"}
-        onOpenChange={(o) => { if (!o) setDialog(null); }}
+        onOpenChange={(o) => {
+          if (!o) setDialog(null);
+        }}
         title={`Reactivate ${userName}`}
         confirmLabel="Reactivate"
         onConfirm={async () => {
           const result = await setUserActiveAction(userId, true);
-          if (result.ok) { toast.success("User reactivated."); refresh(); }
+          if (result.ok) {
+            toast.success("User reactivated.");
+            refresh();
+          }
           return result;
         }}
       />
       <ConfirmDialog
         open={dialog === "reset2fa"}
-        onOpenChange={(o) => { if (!o) setDialog(null); }}
+        onOpenChange={(o) => {
+          if (!o) setDialog(null);
+        }}
         tone="danger"
         title={`Reset ${userName}'s 2FA`}
         description="Their authenticator is removed; they'll set it up again at next sign-in."
         confirmLabel="Reset 2FA"
         onConfirm={async () => {
           const result = await resetUser2faAction(userId);
-          if (result.ok) { toast.success("2FA reset."); refresh(); }
+          if (result.ok) {
+            toast.success("2FA reset.");
+            refresh();
+          }
           return result;
         }}
       />
       <ConfirmDialog
         open={dialog === "signout"}
-        onOpenChange={(o) => { if (!o) setDialog(null); }}
+        onOpenChange={(o) => {
+          if (!o) setDialog(null);
+        }}
         tone="danger"
         title={`Sign ${userName} out everywhere`}
         confirmLabel="Force sign-out"
         onConfirm={async () => {
           const result = await forceSignOutAction(userId);
-          if (result.ok) { toast.success("Signed out of all sessions."); refresh(); }
+          if (result.ok) {
+            toast.success("Signed out of all sessions.");
+            refresh();
+          }
           return result;
         }}
       />
@@ -264,29 +428,74 @@ export function UserActions({
   );
 }
 
-export function PendingInviteActions({ inviteId }: { inviteId: string }) {
+export function PendingInviteActions({
+  inviteId,
+  email,
+  emailLive,
+}: {
+  inviteId: string;
+  email: string;
+  emailLive: boolean;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [link, setLink] = useState<string | null>(null);
 
   function resend() {
     startTransition(async () => {
       const result = await resendInviteAction(inviteId);
-      if (result.ok) toast.success("Invite resent.");
-      else toast.error(result.error.message);
+      if (result.ok) {
+        // Resending mints a new token and invalidates the old one, so this link is the only way
+        // back to the invite. Show it rather than dropping it into a toast.
+        setLink(result.data.link);
+        if (emailLive) toast.success("Invite resent.");
+        router.refresh();
+      } else toast.error(result.error.message);
     });
   }
   function revoke() {
     startTransition(async () => {
       const result = await revokeInviteAction(inviteId);
-      if (result.ok) { toast.success("Invite revoked."); router.refresh(); }
-      else toast.error(result.error.message);
+      if (result.ok) {
+        toast.success("Invite revoked.");
+        router.refresh();
+      } else toast.error(result.error.message);
     });
   }
 
   return (
     <div className="flex gap-1">
-      <Button variant="ghost" size="sm" onClick={resend} disabled={pending}>Resend</Button>
-      <Button variant="ghost" size="sm" className="text-danger" onClick={revoke} disabled={pending}>Revoke</Button>
+      <Button variant="ghost" size="sm" onClick={resend} disabled={pending}>
+        Resend
+      </Button>
+      <Button variant="ghost" size="sm" className="text-danger" onClick={revoke} disabled={pending}>
+        Revoke
+      </Button>
+      <Dialog
+        open={link !== null}
+        onOpenChange={(o) => {
+          if (!o) setLink(null);
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New invite link for {email}</DialogTitle>
+            <DialogDescription>
+              The previous link stopped working. This one expires in 7 days.
+            </DialogDescription>
+          </DialogHeader>
+          {link !== null && <InviteLinkBlock link={link} emailLive={emailLive} />}
+          <DialogFooter>
+            <Button
+              onClick={() => {
+                setLink(null);
+              }}
+            >
+              Done
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

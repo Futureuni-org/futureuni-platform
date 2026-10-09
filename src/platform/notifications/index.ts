@@ -20,14 +20,6 @@ export {
   type UserPreferences,
 } from "./service";
 export { sendEmail, type SendEmailInput } from "./email/send";
-export {
-  clearMockOutbox,
-  getMockOutbox,
-  type EmailSender,
-} from "./email/adapter";
+export { clearMockOutbox, getMockOutbox, isEmailLive, type EmailSender } from "./email/adapter";
 export { routeEventToNotifications } from "./router";
-export {
-  getNotificationType,
-  listNotificationTypes,
-  _resetNotificationRegistry,
-} from "./registry";
+export { getNotificationType, listNotificationTypes, _resetNotificationRegistry } from "./registry";

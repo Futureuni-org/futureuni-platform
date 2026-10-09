@@ -15,6 +15,9 @@ import { z } from "zod";
  * - Provider keys are optional while `MOCKS=true`, and required in the production deployment
  *   (`VERCEL_ENV=production`) when `MOCKS=false` (ADR-005). See phases/01/REQUESTS.md CR-01-11:
  *   Phase 21 reconciles this with the credentials vault, which is read before env keys.
+ * - `LIVE_PROVIDERS` lifts single providers out of mock mode while the rest stay mocked, so one
+ *   integration can go live without waiting for all ten. A provider named there must carry its
+ *   key wherever the app boots, which is checked here rather than at the first call.
  * - On Vercel the local storage driver is rejected: the filesystem there is read-only.
  */
 
@@ -79,6 +82,79 @@ const encryptionKey = () =>
 
 const optional = <T extends z.ZodType>(schema: T) => schema.optional();
 
+/**
+ * Providers that can be switched on one at a time through `LIVE_PROVIDERS`, each with the
+ * variable carrying its key. This is the single source of truth: `providerEnvKey` in
+ * `@/platform/credentials` reads it rather than keeping a second copy.
+ */
+export const LIVE_PROVIDER_IDS = [
+  "anthropic",
+  "google-places",
+  "pagespeed",
+  "youtube-data",
+  "serpapi",
+  "hunter",
+  "companies-house",
+  "resend",
+  "cal-com",
+] as const;
+export type LiveProviderId = (typeof LIVE_PROVIDER_IDS)[number];
+
+export const PROVIDER_ENV_KEY = {
+  anthropic: "ANTHROPIC_API_KEY",
+  "google-places": "GOOGLE_PLACES_API_KEY",
+  pagespeed: "PAGESPEED_API_KEY",
+  "youtube-data": "YOUTUBE_API_KEY",
+  serpapi: "SERPAPI_API_KEY",
+  hunter: "HUNTER_API_KEY",
+  "companies-house": "COMPANIES_HOUSE_API_KEY",
+  resend: "RESEND_API_KEY",
+  "cal-com": "CALCOM_API_KEY",
+} as const satisfies Record<LiveProviderId, string>;
+
+/** Domains that never reach a real inbox, so a from-address using one is a configuration mistake. */
+const RESERVED_EMAIL_TLDS = new Set(["example", "invalid", "test", "localhost"]);
+
+/** `address@domain` or `Display Name <address@domain>`, excluding the reserved documentation TLDs. */
+const emailAddress = () =>
+  text().refine(
+    (value) => {
+      const match = /^(?:[^<>]*<\s*([^<>\s]+)\s*>|([^<>\s]+))$/.exec(value.trim());
+      const address = match?.[1] ?? match?.[2];
+      if (address === undefined) return false;
+      const at = address.lastIndexOf("@");
+      if (at <= 0 || at === address.length - 1) return false;
+      const domain = address.slice(at + 1).toLowerCase();
+      if (!domain.includes(".")) return false;
+      return !RESERVED_EMAIL_TLDS.has(domain.split(".").pop() ?? "");
+    },
+    {
+      error:
+        'must be a deliverable address, on its own or as "Name <address@domain>" (.example and other reserved domains are rejected)',
+    },
+  );
+
+/** A comma-separated provider list, e.g. `resend,anthropic`. Blank means "mock everything". */
+const providerList = () =>
+  z
+    .string()
+    .optional()
+    .transform((value) =>
+      value === undefined
+        ? []
+        : value
+            .split(",")
+            .map((entry) => entry.trim())
+            .filter((entry) => entry !== ""),
+    )
+    .pipe(
+      z.array(
+        z.enum(LIVE_PROVIDER_IDS, {
+          error: `must name providers from: ${LIVE_PROVIDER_IDS.join(", ")}`,
+        }),
+      ),
+    );
+
 /** Public variables: safe for the browser. Next.js inlines each one only when referenced literally. */
 const publicShape = {
   NEXT_PUBLIC_APP_URL: httpUrl(),
@@ -95,6 +171,7 @@ const serverShape = {
 
   // Mock mode (ADR-005)
   MOCKS: bool(true),
+  LIVE_PROVIDERS: providerList(),
   AI_MOCK_FAIL: optional(z.enum(["empty", "invalid", "timeout", "429"])),
 
   // Database (ADR-004, ADR-019)
@@ -144,8 +221,8 @@ const serverShape = {
 
   // Platform (transactional) email (ADR-023)
   RESEND_API_KEY: optional(text()),
-  EMAIL_FROM: optional(text()),
-  EMAIL_REPLY_TO: optional(text()),
+  EMAIL_FROM: optional(emailAddress()),
+  EMAIL_REPLY_TO: optional(emailAddress()),
 
   // Outreach sending and reply ingestion (ADR-016)
   OUTREACH_SENDER: z.enum(["gmail-api", "smtp", "mock"]).default("mock"),
@@ -237,6 +314,18 @@ const serverSchema = serverObject.superRefine((values, ctx) => {
   // start-up instead, where the message says what is missing.
   if (values.STORAGE_DRIVER === "vercel-blob") {
     missing("BLOB_READ_WRITE_TOKEN", 'when STORAGE_DRIVER="vercel-blob"');
+  }
+
+  // A provider named in LIVE_PROVIDERS talks to the real service even while MOCKS=true, so its key
+  // has to be present wherever the app boots — not only in the production deployment. Without this
+  // the mistake surfaces as a failed job hours later instead of at start-up.
+  for (const id of values.LIVE_PROVIDERS) {
+    missing(PROVIDER_ENV_KEY[id], `when LIVE_PROVIDERS includes "${id}"`);
+  }
+  // The platform-email fallback from-address is a reserved domain, so live Resend without an
+  // explicit EMAIL_FROM would be rejected by the provider on every send.
+  if (values.LIVE_PROVIDERS.includes("resend")) {
+    missing("EMAIL_FROM", 'when LIVE_PROVIDERS includes "resend"');
   }
 
   if (values.VERCEL_ENV === "production" && !values.MOCKS) {
@@ -348,3 +437,19 @@ function browserGuard(): ServerEnv {
 
 /** Validated server environment. Import it only from server code. */
 export const env: ServerEnv = serverEnv ?? browserGuard();
+
+/**
+ * Whether `id` runs against the real service rather than its mock (ADR-005).
+ *
+ * `MOCKS=false` makes every provider live. While `MOCKS=true`, only the providers named in
+ * `LIVE_PROVIDERS` are, which is how one integration goes live before the rest have keys.
+ * Server-only: reading `MOCKS` in the browser throws.
+ */
+export function isProviderLive(id: LiveProviderId): boolean {
+  // `parseEnvLoosely` (SKIP_ENV_VALIDATION=1) can leave these undefined despite what the types
+  // say, so both are read defensively and anything unset means "mocked". Defaulting the other way
+  // would turn a half-configured environment into real sends.
+  const loose = env as Partial<ServerEnv>;
+  if (loose.MOCKS === false) return true;
+  return loose.LIVE_PROVIDERS?.includes(id) ?? false;
+}

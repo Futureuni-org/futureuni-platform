@@ -10,7 +10,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import { env } from "@/env";
+import { env, isProviderLive, PROVIDER_ENV_KEY, type LiveProviderId } from "@/env";
 import type { ProviderId } from "@/contracts/common";
 
 /** A password-shaped API key: a single opaque token. */
@@ -28,9 +28,7 @@ export const OAuthSchema = z.object({
 });
 
 export type CredentialPayload =
-  | z.infer<typeof ApiKeySchema>
-  | z.infer<typeof AppIdSecretSchema>
-  | z.infer<typeof OAuthSchema>;
+  z.infer<typeof ApiKeySchema> | z.infer<typeof AppIdSecretSchema> | z.infer<typeof OAuthSchema>;
 
 export interface ProviderDefinition {
   id: ProviderId;
@@ -42,7 +40,10 @@ export interface ProviderDefinition {
   /** A cheap read-only call. Returns `{ ok: false, error }` on failure. Never throws. */
   test: (payload: CredentialPayload) => Promise<{ ok: true } | { ok: false; error: string }>;
   /** Which field of the payload to hint as a masked string (first 4 + last 4 of the value). */
-  hintFrom: keyof z.infer<typeof ApiKeySchema> | keyof z.infer<typeof AppIdSecretSchema> | keyof z.infer<typeof OAuthSchema>;
+  hintFrom:
+    | keyof z.infer<typeof ApiKeySchema>
+    | keyof z.infer<typeof AppIdSecretSchema>
+    | keyof z.infer<typeof OAuthSchema>;
 }
 
 const mockOk = (): Promise<{ ok: true }> => Promise.resolve({ ok: true });
@@ -163,47 +164,34 @@ export function getProvider(id: ProviderId): ProviderDefinition | null {
   return BY_ID.get(id) ?? null;
 }
 
-/** The env-variable name that carries a provider's key, used by `resolveProviderKey` fallback. */
+/**
+ * The env-variable name that carries a provider's key, used by `resolveProviderKey` fallback.
+ * `PROVIDER_ENV_KEY` in `@/env` is the source of truth; ids absent from it (adzuna, browser,
+ * `outreach-mailbox:<id>`) have no env fallback.
+ */
 export function providerEnvKey(id: ProviderId): string | null {
-  switch (id) {
-    case "anthropic":
-      return "ANTHROPIC_API_KEY";
-    case "google-places":
-      return "GOOGLE_PLACES_API_KEY";
-    case "pagespeed":
-      return "PAGESPEED_API_KEY";
-    case "youtube-data":
-      return "YOUTUBE_API_KEY";
-    case "serpapi":
-      return "SERPAPI_API_KEY";
-    case "hunter":
-      return "HUNTER_API_KEY";
-    case "companies-house":
-      return "COMPANIES_HOUSE_API_KEY";
-    case "resend":
-      return "RESEND_API_KEY";
-    case "cal-com":
-      return "CALCOM_API_KEY";
-    case "adzuna":
-    case "browser":
-      return null;
-    default:
-      // outreach-mailbox:<id> etc — no env fallback
-      return null;
-  }
+  return Object.prototype.hasOwnProperty.call(PROVIDER_ENV_KEY, id)
+    ? PROVIDER_ENV_KEY[id as LiveProviderId]
+    : null;
 }
 
-/** Reads a provider key from the env when the vault is empty. Returns null in mock mode. */
+/**
+ * Reads a provider key from the env when the vault is empty. Returns null while the provider is
+ * mocked, so a key left in the environment can never cause a real call behind mock mode.
+ */
 export function readProviderEnvKey(id: ProviderId): string | null {
-  if (env.MOCKS) return null;
   const key = providerEnvKey(id);
   if (key === null) return null;
+  if (!isProviderLive(id as LiveProviderId)) return null;
   const value = (env as unknown as Record<string, string | undefined>)[key];
   return value !== undefined && value.trim() !== "" ? value : null;
 }
 
 /** Masks the "shown" field of a payload: first 4 + `…` + last 4. */
-export function maskHint(payload: CredentialPayload, hintFrom: ProviderDefinition["hintFrom"]): string {
+export function maskHint(
+  payload: CredentialPayload,
+  hintFrom: ProviderDefinition["hintFrom"],
+): string {
   const value = (payload as Record<string, unknown>)[hintFrom];
   if (typeof value !== "string" || value.length === 0) return "…";
   if (value.length <= 8) return `${value.slice(0, 1)}…${value.slice(-1)}`;

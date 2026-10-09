@@ -3,12 +3,12 @@
  *  - `mock`: writes to an in-memory outbox that tests can read.
  *  - `resend`: uses the Resend SDK; API key from the credentials vault, then env.
  *
- * The choice is made by `MOCKS`; there is no `if (isProd)` in feature code.
+ * The choice is made by `MOCKS` and `LIVE_PROVIDERS`; there is no `if (isProd)` in feature code.
  */
 
 import "server-only";
 
-import { env } from "@/env";
+import { isProviderLive } from "@/env";
 
 export interface EmailPayload {
   to: string;
@@ -85,15 +85,21 @@ const resendSender: EmailSender = {
     });
     if (!response.ok) {
       const message = await response.text().catch(() => response.statusText);
-      throw new Error(`Resend rejected the message (${String(response.status)}): ${message.slice(0, 500)}`);
+      throw new Error(
+        `Resend rejected the message (${String(response.status)}): ${message.slice(0, 500)}`,
+      );
     }
     const body = (await response.json()) as { id?: string };
     return { providerMessageId: body.id ?? "unknown" };
   },
 };
 
-/** Selects the sender by `MOCKS`. Tests always get the mock. */
+/** True when platform email reaches real inboxes rather than the in-memory outbox. */
+export function isEmailLive(): boolean {
+  return isProviderLive("resend");
+}
+
+/** Selects the sender by `MOCKS` and `LIVE_PROVIDERS`. Tests always get the mock. */
 export function getEmailSender(): EmailSender {
-  if (env.MOCKS) return mockSender;
-  return resendSender;
+  return isEmailLive() ? resendSender : mockSender;
 }

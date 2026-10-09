@@ -35,6 +35,7 @@ Last updated: 2026-09-25 (Phase 0). After Phase 0, this file changes only when a
   - Tests: Vitest 5.0, Testing Library (React 16.3, jest-dom 7.0 with the Vitest 5 type shim in `tests/setup/`), jsdom 30.0.1 (30.1.x has an open Vitest Blob/FormData bug), MSW 2.15, Playwright 1.63.
   - Lint: ESLint 9.39 (Next's plugins don't support ESLint 10 yet), typescript-eslint 8.70 (needs TypeScript below 6.1, so TypeScript 7 is not an option yet), eslint-plugin-boundaries 7.2, Prettier 3.9.
 - **Environment:** `src/env.ts` validates every variable in `.env.example` at start-up (`next.config.ts` imports it); `SKIP_ENV_VALIDATION=1` relaxes it for tooling steps. Create `.env.local` with `node scripts/env-init.mjs`.
+- **Mock mode (ADR-005):** `MOCKS` is the global switch, and `LIVE_PROVIDERS` is a comma-separated list of providers that run live despite it, so one integration can go live before the other nine have keys. Every adapter asks `isProviderLive(id)` from `@/env`, never `env.MOCKS` directly. A provider named there must carry its key wherever the app boots, and anything unset counts as mocked, so a half-configured environment can never send for real.
 - **Database and ORM:** PostgreSQL through **Prisma 7**. Pin `prisma@^7` and `@prisma/client@^7`, because `prisma@latest` is currently the 8.0 release candidate.
   - `prisma.config.ts` holds the migration datasource URL.
   - The multi-file schema lives in `prisma/schema/`.
@@ -457,7 +458,7 @@ Each one is enforced in review. A violation is at least Major.
 - **WhatsApp prepared text:** 600 characters or fewer. The first line identifies FUTUREUNI. No links except one portfolio or booking link.
 - **LinkedIn note:** 300 characters or fewer.
 - **Platform (transactional) email:**
-  - **Sender:** from "FUTUREUNI Platform <notifications@TODO(confirm: platform mail subdomain)>", sent through Resend (ADR-023).
+  - **Sender:** from "FUTUREUNI Platform <info@futureuni.org>", sent through Resend (ADR-023), set as `EMAIL_FROM`. Chosen by Prince on 2026-10-08 in place of a dedicated mail subdomain. Resend verifies the domain through `send.futureuni.org` (MX plus SPF) and `resend._domainkey.futureuni.org`, so the root MX and SPF serving the Hostinger mailboxes are untouched.
   - **Template:** branded React Email with a plain-text version. No marketing content, and no personal data beyond what the message needs.
 - **CSV exports:** UTF-8 with a BOM and a header row. Timestamps in ISO 8601 UTC. Money as two columns (`amountMinor`, `currency`) plus a formatted column.
 - **Generated copy in general:** no emoji, no exclamation marks in first-touch outreach, and sentence case headings.
@@ -469,7 +470,7 @@ The full register, with purpose, adapter IDs, mock availability, free tiers, pri
 | Concern | Provider | Notes |
 |---|---|---|
 | Payments | none | No billing in this product (non-goal) |
-| Platform email | Resend (ADR-023) | Transactional only; separate from outreach |
+| Platform email | Resend (ADR-023) | Transactional only; separate from outreach. Live independently of `MOCKS` via `LIVE_PROVIDERS=resend` |
 | Outreach email and replies | Google Workspace mailboxes on dedicated outreach domains, Gmail API (ADR-016) | `smtp` and `imap` fallbacks; `mock` |
 | File storage | Vercel Blob (private by default) | `local` driver writes to `.storage/` in development and tests |
 | AI | Anthropic, through `src/platform/ai` only | Model tiers from env or settings (ADR-018) |

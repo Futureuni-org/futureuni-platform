@@ -11,7 +11,7 @@ import { db } from "@/platform/db";
 
 import { EMAIL_TEMPLATES, type EmailTemplateId } from "@/emails/index";
 
-import { getEmailSender } from "./adapter";
+import { getEmailSender, isEmailLive } from "./adapter";
 
 const FALLBACK_FROM = "FUTUREUNI Platform <notifications@futureuni.example>";
 
@@ -26,6 +26,13 @@ export async function deliverPlatformEmail(input: {
     throw new AppError("VALIDATION_FAILED", `Unknown email template: ${input.template}`);
   }
   const template = EMAIL_TEMPLATES[templateId];
+  const live = isEmailLive();
+  // FALLBACK_FROM is a reserved domain that no provider accepts, so it only ever stands in for the
+  // mock sender. Sending live without EMAIL_FROM is a misconfiguration, and failing here names it
+  // instead of letting Resend reject every message with a provider error.
+  if (live && env.EMAIL_FROM === undefined) {
+    throw new AppError("INTERNAL", "EMAIL_FROM is required when platform email is live.");
+  }
   const from = env.EMAIL_FROM ?? FALLBACK_FROM;
   const replyTo = env.EMAIL_REPLY_TO;
 
@@ -34,7 +41,11 @@ export async function deliverPlatformEmail(input: {
     return { counts: { skipped: 1 } };
   }
 
-  const rendered = await (template.render as (props: Record<string, unknown>) => Promise<{ subject: string; html: string; text: string }>)(input.props);
+  const rendered = await (
+    template.render as (
+      props: Record<string, unknown>,
+    ) => Promise<{ subject: string; html: string; text: string }>
+  )(input.props);
   const sender = getEmailSender();
   const delivery = await db.emailDelivery.upsert({
     where: { dedupeKey: input.dedupeKey },
@@ -43,7 +54,7 @@ export async function deliverPlatformEmail(input: {
       template: input.template,
       subject: rendered.subject,
       status: "QUEUED",
-      provider: env.MOCKS ? "mock" : "resend",
+      provider: live ? "resend" : "mock",
       dedupeKey: input.dedupeKey,
     },
     update: { status: "QUEUED" },
@@ -61,7 +72,12 @@ export async function deliverPlatformEmail(input: {
     });
     await db.emailDelivery.update({
       where: { id: delivery.id },
-      data: { status: "SENT", providerMessageId: result.providerMessageId, sentAt: new Date(), error: null },
+      data: {
+        status: "SENT",
+        providerMessageId: result.providerMessageId,
+        sentAt: new Date(),
+        error: null,
+      },
     });
     return { counts: { sent: 1 } };
   } catch (error) {

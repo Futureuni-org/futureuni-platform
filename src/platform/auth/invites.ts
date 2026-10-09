@@ -58,10 +58,7 @@ export interface CreatedInvite {
   link: string;
 }
 
-export async function createInvite(
-  actor: Inviter,
-  raw: CreateInviteInput,
-): Promise<CreatedInvite> {
+export async function createInvite(actor: Inviter, raw: CreateInviteInput): Promise<CreatedInvite> {
   const input = CreateInviteInputSchema.parse(raw);
   assertCan(
     { id: actor.id, role: actor.role, serviceLines: [], canApprove: actor.canApprove },
@@ -177,7 +174,7 @@ export async function resendInvite(actor: Inviter, inviteId: string): Promise<Cr
       lastSentAt: new Date(),
       sendCount: { increment: 1 },
     },
-    select: { id: true, email: true, role: true, expiresAt: true },
+    select: { id: true, email: true, role: true, expiresAt: true, sendCount: true },
   });
   const link = inviteLink(token.plain);
   const inviter = await db.user.findUnique({
@@ -200,9 +197,15 @@ export async function resendInvite(actor: Inviter, inviteId: string): Promise<Cr
     action: "platform.user.invite",
     targetType: "Invite",
     targetId: inviteId,
-    after: { resentAt: new Date().toISOString(), sendCount: updated.role },
+    after: { resentAt: new Date().toISOString(), sendCount: updated.sendCount },
   });
-  return { ...updated, link };
+  return {
+    id: updated.id,
+    email: updated.email,
+    role: updated.role,
+    expiresAt: updated.expiresAt,
+    link,
+  };
 }
 
 export const AcceptInviteInputSchema = z.object({

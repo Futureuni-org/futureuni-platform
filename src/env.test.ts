@@ -133,6 +133,91 @@ describe("parseEnv", () => {
   it("rejects a MOCKS value that isn't a boolean", () => {
     expect(messageOf({ ...valid, MOCKS: "maybe" })).toContain("MOCKS:");
   });
+
+  describe("LIVE_PROVIDERS", () => {
+    const liveResend = {
+      LIVE_PROVIDERS: "resend",
+      RESEND_API_KEY: "re_test_key",
+      EMAIL_FROM: "FUTUREUNI Platform <notifications@mail.futureuni.org>",
+    };
+    /** The from-address configured in the production deployment (project-rules, ADR-023). */
+    const liveFromOnly = { EMAIL_FROM: "FUTUREUNI Platform <info@futureuni.org>" };
+
+    it("defaults to an empty list, leaving every provider mocked", () => {
+      expect(parseEnv(valid).LIVE_PROVIDERS).toEqual([]);
+    });
+
+    it("accepts a single live provider with its key and from-address", () => {
+      expect(parseEnv({ ...valid, ...liveResend }).LIVE_PROVIDERS).toEqual(["resend"]);
+    });
+
+    it("accepts a comma-separated list, ignoring surrounding spaces", () => {
+      expect(
+        parseEnv({
+          ...valid,
+          ...liveResend,
+          LIVE_PROVIDERS: " resend , anthropic ",
+          ANTHROPIC_API_KEY: "sk-ant-test",
+        }).LIVE_PROVIDERS,
+      ).toEqual(["resend", "anthropic"]);
+    });
+
+    it("requires the key of each live provider, even outside production", () => {
+      const message = messageOf({ ...valid, ...liveResend, RESEND_API_KEY: undefined });
+      expect(message).toContain(
+        'RESEND_API_KEY: is required when LIVE_PROVIDERS includes "resend"',
+      );
+    });
+
+    it("requires EMAIL_FROM when Resend is live, because the fallback is unroutable", () => {
+      const message = messageOf({ ...valid, ...liveResend, EMAIL_FROM: undefined });
+      expect(message).toContain('EMAIL_FROM: is required when LIVE_PROVIDERS includes "resend"');
+    });
+
+    it("rejects a provider name it doesn't know", () => {
+      expect(messageOf({ ...valid, LIVE_PROVIDERS: "resend,postmark" })).toContain(
+        "LIVE_PROVIDERS.1: must name providers from:",
+      );
+    });
+
+    it("rejects a from-address on a reserved domain", () => {
+      expect(
+        messageOf({
+          ...valid,
+          ...liveResend,
+          EMAIL_FROM: "FUTUREUNI Platform <notifications@futureuni.example>",
+        }),
+      ).toContain("EMAIL_FROM: must be a deliverable address");
+    });
+
+    it("rejects a from-address that isn't an address at all", () => {
+      expect(messageOf({ ...valid, ...liveResend, EMAIL_FROM: "FUTUREUNI Platform" })).toContain(
+        "EMAIL_FROM: must be a deliverable address",
+      );
+    });
+
+    // The shape actually configured on Vercel. These two assertions are what stand between a
+    // deploy and a production boot failure, since a bad environment fails at start-up by design.
+    it("accepts the deployed production environment, which mocks everything", () => {
+      const env = parseEnv({ ...valid, ...vercelProduction, MOCKS: "true", ...liveFromOnly });
+      expect(env.LIVE_PROVIDERS).toEqual([]);
+      expect(env.EMAIL_FROM).toBe("FUTUREUNI Platform <info@futureuni.org>");
+    });
+
+    it("accepts that same environment once Resend alone is switched live", () => {
+      const env = parseEnv({
+        ...valid,
+        ...vercelProduction,
+        MOCKS: "true",
+        ...liveFromOnly,
+        LIVE_PROVIDERS: "resend",
+        RESEND_API_KEY: "re_test_key",
+      });
+      expect(env.LIVE_PROVIDERS).toEqual(["resend"]);
+      // The other nine stay mocked, which is the whole point of the switch.
+      expect(env.ANTHROPIC_API_KEY).toBeUndefined();
+    });
+  });
 });
 
 describe("loading src/env.ts", () => {

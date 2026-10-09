@@ -5,14 +5,23 @@ import { PageHeader } from "@/components/patterns/page-header";
 import { EmptyState, PermissionState } from "@/components/patterns/states";
 import { Badge } from "@/components/ui/badge";
 import { RelativeTime } from "@/components/ui/relative-time";
-import { SettingsSection, AdminTable, FilterBar, UrlSearchInput, UrlSelect, type AdminColumn } from "@/components/admin";
+import {
+  SettingsSection,
+  AdminTable,
+  FilterBar,
+  UrlSearchInput,
+  UrlSelect,
+  type AdminColumn,
+} from "@/components/admin";
 import { canFromUser, requireUser } from "@/platform/auth";
 import { listUsers, type ListedUser } from "@/platform/auth/users";
+import { isEmailLive } from "@/platform/notifications";
 import { actorFromCurrentUser, listTeam } from "@/platform/team";
 import type { Role, ServiceLine } from "@/contracts/common";
 
 import { listPendingInvites, type PendingInvite } from "./invites.repo";
 import {
+  EmailMockNotice,
   InviteDialog,
   PendingInviteActions,
   UserActions,
@@ -57,9 +66,12 @@ export default async function UsersPage({
   const search = one(sp.q);
   const cursor = one(sp.cursor);
 
-  const role = roleParam !== undefined && ROLES.has(roleParam as Role) ? (roleParam as Role) : undefined;
-  const status = statusParam === "ACTIVE" || statusParam === "DEACTIVATED" ? statusParam : undefined;
+  const role =
+    roleParam !== undefined && ROLES.has(roleParam as Role) ? (roleParam as Role) : undefined;
+  const status =
+    statusParam === "ACTIVE" || statusParam === "DEACTIVATED" ? statusParam : undefined;
 
+  const emailLive = isEmailLive();
   const adminActor = { id: user.id, role: user.role, canApprove: user.canApprove };
   const [{ items, nextCursor }, team] = await Promise.all([
     listUsers(adminActor, {
@@ -76,7 +88,9 @@ export default async function UsersPage({
   const linesByUser = new Map(team.map((t) => [t.id, t.serviceLines]));
   const rows: Row[] = items.map((u) => ({ ...u, serviceLines: linesByUser.get(u.id) ?? [] }));
 
-  const pendingInvites = canFromUser(user, "platform.user.invite") ? await listPendingInvites() : [];
+  const pendingInvites = canFromUser(user, "platform.user.invite")
+    ? await listPendingInvites()
+    : [];
 
   const caps: UserCapabilities = {
     canChangeRole: canFromUser(user, "platform.user.changeRole"),
@@ -96,12 +110,18 @@ export default async function UsersPage({
         </span>
       ),
     },
-    { key: "role", header: "Role", cell: (u) => <Badge tone="neutral">{ROLE_LABEL[u.role] ?? u.role}</Badge> },
+    {
+      key: "role",
+      header: "Role",
+      cell: (u) => <Badge tone="neutral">{ROLE_LABEL[u.role] ?? u.role}</Badge>,
+    },
     {
       key: "lines",
       header: "Service lines",
       cell: (u) =>
-        u.serviceLines.length === 0 ? "—" : u.serviceLines.map((l) => LINE_SHORT[l] ?? l).join(", "),
+        u.serviceLines.length === 0
+          ? "—"
+          : u.serviceLines.map((l) => LINE_SHORT[l] ?? l).join(", "),
     },
     {
       key: "2fa",
@@ -129,7 +149,11 @@ export default async function UsersPage({
       key: "status",
       header: "Status",
       cell: (u) =>
-        u.status === "ACTIVE" ? <Badge tone="success">Active</Badge> : <Badge tone="danger">Deactivated</Badge>,
+        u.status === "ACTIVE" ? (
+          <Badge tone="success">Active</Badge>
+        ) : (
+          <Badge tone="danger">Deactivated</Badge>
+        ),
     },
     {
       key: "actions",
@@ -141,7 +165,16 @@ export default async function UsersPage({
           userName={u.name}
           role={u.role}
           status={u.status}
-          caps={u.id === user.id ? { canChangeRole: false, canDeactivate: false, canReset2fa: false, canForceSignOut: caps.canForceSignOut } : caps}
+          caps={
+            u.id === user.id
+              ? {
+                  canChangeRole: false,
+                  canDeactivate: false,
+                  canReset2fa: false,
+                  canForceSignOut: caps.canForceSignOut,
+                }
+              : caps
+          }
         />
       ),
     },
@@ -159,13 +192,30 @@ export default async function UsersPage({
         eyebrow="Admin"
         title="Users"
         description="People with access to the platform. The last active admin can't be removed or demoted."
-        actions={canFromUser(user, "platform.user.invite") ? <InviteDialog inviterRole={user.role} /> : undefined}
+        actions={
+          canFromUser(user, "platform.user.invite") ? (
+            <InviteDialog inviterRole={user.role} emailLive={emailLive} />
+          ) : undefined
+        }
       />
+
+      {!emailLive && canFromUser(user, "platform.user.invite") && <EmailMockNotice />}
 
       <FilterBar>
         <UrlSearchInput label="Search users" placeholder="Search name or email" />
-        <UrlSelect paramKey="role" label="Role" options={Object.keys(ROLE_LABEL).map((r) => ({ value: r, label: ROLE_LABEL[r] ?? r }))} />
-        <UrlSelect paramKey="status" label="Status" options={[{ value: "ACTIVE", label: "Active" }, { value: "DEACTIVATED", label: "Deactivated" }]} />
+        <UrlSelect
+          paramKey="role"
+          label="Role"
+          options={Object.keys(ROLE_LABEL).map((r) => ({ value: r, label: ROLE_LABEL[r] ?? r }))}
+        />
+        <UrlSelect
+          paramKey="status"
+          label="Status"
+          options={[
+            { value: "ACTIVE", label: "Active" },
+            { value: "DEACTIVATED", label: "Deactivated" },
+          ]}
+        />
       </FilterBar>
 
       <AdminTable
@@ -180,7 +230,7 @@ export default async function UsersPage({
         <div>
           <Link
             href={`/admin/users?${loadMore.toString()}`}
-            className="inline-flex h-9 items-center rounded-md border border-input bg-surface px-3 text-sm font-semibold text-foreground hover:bg-primary-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="inline-flex h-9 items-center rounded-md border border-input bg-surface px-3 text-sm font-semibold text-foreground hover:bg-primary-soft focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background focus-visible:outline-none"
           >
             Load more
           </Link>
@@ -190,7 +240,7 @@ export default async function UsersPage({
       {pendingInvites.length > 0 && (
         <SettingsSection eyebrow="Invites" title="Pending invites">
           <AdminTable
-            columns={pendingColumns(user.timezone)}
+            columns={pendingColumns(user.timezone, emailLive)}
             rows={pendingInvites}
             getRowKey={(i) => i.id}
             caption="Pending invites"
@@ -201,16 +251,28 @@ export default async function UsersPage({
   );
 }
 
-function pendingColumns(timezone: string): AdminColumn<PendingInvite>[] {
+function pendingColumns(timezone: string, emailLive: boolean): AdminColumn<PendingInvite>[] {
   return [
     { key: "email", header: "Email", cell: (i) => i.email },
     { key: "role", header: "Role", cell: (i) => ROLE_LABEL[i.role] ?? i.role },
     {
       key: "lines",
       header: "Service lines",
-      cell: (i) => (i.serviceLines.length === 0 ? "—" : i.serviceLines.map((l) => LINE_SHORT[l] ?? l).join(", ")),
+      cell: (i) =>
+        i.serviceLines.length === 0
+          ? "—"
+          : i.serviceLines.map((l) => LINE_SHORT[l] ?? l).join(", "),
     },
-    { key: "expires", header: "Expires", cell: (i) => <RelativeTime value={i.expiresAt} timezone={timezone} /> },
-    { key: "actions", header: "", align: "right", cell: (i) => <PendingInviteActions inviteId={i.id} /> },
+    {
+      key: "expires",
+      header: "Expires",
+      cell: (i) => <RelativeTime value={i.expiresAt} timezone={timezone} />,
+    },
+    {
+      key: "actions",
+      header: "",
+      align: "right",
+      cell: (i) => <PendingInviteActions inviteId={i.id} email={i.email} emailLive={emailLive} />,
+    },
   ];
 }
