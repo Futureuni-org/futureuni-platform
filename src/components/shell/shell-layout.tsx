@@ -3,6 +3,7 @@ import "server-only";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 
+import { InstallAppBanner } from "@/components/pwa";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { canFromUser, getCurrentUser } from "@/platform/auth";
 import { listForUser, markRead, unreadCount } from "@/platform/notifications";
@@ -82,6 +83,7 @@ export async function ShellLayout({ children }: { children: ReactNode }) {
             markAllReadAction={markAllReadAction}
           />
           <OutreachPausedBanner paused={outreachPaused} />
+          <InstallAppBanner />
           <main className="flex-1 pb-8">
             <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-8 sm:px-6 lg:px-8">
               {children}

@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
 import { headers } from "next/headers";
 
+import { ServiceWorkerRegistrar } from "@/components/pwa";
 import { Toaster } from "@/components/ui/toaster";
 import { ThemeScript } from "@/lib/theme";
 import { fontVariables } from "@/styles/fonts";
+import { PWA_THEME_COLOR } from "@/styles/pwa-theme";
 
 import "@/styles/globals.css";
 
@@ -17,6 +19,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   minimumScale: 1,
   viewportFit: "cover",
+  // Brand navy for the mobile browser / installed-app title bar. Matches the manifest theme_color.
+  themeColor: PWA_THEME_COLOR,
 };
 
 export const metadata: Metadata = {
@@ -24,8 +28,15 @@ export const metadata: Metadata = {
   description: "FUTUREUNI's internal platform.",
   // Internal app: never indexed.
   robots: { index: false, follow: false },
-  // Until Phase 4 generates the icon set from the approved favicon draft.
-  icons: { icon: "/brand/futureuni-mark.png" },
+  // PWA: installable as a home-screen app. The manifest (src/app/manifest.ts) is allowlisted in
+  // src/proxy.ts so the browser can fetch it without a session cookie.
+  manifest: "/manifest.webmanifest",
+  applicationName: "FUTUREUNI",
+  appleWebApp: { capable: true, title: "FUTUREUNI", statusBarStyle: "default" },
+  icons: {
+    icon: "/icons/icon-192.png",
+    apple: "/icons/apple-touch-icon-180.png",
+  },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
@@ -42,6 +53,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
       <body>
         {children}
         <Toaster />
+        <ServiceWorkerRegistrar />
       </body>
     </html>
   );

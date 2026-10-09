@@ -36,6 +36,11 @@ export function buildCsp(nonce: string, isDev: boolean): string {
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' blob: data:`,
     `font-src 'self'`,
+    // PWA: the service worker (/sw.js) and the web app manifest are same-origin. `default-src`
+    // would already allow them, but naming them explicitly documents the intent and is robust to
+    // future default-src tightening.
+    `worker-src 'self'`,
+    `manifest-src 'self'`,
     // 'self' for same-origin fetches + server actions; Sentry ingest (ADR-030) and Vercel Speed
     // Insights need their hosts, or the browser SDKs are blocked in production.
     `connect-src 'self' https://*.ingest.sentry.io https://*.sentry.io https://vitals.vercel-insights.com`,
@@ -59,10 +64,7 @@ function applySecurityHeaders(response: NextResponse, csp: string): NextResponse
     "camera=(), microphone=(), geolocation=(), browsing-topics=(), payment=()",
   );
   // HSTS only matters over HTTPS; harmless on localhost. Two years, subdomains, preload.
-  response.headers.set(
-    "Strict-Transport-Security",
-    "max-age=63072000; includeSubDomains; preload",
-  );
+  response.headers.set("Strict-Transport-Security", "max-age=63072000; includeSubDomains; preload");
   return response;
 }
 
@@ -78,6 +80,12 @@ const PUBLIC_PREFIXES = [
   "/api/webhooks/",
   "/api/unsubscribe/",
   "/.well-known/",
+  // PWA assets the browser fetches WITHOUT a session cookie. Without these, the proxy redirects
+  // them to /login and the app silently fails to install / has no offline fallback. They carry no
+  // sensitive data. (Icon PNGs under /icons/ are already excluded by the matcher below.)
+  "/manifest.webmanifest",
+  "/sw.js",
+  "/offline.html",
 ] as const;
 
 function isPublicPath(pathname: string): boolean {
@@ -113,5 +121,7 @@ export function proxy(request: NextRequest): NextResponse {
 export const config = {
   // Match everything except Next's own assets and static files. Individual public prefixes are
   // still checked in the handler above so we always attach `x-next-pathname`.
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|brand/|.*\\.(?:png|jpg|jpeg|svg|ico|webp)$).*)"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|brand/|.*\\.(?:png|jpg|jpeg|svg|ico|webp)$).*)",
+  ],
 };

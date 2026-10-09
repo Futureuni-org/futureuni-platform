@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Offline · FUTUREUNI</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        height: 100%;
+      }
+      body {
+        display: flex;
+        min-height: 100dvh;
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+        background: #060925;
+        color: #ecedf8;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+        text-align: center;
+      }
+      .card {
+        width: 100%;
+        max-width: 24rem;
+      }
+      .mark {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 56px;
+        height: 56px;
+        margin-bottom: 20px;
+        border-radius: 14px;
+        background: #5342cc;
+        color: #ffffff;
+        font-weight: 700;
+        font-size: 22px;
+        letter-spacing: 0.02em;
+      }
+      h1 {
+        margin: 0 0 8px;
+        font-size: 1.25rem;
+        font-weight: 650;
+        color: #ffffff;
+      }
+      p {
+        margin: 0 0 24px;
+        font-size: 0.95rem;
+        line-height: 1.55;
+        color: #a9adcc;
+      }
+      .retry {
+        display: inline-block;
+        border-radius: 10px;
+        padding: 10px 18px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        text-decoration: none;
+        color: #ffffff;
+        background: #5342cc;
+      }
+      .retry:hover {
+        background: #6653d6;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <div class="mark" aria-hidden="true">FU</div>
+      <h1>You're offline</h1>
+      <p>
+        The FUTUREUNI platform needs a connection to load. Check your network and try again — your
+        work is safe.
+      </p>
+      <!-- A plain link (not an inline onclick handler) so it works under the strict CSP that the
+           proxy applies to this page. Navigating to "/" retries the app once the network is back. -->
+      <a class="retry" href="/">Try again</a>
+    </main>
+  </body>
+</html>
