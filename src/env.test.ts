@@ -8,6 +8,7 @@ import {
   EnvValidationError,
   parseEnv,
   PRODUCTION_PROVIDER_KEYS,
+  PRODUCTION_REQUIRED_PROVIDER_KEYS,
   VERCEL_SYSTEM_VARIABLES,
 } from "@/env";
 
@@ -82,12 +83,30 @@ describe("parseEnv", () => {
     expect(() => parseEnv({ ...valid, ...vercelProduction, MOCKS: "true" })).not.toThrow();
   });
 
-  it("requires every provider key in the production deployment when MOCKS=false", () => {
+  it("requires the AI engine key in the production deployment when MOCKS=false", () => {
     const message = messageOf({ ...valid, ...vercelProduction, MOCKS: "false" });
-    for (const key of PRODUCTION_PROVIDER_KEYS) {
+    for (const key of PRODUCTION_REQUIRED_PROVIDER_KEYS) {
       expect(message).toContain(
         `${key}: is required in production (VERCEL_ENV=production) when MOCKS=false`,
       );
+    }
+  });
+
+  it("keeps the other provider keys optional in production (lean/ramped launch)", () => {
+    const required: readonly string[] = PRODUCTION_REQUIRED_PROVIDER_KEYS;
+    const optional = PRODUCTION_PROVIDER_KEYS.filter((key) => !required.includes(key));
+    // Only the required AI key is set; a live build boots without SerpApi, Hunter, Cal.com, etc.
+    expect(() =>
+      parseEnv({
+        ...valid,
+        ...vercelProduction,
+        MOCKS: "false",
+        ANTHROPIC_API_KEY: "sk-ant-test-key",
+      }),
+    ).not.toThrow();
+    const message = messageOf({ ...valid, ...vercelProduction, MOCKS: "false" });
+    for (const key of optional) {
+      expect(message).not.toContain(`${key}: is required`);
     }
   });
 
@@ -216,6 +235,54 @@ describe("parseEnv", () => {
       expect(env.LIVE_PROVIDERS).toEqual(["resend"]);
       // The other nine stay mocked, which is the whole point of the switch.
       expect(env.ANTHROPIC_API_KEY).toBeUndefined();
+    });
+  });
+
+  describe("EMAIL_TRANSPORT=smtp", () => {
+    const smtp = {
+      EMAIL_TRANSPORT: "smtp",
+      EMAIL_SMTP_HOST: "smtp.hostinger.com",
+      EMAIL_SMTP_PORT: "465",
+      EMAIL_SMTP_USER: "info@futureuni.org",
+      EMAIL_SMTP_PASSWORD: "mailbox-secret",
+      EMAIL_FROM: "FUTUREUNI Platform <info@futureuni.org>",
+    };
+
+    it("accepts a full SMTP configuration and coerces the port to a number", () => {
+      const env = parseEnv({ ...valid, ...smtp });
+      expect(env.EMAIL_TRANSPORT).toBe("smtp");
+      expect(env.EMAIL_SMTP_PORT).toBe(465);
+    });
+
+    it("accepts the deployed SMTP shape (MOCKS=true, email driven by EMAIL_TRANSPORT)", () => {
+      expect(() =>
+        parseEnv({ ...valid, ...vercelProduction, MOCKS: "true", ...smtp }),
+      ).not.toThrow();
+    });
+
+    it("requires every SMTP setting and the from-address when the transport is smtp", () => {
+      const message = messageOf({
+        ...valid,
+        EMAIL_TRANSPORT: "smtp",
+        EMAIL_SMTP_HOST: undefined,
+        EMAIL_SMTP_PORT: undefined,
+        EMAIL_SMTP_USER: undefined,
+        EMAIL_SMTP_PASSWORD: undefined,
+        EMAIL_FROM: undefined,
+      });
+      for (const key of [
+        "EMAIL_SMTP_HOST",
+        "EMAIL_SMTP_PORT",
+        "EMAIL_SMTP_USER",
+        "EMAIL_SMTP_PASSWORD",
+        "EMAIL_FROM",
+      ]) {
+        expect(message).toContain(`${key}: is required when EMAIL_TRANSPORT="smtp"`);
+      }
+    });
+
+    it("rejects an unknown transport name", () => {
+      expect(messageOf({ ...valid, EMAIL_TRANSPORT: "sendgrid" })).toContain("EMAIL_TRANSPORT:");
     });
   });
 });

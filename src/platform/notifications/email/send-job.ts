@@ -11,7 +11,7 @@ import { db } from "@/platform/db";
 
 import { EMAIL_TEMPLATES, type EmailTemplateId } from "@/emails/index";
 
-import { getEmailSender, isEmailLive } from "./adapter";
+import { emailTransport, getEmailSender, isEmailLive } from "./adapter";
 
 const FALLBACK_FROM = "FUTUREUNI Platform <notifications@futureuni.example>";
 
@@ -54,7 +54,7 @@ export async function deliverPlatformEmail(input: {
       template: input.template,
       subject: rendered.subject,
       status: "QUEUED",
-      provider: live ? "resend" : "mock",
+      provider: emailTransport(),
       dedupeKey: input.dedupeKey,
     },
     update: { status: "QUEUED" },

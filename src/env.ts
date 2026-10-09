@@ -220,9 +220,21 @@ const serverShape = {
   BLOB_READ_WRITE_TOKEN: optional(text()),
 
   // Platform (transactional) email (ADR-023)
+  // EMAIL_TRANSPORT chooses the sender explicitly. Unset falls back to the Resend/LIVE_PROVIDERS
+  // gate. "smtp" sends through EMAIL_SMTP_* (e.g. the Hostinger mailbox on the sending domain).
+  EMAIL_TRANSPORT: optional(z.enum(["mock", "resend", "smtp"])),
   RESEND_API_KEY: optional(text()),
   EMAIL_FROM: optional(emailAddress()),
   EMAIL_REPLY_TO: optional(emailAddress()),
+  EMAIL_SMTP_HOST: optional(text()),
+  EMAIL_SMTP_PORT: z.coerce
+    .number({ error: "must be a port number" })
+    .int({ error: "must be a port number" })
+    .min(1, { error: "must be a port number" })
+    .max(65535, { error: "must be a port number" })
+    .optional(),
+  EMAIL_SMTP_USER: optional(text()),
+  EMAIL_SMTP_PASSWORD: optional(text()),
 
   // Outreach sending and reply ingestion (ADR-016)
   OUTREACH_SENDER: z.enum(["gmail-api", "smtp", "mock"]).default("mock"),
@@ -275,7 +287,12 @@ const serverShape = {
 /** Variables Vercel sets itself; everything else must appear in `.env.example`. */
 export const VERCEL_SYSTEM_VARIABLES = ["VERCEL", "VERCEL_ENV", "VERCEL_GIT_COMMIT_SHA"] as const;
 
-/** Provider keys required in the production deployment (`VERCEL_ENV=production`) when `MOCKS=false`. */
+/**
+ * Every provider key the platform can use in the production deployment. These are all OPTIONAL at
+ * boot: an unset provider is simply skipped at runtime (each adapter resolves a null key, logs, and
+ * yields nothing), so the platform can go live paying for one provider at a time. Only the keys in
+ * `PRODUCTION_REQUIRED_PROVIDER_KEYS` are enforced.
+ */
 export const PRODUCTION_PROVIDER_KEYS = [
   "ANTHROPIC_API_KEY",
   "GOOGLE_PLACES_API_KEY",
@@ -288,6 +305,14 @@ export const PRODUCTION_PROVIDER_KEYS = [
   "CALCOM_API_KEY",
   "CALCOM_WEBHOOK_SECRET",
 ] as const;
+
+/**
+ * Provider keys that MUST be present in the production deployment (`VERCEL_ENV=production`) when
+ * `MOCKS=false`. Only the AI engine is non-negotiable: scoring, audits and drafting all call it, so
+ * a keyless live build is a misconfiguration worth failing at start-up. Every other provider degrades
+ * gracefully when absent, so it stays optional (lean/ramped launch, ADR — see docs/integrations.md).
+ */
+export const PRODUCTION_REQUIRED_PROVIDER_KEYS = ["ANTHROPIC_API_KEY"] as const;
 
 const serverObject = z.object(serverShape);
 
@@ -328,10 +353,20 @@ const serverSchema = serverObject.superRefine((values, ctx) => {
   if (values.LIVE_PROVIDERS.includes("resend")) {
     missing("EMAIL_FROM", 'when LIVE_PROVIDERS includes "resend"');
   }
+  // SMTP transport needs its connection settings and a real from-address wherever the app boots,
+  // so a misconfiguration fails at start-up instead of on the first send.
+  if (values.EMAIL_TRANSPORT === "smtp") {
+    const why = 'when EMAIL_TRANSPORT="smtp"';
+    missing("EMAIL_SMTP_HOST", why);
+    missing("EMAIL_SMTP_PORT", why);
+    missing("EMAIL_SMTP_USER", why);
+    missing("EMAIL_SMTP_PASSWORD", why);
+    missing("EMAIL_FROM", why);
+  }
 
   if (values.VERCEL_ENV === "production" && !values.MOCKS) {
     const why = "in production (VERCEL_ENV=production) when MOCKS=false";
-    for (const key of PRODUCTION_PROVIDER_KEYS) missing(key, why);
+    for (const key of PRODUCTION_REQUIRED_PROVIDER_KEYS) missing(key, why);
     if (values.OUTREACH_SENDER === "gmail-api" || values.INBOUND_SOURCE === "gmail-api") {
       missing("GOOGLE_WORKSPACE_OAUTH_CLIENT_ID", `${why} and Gmail API is selected`);
       missing("GOOGLE_WORKSPACE_OAUTH_CLIENT_SECRET", `${why} and Gmail API is selected`);
