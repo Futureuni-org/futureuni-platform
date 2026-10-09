@@ -13,6 +13,12 @@ vi.mock("@/env", () => ({
   isProviderLive: (id: string) => id === "resend" && live.value,
 }));
 
+// The live sender resolves a key before any request. Stubbed so the test neither touches the
+// credentials vault (and therefore the database) nor makes a network call.
+vi.mock("@/platform/credentials", () => ({
+  resolveProviderKey: () => Promise.resolve(null),
+}));
+
 async function load(isLive: boolean) {
   live.value = isLive;
   vi.resetModules();
@@ -46,8 +52,8 @@ describe("platform email sender", () => {
     clearMockOutbox();
     expect(isEmailLive()).toBe(true);
 
-    // The real sender resolves a key before any request, so with no vault and no key it fails
-    // rather than quietly swallowing the message.
+    // With no key configured the live sender fails loudly rather than quietly swallowing the
+    // message — and, critically, nothing lands in the outbox, proving the mock is out of the path.
     await expect(
       getEmailSender().send({
         to: "ada@example.com",
@@ -56,7 +62,7 @@ describe("platform email sender", () => {
         html: "<p>hello</p>",
         text: "hello",
       }),
-    ).rejects.toThrow();
+    ).rejects.toThrow(/Resend API key not configured/);
     expect(getMockOutbox()).toHaveLength(0);
   });
 });

@@ -176,13 +176,15 @@ export function providerEnvKey(id: ProviderId): string | null {
 }
 
 /**
- * Reads a provider key from the env when the vault is empty. Returns null while the provider is
- * mocked, so a key left in the environment can never cause a real call behind mock mode.
+ * The raw value of a provider's key variable, or null when it has none or it is blank.
+ *
+ * Deliberately ungated: mock mode is enforced once, by `resolveProviderKey`, which is the function
+ * whose contract is "a key for calling out". `resolveWebhookSecret` reads the same value without
+ * that gate, because verifying an inbound webhook must work whether or not the provider is mocked.
  */
 export function readProviderEnvKey(id: ProviderId): string | null {
   const key = providerEnvKey(id);
   if (key === null) return null;
-  if (!isProviderLive(id as LiveProviderId)) return null;
   const value = (env as unknown as Record<string, string | undefined>)[key];
   return value !== undefined && value.trim() !== "" ? value : null;
 }

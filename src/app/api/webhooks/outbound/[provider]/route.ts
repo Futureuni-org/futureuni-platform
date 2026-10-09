@@ -16,7 +16,7 @@ import { OutboundProviderEventSchema } from "@/contracts/outreach-channel";
 import { env } from "@/env";
 import { errorResponse } from "@/lib/errors";
 import { db } from "@/platform/db";
-import { resolveProviderKey } from "@/platform/credentials";
+import { resolveWebhookSecret } from "@/platform/credentials";
 import { recordBounce } from "@/modules/acquisition/outreach/email/bounces";
 
 export const dynamic = "force-dynamic";
@@ -40,18 +40,32 @@ export async function POST(request: Request, ctx: RouteContext): Promise<Respons
     const { provider } = await ctx.params;
     const rawBody = await request.text();
 
-    // Verify the signature against the provider's secret. With MOCKS and no secret, accept (dev).
-    const secret = await resolveProviderKey(provider as never).catch(() => null);
+    // Verify the signature against the provider's secret, resolved with `resolveWebhookSecret` so
+    // that mock mode cannot downgrade authentication on a public endpoint. Running unverified is a
+    // local-development convenience only: on a deployment a missing secret is a 401. Previously
+    // MOCKS=true with an empty vault let anyone post forged bounce and unsubscribe events, which
+    // suppress contacts and stop enrolments (INV-3).
+    const secret = await resolveWebhookSecret(provider as never).catch(() => null);
     if (secret !== null) {
       const ok = verifySignature(rawBody, request.headers.get("x-webhook-signature"), secret);
-      if (!ok) return Response.json({ error: { code: "UNAUTHENTICATED", message: "Bad signature." } }, { status: 401 });
-    } else if (!env.MOCKS) {
-      return Response.json({ error: { code: "UNAUTHENTICATED", message: "No webhook secret configured." } }, { status: 401 });
+      if (!ok)
+        return Response.json(
+          { error: { code: "UNAUTHENTICATED", message: "Bad signature." } },
+          { status: 401 },
+        );
+    } else if (env.VERCEL === "1" || !env.MOCKS) {
+      return Response.json(
+        { error: { code: "UNAUTHENTICATED", message: "No webhook secret configured." } },
+        { status: 401 },
+      );
     }
 
     const parsed = PayloadSchema.safeParse(JSON.parse(rawBody) as unknown);
     if (!parsed.success) {
-      return Response.json({ error: { code: "VALIDATION_FAILED", message: "Bad payload." } }, { status: 422 });
+      return Response.json(
+        { error: { code: "VALIDATION_FAILED", message: "Bad payload." } },
+        { status: 422 },
+      );
     }
     const events = Array.isArray(parsed.data) ? parsed.data : [parsed.data];
 
@@ -66,7 +80,9 @@ export async function POST(request: Request, ctx: RouteContext): Promise<Respons
 
       if (event.type === "BOUNCED_HARD" || event.type === "BOUNCED_SOFT") {
         await recordBounce(null, {
-          ...(event.providerMessageId === undefined ? {} : { providerMessageId: event.providerMessageId }),
+          ...(event.providerMessageId === undefined
+            ? {}
+            : { providerMessageId: event.providerMessageId }),
           email: event.email ?? "unknown@invalid.example",
           kind: event.type === "BOUNCED_HARD" ? "HARD" : "SOFT",
           detail: event.detail ?? event.type,

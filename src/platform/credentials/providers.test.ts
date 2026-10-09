@@ -8,7 +8,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({ live: [] as string[] }));
 
 vi.mock("@/env", () => ({
-  env: { RESEND_API_KEY: "re_live_key", ANTHROPIC_API_KEY: "sk-ant-key" },
+  // Deliberately not shaped like real keys: the pre-commit secrets guard scans the diff.
+  env: { RESEND_API_KEY: "resend-test-key", ANTHROPIC_API_KEY: "anthropic-test-key" },
   isProviderLive: (id: string) => state.live.includes(id),
   PROVIDER_ENV_KEY: {
     anthropic: "ANTHROPIC_API_KEY",
@@ -53,19 +54,26 @@ describe("providerEnvKey", () => {
   });
 });
 
+/**
+ * This reader is deliberately ungated — mock mode is enforced once, by `resolveProviderKey`
+ * (covered in service.test.ts), so that `resolveWebhookSecret` can read the same value without it.
+ */
 describe("readProviderEnvKey", () => {
-  it("ignores a key in the environment while the provider is mocked", async () => {
+  it("returns the configured value for a provider that has a key variable", async () => {
     const { readProviderEnvKey } = await load([]);
-    expect(readProviderEnvKey("resend")).toBeNull();
+    expect(readProviderEnvKey("resend")).toBe("resend-test-key");
+    expect(readProviderEnvKey("anthropic")).toBe("anthropic-test-key");
   });
 
-  it("returns the key once that provider is live", async () => {
-    const { readProviderEnvKey } = await load(["resend"]);
-    expect(readProviderEnvKey("resend")).toBe("re_live_key");
+  it("returns null for a provider with no key variable", async () => {
+    const { readProviderEnvKey } = await load([]);
+    expect(readProviderEnvKey("adzuna")).toBeNull();
+    expect(readProviderEnvKey("outreach-mailbox:abc")).toBeNull();
   });
 
-  it("keeps other providers mocked when only one is live", async () => {
-    const { readProviderEnvKey } = await load(["resend"]);
-    expect(readProviderEnvKey("anthropic")).toBeNull();
+  it("treats a blank or unset variable as absent", async () => {
+    const { readProviderEnvKey } = await load([]);
+    // HUNTER_API_KEY is not in the mocked env at all.
+    expect(readProviderEnvKey("hunter")).toBeNull();
   });
 });

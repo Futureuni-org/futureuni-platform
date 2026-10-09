@@ -1,8 +1,13 @@
 /**
  * Batch B1 acceptance tests (docs/prompts/wave-1/wave-1-prep-and-merge.md Part C3 step 5).
  *
- * Non-UI acceptance for the auth + audit + credentials + AI + cron seams. Every test runs
- * against `futureuni_test` inside `withRollback` so nothing persists between cases.
+ * Non-UI acceptance for the auth + audit + credentials + AI + cron seams.
+ *
+ * These run against `futureuni_test` and, unlike most integration tests, NOT inside
+ * `withRollback`: the services under test (`changeRole`, `saveCredential`, `acceptInvite`) use the
+ * global `db` and commit their own transactions, so there is nothing to roll back. They must
+ * therefore be robust to a database other files have already written to — see
+ * `ensureBaselineUsers`, which repairs its fixtures, and `withSoleActiveAdmin`.
  *
  * Skips anything that needs Phase 4 (the shell, notification bell) — those come next in B2.
  */
@@ -38,11 +43,25 @@ async function ensureBaselineUsers(): Promise<{
   ): Promise<string> {
     const existing = await db.user.findUnique({ where: { email }, select: { id: true } });
     const user =
-      existing ??
-      (await db.user.create({
-        data: { email, name, role, status: "ACTIVE", emailVerified: true },
-        select: { id: true },
-      }));
+      existing === null
+        ? await db.user.create({
+            data: { email, name, role, status: "ACTIVE", emailVerified: true },
+            select: { id: true },
+          })
+        : // Repair the row rather than trusting it. A failed run of the "last active admin" tests
+          // demotes this user, and without this the suite could never recover: every later run
+          // found a MEMBER here and failed the credentials test with FORBIDDEN.
+          await db.user.update({
+            where: { id: existing.id },
+            data: {
+              role,
+              status: "ACTIVE",
+              emailVerified: true,
+              deactivatedAt: null,
+              banned: false,
+            },
+            select: { id: true },
+          });
     await db.account.upsert({
       where: { providerId_accountId: { providerId: "credential", accountId: user.id } },
       create: {
@@ -71,6 +90,34 @@ async function ensureBaselineUsers(): Promise<{
     admin: { id: adminId, role: "ADMIN", canApprove: true },
     manager: { id: managerId, role: "MANAGER" },
   };
+}
+
+/**
+ * Runs `fn` with `adminId` as the only ACTIVE ADMIN on the platform, then puts the others back.
+ *
+ * The "last active admin" guard is global by design (single-tenant), so a test asserting on it
+ * needs a global precondition. The shared `futureuni_test` database does not provide one: other
+ * files commit factory users, some of them ADMIN, and then these tests find a second admin, the
+ * guard correctly declines to fire, and the assertion fails for a reason that has nothing to do
+ * with the code under test.
+ */
+async function withSoleActiveAdmin<T>(adminId: string, fn: () => Promise<T>): Promise<T> {
+  const others = await db.user.findMany({
+    where: { role: "ADMIN", status: "ACTIVE", id: { not: adminId } },
+    select: { id: true },
+  });
+  await db.user.updateMany({
+    where: { id: { in: others.map((u) => u.id) } },
+    data: { role: "MEMBER" },
+  });
+  try {
+    return await fn();
+  } finally {
+    await db.user.updateMany({
+      where: { id: { in: others.map((u) => u.id) } },
+      data: { role: "ADMIN" },
+    });
+  }
 }
 
 describe("batch B1 acceptance", () => {
@@ -154,27 +201,31 @@ describe("batch B1 acceptance", () => {
     it("changeRole refuses to leave zero active admins", async () => {
       const { admin } = await ensureBaselineUsers();
       // With exactly one ACTIVE ADMIN, demoting them must throw CONFLICT and leave the row alone.
-      await expect(
-        changeRole(
-          { id: admin.id, role: admin.role, canApprove: admin.canApprove },
-          { userId: admin.id, newRole: "MEMBER" },
-        ),
-      ).rejects.toMatchObject({ code: "CONFLICT" });
-      const stillAdmin = await db.user.findUnique({
-        where: { id: admin.id },
-        select: { role: true },
+      await withSoleActiveAdmin(admin.id, async () => {
+        await expect(
+          changeRole(
+            { id: admin.id, role: admin.role, canApprove: admin.canApprove },
+            { userId: admin.id, newRole: "MEMBER" },
+          ),
+        ).rejects.toMatchObject({ code: "CONFLICT" });
+        const stillAdmin = await db.user.findUnique({
+          where: { id: admin.id },
+          select: { role: true },
+        });
+        expect(stillAdmin?.role).toBe("ADMIN");
       });
-      expect(stillAdmin?.role).toBe("ADMIN");
     });
 
     it("deactivateUser refuses to strip the last active admin", async () => {
       const { admin } = await ensureBaselineUsers();
-      await expect(
-        deactivateUser(
-          { id: admin.id, role: admin.role, canApprove: admin.canApprove },
-          admin.id,
-        ),
-      ).rejects.toMatchObject({ code: "CONFLICT" });
+      await withSoleActiveAdmin(admin.id, async () => {
+        await expect(
+          deactivateUser(
+            { id: admin.id, role: admin.role, canApprove: admin.canApprove },
+            admin.id,
+          ),
+        ).rejects.toMatchObject({ code: "CONFLICT" });
+      });
     });
   });
 
@@ -182,11 +233,9 @@ describe("batch B1 acceptance", () => {
     it("saveCredential stores encrypted ciphertext and returns a masked status", async () => {
       const { admin } = await ensureBaselineUsers();
       try {
-        await saveCredential(
-          { type: "USER", userId: admin.id, role: "ADMIN" },
-          "anthropic",
-          { apiKey: "sk-ant-test-key-do-not-use-1234567890abcdef" },
-        );
+        await saveCredential({ type: "USER", userId: admin.id, role: "ADMIN" }, "anthropic", {
+          apiKey: "anthropic-placeholder-do-not-use-1234567890abcdef",
+        });
         const status = await getCredentialStatus("anthropic");
         expect(status.provider).toBe("anthropic");
         expect(status.maskedHint).toBeDefined();
@@ -301,5 +350,3 @@ describe("batch B1 acceptance", () => {
     });
   });
 });
-
-

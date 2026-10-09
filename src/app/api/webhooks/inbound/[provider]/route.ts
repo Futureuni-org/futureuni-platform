@@ -13,7 +13,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 
 import { env } from "@/env";
 import { errorResponse } from "@/lib/errors";
-import { resolveProviderKey } from "@/platform/credentials";
+import { resolveWebhookSecret } from "@/platform/credentials";
 import { enqueueJob } from "@/platform/jobs";
 
 export const dynamic = "force-dynamic";
@@ -42,17 +42,29 @@ export async function POST(request: Request, ctx: RouteContext): Promise<Respons
     const { provider } = await ctx.params;
 
     // Verify the caller with a shared token held in the provider's vault entry (Gmail Pub/Sub push
-    // sends a Bearer token; full OIDC verification is a Phase 21 go-live task). With MOCKS and no
-    // secret configured, accept (dev).
-    const expected = await resolveProviderKey(provider as never).catch(() => null);
+    // sends a Bearer token; full OIDC verification is a Phase 21 go-live task).
+    //
+    // The secret is resolved through `resolveWebhookSecret`, which ignores mock mode on purpose:
+    // mock mode must never downgrade authentication on a publicly reachable endpoint. Running
+    // unverified is a local-development convenience only — on a deployment, a missing secret is a
+    // 401, because MOCKS=true plus an empty vault previously left this endpoint open to anyone.
+    const expected = await resolveWebhookSecret(provider as never).catch(() => null);
     if (expected !== null) {
       const auth = request.headers.get("authorization") ?? "";
-      const token = auth.startsWith("Bearer ") ? auth.slice(7) : new URL(request.url).searchParams.get("token");
+      const token = auth.startsWith("Bearer ")
+        ? auth.slice(7)
+        : new URL(request.url).searchParams.get("token");
       if (!tokenMatches(token, expected)) {
-        return Response.json({ error: { code: "UNAUTHENTICATED", message: "Bad token." } }, { status: 401 });
+        return Response.json(
+          { error: { code: "UNAUTHENTICATED", message: "Bad token." } },
+          { status: 401 },
+        );
       }
-    } else if (!env.MOCKS) {
-      return Response.json({ error: { code: "UNAUTHENTICATED", message: "No webhook secret configured." } }, { status: 401 });
+    } else if (env.VERCEL === "1" || !env.MOCKS) {
+      return Response.json(
+        { error: { code: "UNAUTHENTICATED", message: "No webhook secret configured." } },
+        { status: 401 },
+      );
     }
 
     const rawBody = await request.text();
@@ -63,7 +75,9 @@ export async function POST(request: Request, ctx: RouteContext): Promise<Respons
       const envelope = JSON.parse(rawBody) as PubSubEnvelope;
       messageId = envelope.message?.messageId ?? "";
       if (envelope.message?.data !== undefined) {
-        const decoded = JSON.parse(Buffer.from(envelope.message.data, "base64").toString("utf8")) as {
+        const decoded = JSON.parse(
+          Buffer.from(envelope.message.data, "base64").toString("utf8"),
+        ) as {
           emailAddress?: string;
           historyId?: string | number;
         };

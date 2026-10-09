@@ -7,6 +7,7 @@ import {
   getCredential,
   getCredentialStatus,
   resolveProviderKey,
+  resolveWebhookSecret,
   saveCredential,
 } from "./service";
 
@@ -51,12 +52,24 @@ describe("credentials service", () => {
     expect(status.maskedHint).toBe("sk-a…wxyz");
   });
 
-  it("resolveProviderKey returns the stored key over the env variable", async () => {
+  it("withholds a vaulted key while the provider is mocked, without weakening webhook checks", async () => {
     const admin = await makeAdmin();
     const actor = { type: "USER" as const, userId: admin.id, role: "ADMIN" as const };
     await saveCredential(actor, "anthropic", { apiKey: "vault-wins" });
-    const key = await resolveProviderKey("anthropic");
-    expect(key).toBe("vault-wins");
+
+    // Tests run with MOCKS=true and no LIVE_PROVIDERS, so an adapter must not receive a usable
+    // key. Guarding only the env variable left this open: a key saved through
+    // /admin/integrations came back from the vault and reached the real service.
+    await expect(resolveProviderKey("anthropic")).resolves.toBeNull();
+
+    // The admin "test this credential" flow reads the vault directly, so it still works.
+    await expect(getCredential<{ apiKey: string }>("anthropic")).resolves.toMatchObject({
+      apiKey: "vault-wins",
+    });
+
+    // Inbound webhook verification must never be downgraded by mock mode.
+    await expect(resolveWebhookSecret("anthropic")).resolves.toBe("vault-wins");
+
     await deleteCredential(actor, "anthropic");
   });
 
@@ -68,7 +81,9 @@ describe("credentials service", () => {
       select: { id: true },
     });
     await expect(
-      saveCredential({ type: "USER", userId: member.id, role: "MEMBER" }, "anthropic", { apiKey: "x" }),
+      saveCredential({ type: "USER", userId: member.id, role: "MEMBER" }, "anthropic", {
+        apiKey: "x",
+      }),
     ).rejects.toMatchObject({ code: "FORBIDDEN" });
     await db.user.delete({ where: { id: member.id } });
   });

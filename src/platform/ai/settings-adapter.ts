@@ -72,7 +72,8 @@ export async function getAiSettings(): Promise<AiSettings> {
  * Today only Anthropic is registered; extend by adding branches when we wire a second provider.
  */
 export async function getProviderKey(provider: "anthropic"): Promise<string | null> {
-  const fromVault = await resolveProviderKey(provider);
-  if (fromVault !== null && fromVault !== "") return fromVault;
-  return env.ANTHROPIC_API_KEY ?? null;
+  // `resolveProviderKey` already falls back to ANTHROPIC_API_KEY, under the mock guard. Reading
+  // the variable again here would hand back a real key for a mocked provider.
+  const key = await resolveProviderKey(provider);
+  return key !== null && key !== "" ? key : null;
 }

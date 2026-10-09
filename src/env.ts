@@ -444,12 +444,16 @@ export const env: ServerEnv = serverEnv ?? browserGuard();
  * `MOCKS=false` makes every provider live. While `MOCKS=true`, only the providers named in
  * `LIVE_PROVIDERS` are, which is how one integration goes live before the rest have keys.
  * Server-only: reading `MOCKS` in the browser throws.
+ *
+ * Takes a plain string, not `LiveProviderId`: `ProviderId` also covers ids with no env key and
+ * dynamic ones such as `outreach-mailbox:<cuid>`, and those are live only when `MOCKS=false`.
  */
-export function isProviderLive(id: LiveProviderId): boolean {
+export function isProviderLive(id: string): boolean {
   // `parseEnvLoosely` (SKIP_ENV_VALIDATION=1) can leave these undefined despite what the types
   // say, so both are read defensively and anything unset means "mocked". Defaulting the other way
   // would turn a half-configured environment into real sends.
   const loose = env as Partial<ServerEnv>;
   if (loose.MOCKS === false) return true;
-  return loose.LIVE_PROVIDERS?.includes(id) ?? false;
+  const live: readonly string[] | undefined = loose.LIVE_PROVIDERS;
+  return live?.includes(id) ?? false;
 }

@@ -12,6 +12,7 @@ export {
   getCredentialStatus,
   listCredentialStatuses,
   resolveProviderKey,
+  resolveWebhookSecret,
   saveCredential,
   testCredential,
   type CredentialStatus,

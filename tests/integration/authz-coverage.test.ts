@@ -20,7 +20,7 @@ const rel = (p: string): string => relative(ROOT, p).replaceAll("\\", "/");
 
 /** Session/permission/webhook gates that count as "this endpoint authorizes itself". */
 const GATE =
-  /\b(requireUser|requireRole|requirePermission|getCurrentUser|canFromUser|assertCan|assertActorCan|resolveProviderKey|verifyUnsubscribeToken|tokenMatches|verifyLeadRef|CRON_SECRET|toNextJsHandler|verifySignature|verifyWebhookSignature)\b/;
+  /\b(requireUser|requireRole|requirePermission|getCurrentUser|canFromUser|assertCan|assertActorCan|resolveProviderKey|resolveWebhookSecret|verifyUnsubscribeToken|tokenMatches|verifyLeadRef|CRON_SECRET|toNextJsHandler|verifySignature|verifyWebhookSignature)\b/;
 
 /** Public endpoints that verify themselves by secret/signature/token, or are pre-session flows. */
 const PUBLIC_ROUTES = new Set([
@@ -59,7 +59,10 @@ describe("authorization coverage (SEC-1)", () => {
       if (PUBLIC_ROUTES.has(path)) continue;
       if (!GATE.test(readFileSync(file, "utf8"))) unguarded.push(path);
     }
-    expect(unguarded, `route handlers missing an auth gate (add a gate or allow-list):\n${unguarded.join("\n")}`).toEqual([]);
+    expect(
+      unguarded,
+      `route handlers missing an auth gate (add a gate or allow-list):\n${unguarded.join("\n")}`,
+    ).toEqual([]);
   });
 
   it("every non-public server-action file authorizes", () => {
@@ -69,11 +72,38 @@ describe("authorization coverage (SEC-1)", () => {
       if (PUBLIC_ACTION_DIRS.some((dir) => path.startsWith(dir))) continue;
       if (!GATE.test(readFileSync(file, "utf8"))) unguarded.push(path);
     }
-    expect(unguarded, `server-action files missing an auth gate:\n${unguarded.join("\n")}`).toEqual([]);
+    expect(unguarded, `server-action files missing an auth gate:\n${unguarded.join("\n")}`).toEqual(
+      [],
+    );
   });
 
   it("finds a meaningful number of endpoints (the scan isn't silently empty)", () => {
     expect(listRouteHandlers().length).toBeGreaterThanOrEqual(8);
     expect(listServerActionFiles().length).toBeGreaterThanOrEqual(15);
+  });
+
+  /**
+   * The gate above only proves a verification call is *present*. It passed while
+   * `/api/webhooks/{inbound,outbound}` accepted unsigned requests in production, because both
+   * treated "no secret configured" as "accept" whenever MOCKS=true — and production runs
+   * MOCKS=true. Verified against the live deployment on 2026-10-09: the outbound route reached
+   * payload validation (422) with no signature, and the inbound route returned 200.
+   *
+   * Skipping verification is only ever a local-development convenience, so any route that allows
+   * it must also require a secret once deployed.
+   */
+  it("no public webhook route accepts unverified calls on a deployment", () => {
+    const failOpen: string[] = [];
+    for (const path of [...PUBLIC_ROUTES].filter((p) => p.includes("/api/webhooks/"))) {
+      const source = readFileSync(join(ROOT, path), "utf8");
+      // Routes that never skip verification (the secret is simply required) are fine.
+      if (!/\bMOCKS\b/.test(source)) continue;
+      // Those that do skip it must gate the skip on not being deployed.
+      if (!/env\.VERCEL\s*===\s*"1"/.test(source)) failOpen.push(path);
+    }
+    expect(
+      failOpen,
+      `webhook routes that skip verification when MOCKS=true without excluding deployments:\n${failOpen.join("\n")}`,
+    ).toEqual([]);
   });
 });

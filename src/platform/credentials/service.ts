@@ -11,6 +11,7 @@
 import "server-only";
 
 import type { Actor, ProviderId } from "@/contracts/common";
+import { isProviderLive } from "@/env";
 import { AppError } from "@/lib/errors";
 import { db } from "@/platform/db";
 import { assertActorCan } from "@/platform/auth";
@@ -197,7 +198,10 @@ function toStatus(
 }
 
 /** Run the provider's test call. In mock mode it succeeds without network access. */
-export async function testCredential(actor: Actor, providerId: ProviderId): Promise<CredentialStatus> {
+export async function testCredential(
+  actor: Actor,
+  providerId: ProviderId,
+): Promise<CredentialStatus> {
   await assertActorCan(actor, "platform.credential.test");
   const provider = requireProvider(providerId);
   const payload = await getCredential(providerId);
@@ -253,11 +257,33 @@ export async function deleteCredential(actor: Actor, providerId: ProviderId): Pr
 
 /**
  * Adapters use this to reach the outside world: the vault first, then the env variable, then
- * `null` (mock mode never has real keys). Payload is decoded to a plain string API key when the
- * provider stores `{ apiKey }`; other shapes are returned as a JSON string so the adapter can
- * parse them itself.
+ * `null`. Payload is decoded to a plain string API key when the provider stores `{ apiKey }`;
+ * other shapes are returned as a JSON string so the adapter can parse them itself.
+ *
+ * A mocked provider always resolves to `null`, whichever source holds the key. Guarding only the
+ * env variable was not enough: a key saved through `/admin/integrations` came back from the vault
+ * and let an adapter call the real service from mock mode. Admins can still check a stored key,
+ * because `testCredential` reads `getCredential` directly.
+ *
+ * This is for outbound calls. A secret used to verify an *inbound* webhook must be honoured
+ * whether or not the provider is mocked — use `resolveWebhookSecret`.
  */
 export async function resolveProviderKey(providerId: ProviderId): Promise<string | null> {
+  if (!isProviderLive(providerId)) return null;
+  return readStoredSecret(providerId);
+}
+
+/**
+ * The shared secret used to verify an inbound webhook. Unlike `resolveProviderKey` this ignores
+ * mock mode: a secret that has been configured is always enforced, because mock mode must never
+ * downgrade authentication on a publicly reachable endpoint.
+ */
+export async function resolveWebhookSecret(providerId: ProviderId): Promise<string | null> {
+  return readStoredSecret(providerId);
+}
+
+/** Vault first, then the provider's env variable. No mock gating: callers decide that. */
+async function readStoredSecret(providerId: ProviderId): Promise<string | null> {
   const payload = await getCredential(providerId);
   if (payload !== null) {
     if ("apiKey" in payload) return payload.apiKey;
