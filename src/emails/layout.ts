@@ -8,6 +8,8 @@
  * (project-rules ban). Keep them in sync with `.claude/project-rules.md` §Brand palette.
  */
 
+import { publicEnv } from "@/env";
+
 export interface Rendered {
   subject: string;
   html: string;
@@ -57,6 +59,9 @@ interface LayoutOptions {
 
 export function renderLayout(opts: LayoutOptions): { html: string; text: string } {
   const company = opts.companyName ?? "FUTUREUNI";
+  // Absolute HTTPS URL: email clients don't resolve relative paths. The mark (411×533) is scaled
+  // to 30×39. The wordmark text stays beside it so the brand still reads when images are blocked.
+  const logoUrl = `${publicEnv.NEXT_PUBLIC_APP_URL.replace(/\/$/, "")}/brand/futureuni-mark.png`;
   const ctaHtml =
     opts.cta === undefined
       ? ""
@@ -65,7 +70,10 @@ export function renderLayout(opts: LayoutOptions): { html: string; text: string 
 <html lang="en"><body style="${HEAD_STYLE}">
   <span style="display:none;overflow:hidden;">${escapeHtml(opts.preheader)}</span>
   <div style="max-width: 560px; margin: 0 auto; padding: 32px 24px; background: ${COLOR.surface}; border-radius: 12px;">
-    <p style="font-family: 'Bricolage Grotesque', serif; color: ${COLOR.navy}; font-weight: 600; letter-spacing: 0.02em; margin: 0;">${escapeHtml(company)}</p>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 8px;"><tr>
+      <td style="vertical-align: middle; padding-right: 10px;"><img src="${logoUrl}" alt="${escapeHtml(company)}" width="30" height="39" style="display: block; border: 0; outline: none; width: 30px; height: 39px;" /></td>
+      <td style="vertical-align: middle;"><span style="font-family: 'Bricolage Grotesque', serif; color: ${COLOR.navy}; font-weight: 600; letter-spacing: 0.02em; font-size: 18px;">${escapeHtml(company)}</span></td>
+    </tr></table>
     <h1 style="${HEADING_STYLE}">${escapeHtml(opts.heading)}</h1>
     ${opts.bodyHtml}
     ${ctaHtml}
