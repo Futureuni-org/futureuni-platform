@@ -7,7 +7,6 @@
 import "server-only";
 
 import type { AiSettings } from "@/contracts/ai-service";
-import { env } from "@/env";
 import { resolveProviderKey } from "@/platform/credentials";
 import { getSetting } from "@/platform/settings";
 

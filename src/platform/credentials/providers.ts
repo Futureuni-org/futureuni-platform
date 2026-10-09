@@ -10,7 +10,7 @@ import "server-only";
 
 import { z } from "zod";
 
-import { env, isProviderLive, PROVIDER_ENV_KEY, type LiveProviderId } from "@/env";
+import { env, PROVIDER_ENV_KEY, type LiveProviderId } from "@/env";
 import type { ProviderId } from "@/contracts/common";
 
 /** A password-shaped API key: a single opaque token. */
