@@ -17,18 +17,12 @@ import { actorOf, auth, requireUser } from "@/platform/auth";
 import { checkPassword } from "@/platform/auth/password";
 import { setSetting } from "@/platform/settings";
 import { updatePreferences } from "@/platform/notifications";
-import { putFile } from "@/platform/storage";
+import { deleteFile } from "@/platform/storage";
 import { db } from "@/platform/db";
 
-import { updateOwnProfile } from "./profile.repo";
+import { avatarKey } from "@/app/api/avatars/key";
 
-/** Avatars are stored under the extension their real content type implies. */
-const EXTENSION_BY_TYPE: Record<string, string> = {
-  "image/webp": "webp",
-  "image/png": "png",
-  "image/jpeg": "jpg",
-  "image/gif": "gif",
-};
+import { updateOwnProfile } from "./profile.repo";
 
 function fail(issues: unknown): AppError {
   return new AppError("VALIDATION_FAILED", "Please check the value and try again.", {
@@ -104,42 +98,19 @@ export async function updateOwnProfileAction(
   }
 }
 
-export async function uploadAvatarAction(formData: FormData): Promise<ActionResult<{ url: string }>> {
-  try {
-    const user = await requireUser();
-    const file = formData.get("file");
-    if (!(file instanceof File)) return err(new AppError("VALIDATION_FAILED", "No file provided."));
-    const contentType = file.type.length > 0 ? file.type : "image/png";
-    if (!contentType.startsWith("image/")) {
-      return err(new AppError("UNSUPPORTED_MEDIA_TYPE", "Choose an image file."));
-    }
-    // The extension comes from the content type, never the client filename: the key decides what
-    // the blob is served as, and a wrong extension would outlive the upload.
-    const key = `avatars/${user.id}.${EXTENSION_BY_TYPE[contentType] ?? "png"}`;
-    const body = Buffer.from(await file.arrayBuffer());
-    const saved = await putFile({
-      key,
-      body,
-      contentType,
-      access: "PUBLIC",
-      purpose: "AVATAR",
-      uploaderId: user.id,
-      originalFilename: file.name,
-    });
-    // A public object is readable at the URL `put` returns. Signing it would issue a *private*
-    // presigned URL that expires, which is both wrong for an avatar and an extra call that can fail.
-    await updateOwnProfile(actorOf(user), user.id, { image: saved.url });
-    revalidatePath("/settings");
-    return ok({ url: saved.url });
-  } catch (error) {
-    return failedAction(error, { action: "uploadAvatarAction" });
-  }
-}
-
 export async function removeAvatarAction(): Promise<ActionResult<{ ok: true }>> {
   try {
     const user = await requireUser();
     await updateOwnProfile(actorOf(user), user.id, { image: null });
+    // Then drop the stored object, so neither the blob nor its row outlives the avatar. Best
+    // effort on purpose: the profile is already clear, and a storage hiccup must not read to the
+    // user as "removing failed" when it didn't.
+    await deleteFile(avatarKey(user.id)).catch((error: unknown) => {
+      const message = error instanceof Error ? error.message : String(error);
+      console.error(
+        JSON.stringify({ level: "error", msg: message, action: "removeAvatarAction.deleteFile" }),
+      );
+    });
     revalidatePath("/settings");
     return ok({ ok: true });
   } catch (error) {

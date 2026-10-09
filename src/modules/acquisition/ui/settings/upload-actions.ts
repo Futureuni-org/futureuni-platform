@@ -35,7 +35,7 @@ export async function uploadPortfolioMediaAction(
       key,
       body,
       contentType: file.type.length > 0 ? file.type : "application/octet-stream",
-      access: "PUBLIC",
+      access: "PRIVATE",
       purpose: "PORTFOLIO",
       uploaderId: user.id,
       module: "acquisition",

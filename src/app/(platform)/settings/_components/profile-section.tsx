@@ -7,9 +7,10 @@ import { toast } from "sonner";
 
 import { SettingsSection, Field, Select } from "@/components/admin";
 import { Avatar } from "@/components/ui/avatar";
+import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { removeAvatarAction, updateOwnProfileAction, uploadAvatarAction } from "../actions";
+import { removeAvatarAction, updateOwnProfileAction } from "../actions";
 
 /** The longest edge an avatar is stored at, and the ceiling the action will accept. */
 const AVATAR_MAX_EDGE = 512;
@@ -48,6 +49,47 @@ async function toAvatarFile(file: File): Promise<File> {
   }
 }
 
+/** Where each phase of an upload lands on the bar, so the number always moves forwards. */
+const PREPARED_AT = 20;
+const UPLOADED_AT = 90;
+
+interface UploadProgress {
+  stage: "Preparing" | "Uploading" | "Saving";
+  percent: number;
+}
+
+/**
+ * Posts the avatar and reports progress. XMLHttpRequest rather than fetch: only it exposes
+ * `upload.onprogress`, which is the whole point of showing a percentage.
+ */
+function postAvatar(file: File, onProgress: (percent: number) => void): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const body = new FormData();
+    body.append("file", file);
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/api/avatars");
+    xhr.responseType = "json";
+    xhr.upload.addEventListener("progress", (event) => {
+      if (!event.lengthComputable) return;
+      onProgress(event.loaded / event.total);
+    });
+    xhr.addEventListener("load", () => {
+      const payload: unknown = xhr.response;
+      if (xhr.status >= 200 && xhr.status < 300) {
+        const url = (payload as { url?: unknown } | null)?.url;
+        if (typeof url === "string") resolve(url);
+        else reject(new Error("The upload returned no image."));
+        return;
+      }
+      const message = (payload as { error?: { message?: unknown } } | null)?.error?.message;
+      reject(new Error(typeof message === "string" ? message : "Couldn't upload that image."));
+    });
+    xhr.addEventListener("error", () => { reject(new Error("The upload failed. Check your connection.")); });
+    xhr.addEventListener("abort", () => { reject(new Error("The upload was cancelled.")); });
+    xhr.send(body);
+  });
+}
+
 const COMMON_TIMEZONES = [
   "Africa/Lagos",
   "Europe/London",
@@ -74,7 +116,8 @@ export function ProfileSection({
   const [timezone, setTimezone] = useState(initialTimezone);
   const [image, setImage] = useState(initialImage);
   const [savePending, startSave] = useTransition();
-  const [uploadPending, startUpload] = useTransition();
+  const [progress, setProgress] = useState<UploadProgress | null>(null);
+  const busy = progress !== null;
 
   const tzOptions = Array.from(new Set([initialTimezone, ...COMMON_TIMEZONES])).map((tz) => ({
     value: tz,
@@ -99,28 +142,40 @@ export function ProfileSection({
       toast.error("Choose an image file.");
       return;
     }
-    startUpload(async () => {
-      const prepared = await toAvatarFile(file);
-      if (prepared.size > AVATAR_MAX_BYTES) {
-        toast.error("That image is too large. Choose one under 3MB.");
-        return;
-      }
-      const fd = new FormData();
-      fd.append("file", prepared);
-      const result = await uploadAvatarAction(fd);
-      if (result.ok) {
-        setImage(result.data.url);
+    void (async () => {
+      // A visible starting value: a bar sitting at 0 reads as "nothing is happening".
+      setProgress({ stage: "Preparing", percent: 8 });
+      try {
+        const prepared = await toAvatarFile(file);
+        if (prepared.size > AVATAR_MAX_BYTES) {
+          toast.error("That image is too large. Choose one under 3MB.");
+          return;
+        }
+        setProgress({ stage: "Uploading", percent: PREPARED_AT });
+        const url = await postAvatar(prepared, (fraction) => {
+          // Once the bytes are sent the wait is the server storing them and writing the profile,
+          // so the label says so rather than claiming to still be uploading at 90%.
+          setProgress({
+            stage: fraction >= 1 ? "Saving" : "Uploading",
+            percent: PREPARED_AT + Math.round(fraction * (UPLOADED_AT - PREPARED_AT)),
+          });
+        });
+        setImage(url);
         toast.success("Avatar updated.");
         router.refresh();
-      } else {
-        toast.error(result.error.message);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Couldn't upload that image.");
+      } finally {
+        setProgress(null);
       }
-    });
+    })();
   }
 
   function removeAvatar() {
-    startUpload(async () => {
+    void (async () => {
+      setProgress({ stage: "Saving", percent: UPLOADED_AT });
       const result = await removeAvatarAction();
+      setProgress(null);
       if (result.ok) {
         setImage(null);
         toast.success("Avatar removed.");
@@ -128,31 +183,60 @@ export function ProfileSection({
       } else {
         toast.error(result.error.message);
       }
-    });
+    })();
   }
 
   return (
     <SettingsSection eyebrow="Profile" title="Your details" emphasized>
       <div className="flex items-center gap-4">
         <Avatar name={name || email} src={image} size="lg" />
-        <div className="flex flex-wrap gap-2">
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-input bg-surface px-3 py-2 text-sm text-foreground hover:bg-primary-soft">
-            <Upload aria-hidden className="size-4" />
-            {uploadPending ? "Uploading…" : "Upload avatar"}
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              disabled={uploadPending}
-              onChange={(e) => {
-                upload(e.target.files?.[0]);
-              }}
-            />
-          </label>
-          {image !== null && (
-            <Button variant="ghost" size="sm" className="text-danger" onClick={removeAvatar} disabled={uploadPending}>
-              Remove
-            </Button>
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex flex-wrap gap-2">
+            <label
+              className={cn(
+                "inline-flex items-center gap-2 rounded-md border border-input bg-surface px-3 py-2 text-sm text-foreground",
+                busy ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-primary-soft",
+              )}
+            >
+              <Upload aria-hidden className="size-4" />
+              {busy ? "Working…" : "Upload avatar"}
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                disabled={busy}
+                onChange={(e) => {
+                  upload(e.target.files?.[0]);
+                  // Clear it, so choosing the same file again still fires a change.
+                  e.target.value = "";
+                }}
+              />
+            </label>
+            {image !== null && !busy && (
+              <Button variant="ghost" size="sm" className="text-danger" onClick={removeAvatar}>
+                Remove
+              </Button>
+            )}
+          </div>
+          {progress !== null && (
+            <div className="flex items-center gap-3">
+              <div
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={progress.percent}
+                aria-label={`${progress.stage} avatar`}
+                className="h-1.5 w-full max-w-64 overflow-hidden rounded-full bg-zone"
+              >
+                <div
+                  className="h-full rounded-full bg-primary motion-safe:transition-[width] motion-safe:duration-200"
+                  style={{ width: `${String(progress.percent)}%` }}
+                />
+              </div>
+              <span className="shrink-0 font-mono text-sm tabular-nums text-muted">
+                {progress.stage} {progress.percent}%
+              </span>
+            </div>
           )}
         </div>
       </div>

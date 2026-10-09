@@ -9,9 +9,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   experimental: {
     serverActions: {
-      // Server Actions cap the request body at 1MB by default, which an avatar photo exceeds (the
-      // upload then fails before the handler runs). 4MB leaves room under Vercel's 4.5MB request
-      // limit for the multipart overhead. The browser shrinks avatars well below this first.
+      // The 1MB default is small for any form that carries a file. 4MB leaves room under Vercel's
+      // 4.5MB request limit for multipart overhead. (The avatar no longer goes through an action:
+      // it posts to /api/avatars so the browser can report upload progress.)
       bodySizeLimit: "4mb",
     },
   },
