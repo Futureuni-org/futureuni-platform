@@ -72,6 +72,7 @@ export default async function SettingsPage({
 
       {section === "profile" && (
         <ProfileSection
+          userId={user.id}
           email={user.email}
           initialName={user.name}
           initialTimezone={user.timezone}

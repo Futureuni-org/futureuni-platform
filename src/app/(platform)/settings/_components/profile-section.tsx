@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Upload } from "lucide-react";
+import { Pencil, Upload } from "lucide-react";
 import { toast } from "sonner";
 
 import { SettingsSection, Field, Select } from "@/components/admin";
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { removeAvatarAction, updateOwnProfileAction } from "../actions";
 import { AvatarCropper } from "./avatar-cropper";
+import { postAvatar } from "./avatar-upload";
 
 /** Where each phase of an upload lands on the bar, so the number always moves forwards. */
 const PREPARED_AT = 20;
@@ -25,42 +26,6 @@ interface UploadProgress {
 /** The cropper exports a 512px square; this is only a guard against a surprising file. */
 const AVATAR_MAX_BYTES = 3 * 1024 * 1024;
 
-/**
- * Posts the avatar and reports progress. XMLHttpRequest rather than fetch: only it exposes
- * `upload.onprogress`, which is the whole point of showing a percentage.
- */
-function postAvatar(file: File, onProgress: (fraction: number) => void): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const body = new FormData();
-    body.append("file", file);
-    const xhr = new XMLHttpRequest();
-    xhr.open("POST", "/api/avatars");
-    xhr.responseType = "json";
-    xhr.upload.addEventListener("progress", (event) => {
-      if (!event.lengthComputable) return;
-      onProgress(event.loaded / event.total);
-    });
-    xhr.addEventListener("load", () => {
-      const payload: unknown = xhr.response;
-      if (xhr.status >= 200 && xhr.status < 300) {
-        const url = (payload as { url?: unknown } | null)?.url;
-        if (typeof url === "string") resolve(url);
-        else reject(new Error("The upload returned no image."));
-        return;
-      }
-      const message = (payload as { error?: { message?: unknown } } | null)?.error?.message;
-      reject(new Error(typeof message === "string" ? message : "Couldn't upload that image."));
-    });
-    xhr.addEventListener("error", () => {
-      reject(new Error("The upload failed. Check your connection."));
-    });
-    xhr.addEventListener("abort", () => {
-      reject(new Error("The upload was cancelled."));
-    });
-    xhr.send(body);
-  });
-}
-
 const COMMON_TIMEZONES = [
   "Africa/Lagos",
   "Europe/London",
@@ -72,11 +37,13 @@ const COMMON_TIMEZONES = [
 ];
 
 export function ProfileSection({
+  userId,
   email,
   initialName,
   initialTimezone,
   initialImage,
 }: {
+  userId: string;
   email: string;
   initialName: string;
   initialTimezone: string;
@@ -88,7 +55,10 @@ export function ProfileSection({
   const [image, setImage] = useState(initialImage);
   const [savePending, startSave] = useTransition();
   const [progress, setProgress] = useState<UploadProgress | null>(null);
-  const [pending, setPending] = useState<File | null>(null);
+  /** What the cropper is framing: a new file, or the stored original being re-adjusted. */
+  const [pending, setPending] = useState<File | string | null>(null);
+  /** How to stop an upload in flight, held in state so the Cancel button appears while it runs. */
+  const [cancelUpload, setCancelUpload] = useState<(() => void) | null>(null);
   const busy = progress !== null;
 
   const tzOptions = Array.from(new Set([initialTimezone, ...COMMON_TIMEZONES])).map((tz) => ({
@@ -117,7 +87,16 @@ export function ProfileSection({
     setPending(file);
   }
 
+  function adjust() {
+    // The stored original, not the framed square: re-framing the square could only ever crop it
+    // further, never recover what the last framing left out.
+    setPending(`/api/avatars/${userId}/source`);
+  }
+
   function upload(framed: File) {
+    // Only a newly chosen file carries an original worth keeping; re-framing reuses the one on
+    // record, so the person can keep adjusting without uploading anything again.
+    const original = pending instanceof File ? pending : null;
     setPending(null);
     void (async () => {
       // A visible starting value: a bar sitting at 0 reads as "nothing is happening".
@@ -127,8 +106,12 @@ export function ProfileSection({
           toast.error("That image is too large. Choose one under 3MB.");
           return;
         }
+        const body = new FormData();
+        body.append("file", framed);
+        if (original !== null) body.append("source", original);
+
         setProgress({ stage: "Uploading", percent: PREPARED_AT });
-        const url = await postAvatar(framed, (fraction) => {
+        const handle = postAvatar(body, (fraction) => {
           // Once the bytes are sent the wait is the server storing them and writing the profile,
           // so the label says so rather than claiming to still be uploading at 90%.
           setProgress({
@@ -136,12 +119,15 @@ export function ProfileSection({
             percent: PREPARED_AT + Math.round(fraction * (UPLOADED_AT - PREPARED_AT)),
           });
         });
+        setCancelUpload(() => handle.cancel);
+        const url = await handle.done;
         setImage(url);
         toast.success("Avatar updated.");
         router.refresh();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Couldn't upload that image.");
       } finally {
+        setCancelUpload(null);
         setProgress(null);
       }
     })();
@@ -165,7 +151,28 @@ export function ProfileSection({
   return (
     <SettingsSection eyebrow="Profile" title="Your details" emphasized>
       <div className="flex items-center gap-4">
-        <Avatar name={name || email} src={image} size="lg" />
+        {image === null ? (
+          <Avatar name={name || email} src={image} size="lg" />
+        ) : (
+          /* The avatar itself is the way back into framing: the position is a property of the
+             picture, so it is adjusted where the picture is, not behind "upload" again. */
+          <button
+            type="button"
+            onClick={adjust}
+            disabled={busy}
+            title="Adjust your avatar"
+            aria-label="Adjust your avatar"
+            className="group relative shrink-0 rounded-full ring-offset-2 ring-offset-background outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Avatar name={name || email} src={image} size="lg" />
+            <span
+              aria-hidden
+              className="absolute inset-0 flex items-center justify-center rounded-full bg-scrim text-primary-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100"
+            >
+              <Pencil className="size-4" />
+            </span>
+          </button>
+        )}
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-wrap gap-2">
             <label
@@ -189,9 +196,14 @@ export function ProfileSection({
               />
             </label>
             {image !== null && !busy && (
-              <Button variant="ghost" size="sm" className="text-danger" onClick={removeAvatar}>
-                Remove
-              </Button>
+              <>
+                <Button variant="ghost" size="sm" onClick={adjust}>
+                  Adjust
+                </Button>
+                <Button variant="ghost" size="sm" className="text-danger" onClick={removeAvatar}>
+                  Remove
+                </Button>
+              </>
             )}
           </div>
           {progress !== null && (
@@ -209,20 +221,37 @@ export function ProfileSection({
                   style={{ width: `${String(progress.percent)}%` }}
                 />
               </div>
-              <span className="shrink-0 font-mono text-sm tabular-nums text-muted">
+              <span className="shrink-0 font-mono text-sm text-muted tabular-nums">
                 {progress.stage} {progress.percent}%
               </span>
+              {cancelUpload !== null && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    cancelUpload();
+                  }}
+                >
+                  Cancel
+                </Button>
+              )}
             </div>
           )}
         </div>
       </div>
 
       <AvatarCropper
-        file={pending}
+        source={pending}
         onCancel={() => {
           setPending(null);
         }}
         onConfirm={upload}
+        onUnavailable={() => {
+          setPending(null);
+          toast.error(
+            "That avatar was uploaded before adjusting was possible. Upload it again to move it.",
+          );
+        }}
       />
 
       <Field label="Name">

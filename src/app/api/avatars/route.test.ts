@@ -28,6 +28,7 @@ vi.mock("@/platform/db", () => ({ db: { fileObject: { findFirst: database.findFi
 
 const { POST } = await import("./route");
 const { GET } = await import("./[userId]/route");
+const { GET: GET_SOURCE } = await import("./[userId]/source/route");
 
 function imageForm(type = "image/webp"): FormData {
   const form = new FormData();
@@ -58,6 +59,24 @@ describe("POST /api/avatars", () => {
     const saved = repo.updateOwnProfile.mock.calls[0]?.[2] as { image: string };
     expect(saved.image).toMatch(/^\/api\/avatars\/usr_1\?v=\d+$/);
     expect(((await response.json()) as { url: string }).url).toBe(saved.image);
+  });
+
+  it("stores the untouched original under its own key when one is sent", async () => {
+    const form = imageForm();
+    form.append("source", new File([new Uint8Array([9, 9, 9, 9])], "orig.png", { type: "image/png" }));
+
+    await POST(request(form));
+
+    const keys = storage.putFile.mock.calls.map((c) => (c[0] as { key: string }).key);
+    expect(keys).toContain("avatars/usr_1");
+    expect(keys).toContain("avatars/usr_1/source");
+  });
+
+  it("stores no source when the upload is just a re-frame", async () => {
+    await POST(request(imageForm()));
+
+    const keys = storage.putFile.mock.calls.map((c) => (c[0] as { key: string }).key);
+    expect(keys).toEqual(["avatars/usr_1"]);
   });
 
   it("answers 401 when signed out, instead of redirecting", async () => {
@@ -102,6 +121,48 @@ describe("GET /api/avatars/[userId]", () => {
     database.findFirst.mockResolvedValue(null);
 
     const response = await GET(new Request("http://localhost/api/avatars/usr_1"), ctx);
+
+    expect(response.status).toBe(404);
+    expect(storage.readFile).not.toHaveBeenCalled();
+  });
+});
+
+describe("GET /api/avatars/[userId]/source", () => {
+  it("returns the owner's own original", async () => {
+    const response = await GET_SOURCE(new Request("http://localhost/api/avatars/usr_1/source"), {
+      params: Promise.resolve({ userId: "usr_1" }),
+    });
+
+    expect(response.status).toBe(200);
+    expect(storage.readFile).toHaveBeenCalledWith("avatars/usr_1/source");
+  });
+
+  it("will not serve someone else's original", async () => {
+    const response = await GET_SOURCE(new Request("http://localhost/api/avatars/usr_2/source"), {
+      params: Promise.resolve({ userId: "usr_2" }),
+    });
+
+    // 404, not 403: another person's original is not theirs to know exists.
+    expect(response.status).toBe(404);
+    expect(storage.readFile).not.toHaveBeenCalled();
+  });
+
+  it("answers 401 when signed out", async () => {
+    session.user = null;
+
+    const response = await GET_SOURCE(new Request("http://localhost/api/avatars/usr_1/source"), {
+      params: Promise.resolve({ userId: "usr_1" }),
+    });
+
+    expect(response.status).toBe(401);
+  });
+
+  it("answers 404 when there is no stored original", async () => {
+    database.findFirst.mockResolvedValue(null);
+
+    const response = await GET_SOURCE(new Request("http://localhost/api/avatars/usr_1/source"), {
+      params: Promise.resolve({ userId: "usr_1" }),
+    });
 
     expect(response.status).toBe(404);
     expect(storage.readFile).not.toHaveBeenCalled();

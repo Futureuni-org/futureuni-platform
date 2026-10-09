@@ -36,16 +36,21 @@ import {
 const NUDGE_PX = 8;
 
 export function AvatarCropper({
-  file,
+  source,
   onCancel,
   onConfirm,
+  onUnavailable,
 }: {
-  /** The chosen file, or null when the dialog is closed. */
-  file: File | null;
+  /** A newly chosen file, the URL of the stored original to re-frame, or null when closed. */
+  source: File | string | null;
   onCancel: () => void;
   onConfirm: (framed: File) => void;
+  /** The stored original could not be loaded, so there is nothing to adjust. */
+  onUnavailable: () => void;
 }) {
-  const [loaded, setLoaded] = useState<{ source: File; image: HTMLImageElement } | null>(null);
+  const [loaded, setLoaded] = useState<{ from: File | string; image: HTMLImageElement } | null>(
+    null,
+  );
   const [zoom, setZoom] = useState(MIN_ZOOM);
   const [offset, setOffset] = useState<Offset>({ x: 0, y: 0 });
   const [working, setWorking] = useState(false);
@@ -56,22 +61,35 @@ export function AvatarCropper({
 
   // Only the decoded image for the file currently being framed counts: a previous one must never
   // flash in the circle while the new file decodes.
-  const image = loaded !== null && loaded.source === file ? loaded.image : null;
+  const image = loaded !== null && loaded.from === source ? loaded.image : null;
+
+  // Held in a ref so a new closure from the parent on every render does not re-run the load
+  // effect, which would re-fetch the image and reset the framing the person is in the middle of.
+  const onUnavailableRef = useRef(onUnavailable);
+  useEffect(() => {
+    onUnavailableRef.current = onUnavailable;
+  }, [onUnavailable]);
 
   useEffect(() => {
-    if (file === null) return;
-    const url = URL.createObjectURL(file);
+    if (source === null) return;
+    // A freshly chosen file needs an object URL; a stored original is already a same-origin URL,
+    // which also keeps the canvas untainted so it can be exported.
+    const objectUrl = typeof source === "string" ? null : URL.createObjectURL(source);
+    const src = objectUrl ?? (typeof source === "string" ? source : "");
     const element = new Image();
     element.addEventListener("load", () => {
-      setLoaded({ source: file, image: element });
+      setLoaded({ from: source, image: element });
       setZoom(MIN_ZOOM);
       setOffset({ x: 0, y: 0 });
     });
-    element.src = url;
+    element.addEventListener("error", () => {
+      onUnavailableRef.current();
+    });
+    element.src = src;
     return () => {
-      URL.revokeObjectURL(url);
+      if (objectUrl !== null) URL.revokeObjectURL(objectUrl);
     };
-  }, [file]);
+  }, [source]);
 
   useEffect(() => {
     const context = canvasRef.current?.getContext("2d");
@@ -115,7 +133,7 @@ export function AvatarCropper({
 
   return (
     <Dialog
-      open={file !== null}
+      open={source !== null}
       onOpenChange={(open) => {
         if (!open) onCancel();
       }}

@@ -13,3 +13,16 @@ export function avatarKey(userId: string): string {
 export function avatarUrl(userId: string, version: number): string {
   return `/api/avatars/${userId}?v=${String(version)}`;
 }
+
+/**
+ * The original the person chose, kept so the framing can be adjusted later without asking them
+ * to find the file again. Served only to its owner.
+ */
+export function avatarSourceKey(userId: string): string {
+  return `avatars/${userId}/source`;
+}
+
+/** The owner-only URL the cropper reloads when someone reopens their avatar to adjust it. */
+export function avatarSourceUrl(userId: string, version: number): string {
+  return `/api/avatars/${userId}/source?v=${String(version)}`;
+}
