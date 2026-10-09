@@ -46,3 +46,45 @@ jobs:
           DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
           SKIP_ENV_VALIDATION: "1"
         run: pnpm db:deploy
+
+  # Vercel's own Git integration stopped acting on pushes: GitHub still delivers them (the app is
+  # installed on the org, with push events and access to every repo), but no deployment and no
+  # commit status appear, so production silently stayed on an older commit while `main` moved on.
+  # Deploying from here makes the promotion something this repository controls and can show: it
+  # runs after the migrations, which is the order the expand → migrate → contract rule needs.
+  #
+  # Inert until `VERCEL_TOKEN` exists in the production environment, so this never fails a push
+  # that simply has not been given one. The org and project ids are identifiers, not secrets.
+  deploy:
+    name: Deploy to Vercel (production)
+    needs: migrate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+      - name: Promote this commit to production
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: team_nw52uMh78uLfNOHf44N3h2e6
+          VERCEL_PROJECT_ID: prj_z3UlhHuCHTkz8Xx3PSbcgpFhJQwZ
+        run: |
+          set -euo pipefail
+          if [ -z "${VERCEL_TOKEN:-}" ]; then
+            echo "::warning::No VERCEL_TOKEN in the production environment, so nothing was deployed. Add it to deploy on every push."
+            exit 0
+          fi
+          npx --yes vercel@latest deploy --prod --yes --token "$VERCEL_TOKEN"
+      - name: Confirm what production is serving
+        run: |
+          set -euo pipefail
+          # The health route reports the commit it was built from, so this proves the alias moved
+          # rather than that some deployment merely succeeded.
+          live="$(curl -fsS --max-time 30 https://futureuni-platform.vercel.app/api/health | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')"
+          echo "production is serving ${live}, this run is ${GITHUB_SHA:0:12}"
+          if [ -n "${live}" ] && [ "${live}" != "${GITHUB_SHA:0:12}" ]; then
+            echo "::warning::production is on ${live}, not ${GITHUB_SHA:0:12}."
+          fi
