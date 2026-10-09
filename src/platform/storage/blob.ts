@@ -29,6 +29,11 @@ async function putFn(
     access: input.access === "PUBLIC" ? "public" : "private",
     contentType: input.contentType,
     addRandomSuffix: false,
+    // Keys are deterministic (e.g. one per user for an avatar) and `putFile` upserts the row, so
+    // writing the same key means "replace". Without this, Vercel Blob refuses the second write
+    // with "This blob already exists" and every upload after the first fails. The local driver
+    // overwrites silently, which is why this only ever showed up in production.
+    allowOverwrite: true,
   });
   return { url: result.url, size: body.byteLength };
 }
@@ -57,7 +62,9 @@ function createUploadUrl(input: {
   // server accepts the upload directly; Phase 20 will switch to `createUploadUrl` from
   // `@vercel/blob/client` for large files.
   return Promise.reject(
-    new Error(`Direct blob client uploads not implemented for "${input.key}"; use put() from the server.`),
+    new Error(
+      `Direct blob client uploads not implemented for "${input.key}"; use put() from the server.`,
+    ),
   );
 }
 
