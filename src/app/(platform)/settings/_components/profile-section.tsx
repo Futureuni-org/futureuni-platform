@@ -11,43 +11,7 @@ import { cn } from "@/lib/cn";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { removeAvatarAction, updateOwnProfileAction } from "../actions";
-
-/** The longest edge an avatar is stored at, and the ceiling the action will accept. */
-const AVATAR_MAX_EDGE = 512;
-const AVATAR_MAX_BYTES = 3 * 1024 * 1024;
-
-/**
- * Shrinks the chosen photo in the browser before it is uploaded. A phone photo is several
- * megabytes, which a Server Action refuses outright, and an avatar is never shown above 512px.
- * Falls back to the original file when the browser cannot decode or encode it.
- */
-async function toAvatarFile(file: File): Promise<File> {
-  if (typeof createImageBitmap !== "function") return file;
-  let bitmap: ImageBitmap;
-  try {
-    bitmap = await createImageBitmap(file);
-  } catch {
-    return file;
-  }
-  try {
-    const scale = Math.min(1, AVATAR_MAX_EDGE / Math.max(bitmap.width, bitmap.height));
-    const width = Math.max(1, Math.round(bitmap.width * scale));
-    const height = Math.max(1, Math.round(bitmap.height * scale));
-    const canvas = document.createElement("canvas");
-    canvas.width = width;
-    canvas.height = height;
-    const context = canvas.getContext("2d");
-    if (context === null) return file;
-    context.drawImage(bitmap, 0, 0, width, height);
-    const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob((result) => { resolve(result); }, "image/webp", 0.85);
-    });
-    if (blob === null || blob.size === 0) return file;
-    return new File([blob], "avatar.webp", { type: "image/webp" });
-  } finally {
-    bitmap.close();
-  }
-}
+import { AvatarCropper } from "./avatar-cropper";
 
 /** Where each phase of an upload lands on the bar, so the number always moves forwards. */
 const PREPARED_AT = 20;
@@ -58,11 +22,14 @@ interface UploadProgress {
   percent: number;
 }
 
+/** The cropper exports a 512px square; this is only a guard against a surprising file. */
+const AVATAR_MAX_BYTES = 3 * 1024 * 1024;
+
 /**
  * Posts the avatar and reports progress. XMLHttpRequest rather than fetch: only it exposes
  * `upload.onprogress`, which is the whole point of showing a percentage.
  */
-function postAvatar(file: File, onProgress: (percent: number) => void): Promise<string> {
+function postAvatar(file: File, onProgress: (fraction: number) => void): Promise<string> {
   return new Promise((resolve, reject) => {
     const body = new FormData();
     body.append("file", file);
@@ -84,8 +51,12 @@ function postAvatar(file: File, onProgress: (percent: number) => void): Promise<
       const message = (payload as { error?: { message?: unknown } } | null)?.error?.message;
       reject(new Error(typeof message === "string" ? message : "Couldn't upload that image."));
     });
-    xhr.addEventListener("error", () => { reject(new Error("The upload failed. Check your connection.")); });
-    xhr.addEventListener("abort", () => { reject(new Error("The upload was cancelled.")); });
+    xhr.addEventListener("error", () => {
+      reject(new Error("The upload failed. Check your connection."));
+    });
+    xhr.addEventListener("abort", () => {
+      reject(new Error("The upload was cancelled."));
+    });
     xhr.send(body);
   });
 }
@@ -117,6 +88,7 @@ export function ProfileSection({
   const [image, setImage] = useState(initialImage);
   const [savePending, startSave] = useTransition();
   const [progress, setProgress] = useState<UploadProgress | null>(null);
+  const [pending, setPending] = useState<File | null>(null);
   const busy = progress !== null;
 
   const tzOptions = Array.from(new Set([initialTimezone, ...COMMON_TIMEZONES])).map((tz) => ({
@@ -136,23 +108,27 @@ export function ProfileSection({
     });
   }
 
-  function upload(file: File | undefined) {
+  function choose(file: File | undefined) {
     if (file === undefined) return;
     if (!file.type.startsWith("image/")) {
       toast.error("Choose an image file.");
       return;
     }
+    setPending(file);
+  }
+
+  function upload(framed: File) {
+    setPending(null);
     void (async () => {
       // A visible starting value: a bar sitting at 0 reads as "nothing is happening".
       setProgress({ stage: "Preparing", percent: 8 });
       try {
-        const prepared = await toAvatarFile(file);
-        if (prepared.size > AVATAR_MAX_BYTES) {
+        if (framed.size > AVATAR_MAX_BYTES) {
           toast.error("That image is too large. Choose one under 3MB.");
           return;
         }
         setProgress({ stage: "Uploading", percent: PREPARED_AT });
-        const url = await postAvatar(prepared, (fraction) => {
+        const url = await postAvatar(framed, (fraction) => {
           // Once the bytes are sent the wait is the server storing them and writing the profile,
           // so the label says so rather than claiming to still be uploading at 90%.
           setProgress({
@@ -206,7 +182,7 @@ export function ProfileSection({
                 className="sr-only"
                 disabled={busy}
                 onChange={(e) => {
-                  upload(e.target.files?.[0]);
+                  choose(e.target.files?.[0]);
                   // Clear it, so choosing the same file again still fires a change.
                   e.target.value = "";
                 }}
@@ -240,6 +216,14 @@ export function ProfileSection({
           )}
         </div>
       </div>
+
+      <AvatarCropper
+        file={pending}
+        onCancel={() => {
+          setPending(null);
+        }}
+        onConfirm={upload}
+      />
 
       <Field label="Name">
         {({ id }) => (
