@@ -6,10 +6,11 @@ import { PageHeader } from "@/components/patterns/page-header";
 import { PermissionState } from "@/components/patterns/states";
 import { canFromUser, requireUser } from "@/platform/auth";
 import { normalizeAnswers } from "@/modules/forms/core/answers";
-import { briefSections, renderBrief } from "@/modules/forms/core/brief";
+import { briefSections } from "@/modules/forms/core/brief";
 import { getFormSubmission } from "@/modules/forms/core/submissions";
 import { getForm } from "@/modules/forms/definitions";
 import { BriefView } from "@/modules/forms/ui/internal/brief-view";
+import { ResponseActions } from "@/modules/forms/ui/internal/response-actions";
 
 interface PageProps {
   params: Promise<{ slug: string; submissionId: string }>;
@@ -17,7 +18,7 @@ interface PageProps {
 
 export const metadata: Metadata = { title: "Brief" };
 
-/** `/forms/<slug>/<id>` — one brief, section by section, with copy-as-text. */
+/** `/forms/<slug>/<id>` — one brief, section by section, with export and (admin) delete. */
 export default async function BriefPage({ params }: PageProps) {
   const { slug, submissionId } = await params;
   const definition = getForm(slug);
@@ -35,6 +36,7 @@ export default async function BriefPage({ params }: PageProps) {
   // re-normalises against today's questions so a renamed choice can never render as raw JSON.
   const answers = normalizeAnswers(definition, submission.answers);
   const submittedAt = submission.submittedAt.toISOString().replace("T", " ").slice(0, 16);
+  const canDelete = canFromUser(user, "forms.submission.delete");
 
   return (
     <>
@@ -53,15 +55,20 @@ export default async function BriefPage({ params }: PageProps) {
             ← {submission.formTitle}
           </Link>
         }
+        actions={
+          <ResponseActions
+            slug={slug}
+            submissionId={submissionId}
+            canDelete={canDelete}
+            size="md"
+            // On delete from the brief page, send the viewer back to the list — the row they
+            // were looking at no longer exists.
+            redirectAfterDeleteTo={`/forms/${slug}`}
+          />
+        }
       />
 
-      <BriefView
-        sections={briefSections(definition, answers)}
-        text={renderBrief(definition, answers, {
-          subtitle: `From ${submission.contactName ?? "a prospect"} · ${submittedAt} UTC`,
-          includeUnanswered: true,
-        })}
-      />
+      <BriefView sections={briefSections(definition, answers)} />
     </>
   );
 }

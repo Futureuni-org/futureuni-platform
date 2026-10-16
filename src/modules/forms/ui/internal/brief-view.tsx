@@ -4,13 +4,9 @@
  * One submitted brief, as the team reads it (docs/specs/module-forms.md §6).
  *
  * Unanswered questions are shown as "Not answered" rather than hidden: the gap is information —
- * it is what the next call with the client is about.
+ * it is what the next call with the client is about. Export and delete are handled by
+ * `ResponseActions`, rendered in the page header beside the title.
  */
-
-import { useState } from "react";
-import { Check, Copy } from "lucide-react";
-
-import { Button } from "@/components/ui/button";
 
 export interface BriefSection {
   key: string;
@@ -18,17 +14,9 @@ export interface BriefSection {
   rows: readonly { key: string; label: string; value: string | null }[];
 }
 
-export function BriefView({
-  sections,
-  text,
-}: {
-  sections: readonly BriefSection[];
-  /** The same brief as plain text, for pasting into a proposal or a chat. */
-  text: string;
-}) {
+export function BriefView({ sections }: { sections: readonly BriefSection[] }) {
   return (
     <div className="flex flex-col gap-8">
-      <CopyBrief text={text} />
       {sections.map((section) => (
         <section key={section.key} className="flex flex-col gap-4">
           <h2 className="font-display text-xl font-semibold text-heading">{section.title}</h2>
@@ -51,31 +39,5 @@ export function BriefView({
         </section>
       ))}
     </div>
-  );
-}
-
-function CopyBrief({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <Button
-      variant="secondary"
-      className="self-start"
-      onClick={() => {
-        void navigator.clipboard
-          .writeText(text)
-          .then(() => {
-            setCopied(true);
-            window.setTimeout(() => {
-              setCopied(false);
-            }, 2_000);
-          })
-          .catch(() => {
-            setCopied(false);
-          });
-      }}
-    >
-      {copied ? <Check aria-hidden className="size-4" /> : <Copy aria-hidden className="size-4" />}
-      {copied ? "Copied" : "Copy as text"}
-    </Button>
   );
 }

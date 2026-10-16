@@ -115,3 +115,7 @@ export async function submissionStats(): Promise<
     ]),
   );
 }
+
+export async function deleteSubmission(id: string): Promise<void> {
+  await db.formSubmission.delete({ where: { id } });
+}

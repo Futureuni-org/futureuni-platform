@@ -1,29 +1,46 @@
 "use client";
 
 /**
- * The public form (docs/specs/module-forms.md §6): one section per step.
+ * The public form (docs/specs/module-forms.md §6).
  *
- * Thirty questions on one page reads as homework; a prospect sees how far it goes and closes the
- * tab. One section per step shows only what is being asked right now, and the ledger beside it
- * shows what is left — the same shape as the platform's own navigation.
+ * Three pages of questions, plus the thank-you panel that replaces the content
+ * on submit. No left rail: the FUTUREUNI lockup sits top-left of the form on
+ * desktop and the appearance toggle top-right; on mobile a sticky navy band
+ * carries both. The step indicator is a horizontal tab strip built on the
+ * platform's own `Tabs` primitive, so the active-tab underline reads as
+ * native. The 13 sections in the form definition are grouped into three
+ * pages here — the definition itself is unchanged, so the stored brief and
+ * its plain-text render stay the same.
  *
  * Four promises to the prospect:
  *
- *  1. Nothing is lost: every change is written to this device, so closing the tab is safe.
- *  2. Nothing is hidden: required questions are marked, moving on stops at an empty one, and the
- *     last step shows the whole brief before anything is sent.
- *  3. Their place is kept: the step is in the URL, so Back walks back and a refresh returns here.
- *  4. There is always a way to reach us: when the brief is sent — and also when sending fails —
- *     they get the brief as copyable text plus the WhatsApp and email handoff.
+ *  1. Nothing is lost: every change is written to this device, so closing the
+ *     tab is safe (localStorage per slug + version).
+ *  2. Nothing is hidden: required questions are marked, moving on stops at an
+ *     empty one, submitting from any page jumps to the first missing field.
+ *  3. Their place is kept: the page is in the URL, so Back walks back and a
+ *     refresh returns here.
+ *  4. There is always a way to reach us: the thank-you panel renders the
+ *     brief as copyable text and the WhatsApp + email handoff — also shown
+ *     when sending fails, so the form is never a dead end.
  *
- * Saved answers are read with `useSyncExternalStore` the way the sidebar reads its collapsed
- * state: storage is an external system, so the server renders an empty form and this device's own
- * answers arrive at hydration without a state-setting effect.
+ * Saved answers are read with `useSyncExternalStore` the way the sidebar reads
+ * its collapsed state: storage is an external system, so the server renders
+ * an empty form and this device's own answers arrive at hydration without a
+ * state-setting effect.
  */
 
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
-import type { SyntheticEvent } from "react";
-import { ArrowLeft, ArrowRight, Check, Copy, Mail, MessageCircle, Pencil } from "lucide-react";
+import Image from "next/image";
+import {
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+  type SyntheticEvent,
+} from "react";
+import { ArrowLeft, ArrowRight, Check, Mail, MessageCircle } from "lucide-react";
 
 import {
   isBlankAnswer,
@@ -32,6 +49,7 @@ import {
   type FormDefinition,
 } from "@/contracts/forms";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/cn";
 
 import {
@@ -40,9 +58,9 @@ import {
   normalizeAnswers,
   questionCount,
 } from "../../core/answers";
-import { briefSections, renderBrief } from "../../core/brief";
-import { BrandRail, type LedgerStep } from "./brand-rail";
 import { Field } from "./fields";
+import { MobileBand } from "./mobile-band";
+import { ThemeSwitch } from "./theme-switch";
 import { openStep, useUrlStep } from "./use-step";
 
 export type SubmitFormResponse =
@@ -59,8 +77,38 @@ export interface FormViewProps {
   }) => Promise<SubmitFormResponse>;
 }
 
+/**
+ * The three pages the 13 sections are grouped into. Section keys come from
+ * `src/modules/forms/definitions/ai-music-video-brief.ts`; a definition
+ * section not listed here would be unreachable, which `assertPagesCover`
+ * catches in development.
+ */
+const PAGES = [
+  {
+    key: "page-1",
+    label: "You and the song",
+    sectionKeys: ["your-details", "the-song", "the-track"],
+  },
+  {
+    key: "page-2",
+    label: "The video",
+    sectionKeys: [
+      "length",
+      "your-vision",
+      "references",
+      "creative-style",
+      "you-in-the-video",
+      "story-or-performance",
+    ],
+  },
+  {
+    key: "page-3",
+    label: "The details",
+    sectionKeys: ["scenes-and-world", "please-do-not-include", "delivery", "anything-else"],
+  },
+] as const satisfies readonly { key: string; label: string; sectionKeys: readonly string[] }[];
+
 const REQUIRED_MESSAGE = "We need this one to start.";
-const REVIEW_KEY = "check-and-send";
 
 function storageKey(definition: FormDefinition): string {
   return `futureuni-form:${definition.slug}:v${String(definition.version)}`;
@@ -111,9 +159,46 @@ function invalidFields(details: Record<string, unknown> | undefined): readonly s
     : [];
 }
 
+/**
+ * In development, catch a section that no page claims (and therefore cannot be reached). Each
+ * page is also expected to claim only sections the definition declares.
+ */
+function assertPagesCover(definition: FormDefinition): void {
+  if (process.env.NODE_ENV === "production") return;
+  const defined = new Set(definition.sections.map((section) => section.key));
+  const grouped = new Set<string>(PAGES.flatMap((page) => page.sectionKeys));
+  for (const key of defined) {
+    if (!grouped.has(key)) {
+      console.error(`[forms] section "${key}" is not on any page; add it to PAGES.`);
+    }
+  }
+  for (const key of grouped) {
+    if (!defined.has(key)) {
+      console.error(`[forms] page claims unknown section "${key}".`);
+    }
+  }
+}
+
+/** Never changes, so `useSyncExternalStore` returns the client snapshot once. */
+function noopSubscribe(): () => void {
+  return () => undefined;
+}
+
 export function FormView({ definition, submit }: FormViewProps) {
-  const sections = definition.sections;
-  const reviewIndex = sections.length;
+  assertPagesCover(definition);
+  const totalPages = PAGES.length;
+
+  // Group the definition's sections by the page they belong to.
+  const pageSections = useMemo(
+    () =>
+      PAGES.map((page) => ({
+        page,
+        sections: page.sectionKeys
+          .map((key) => definition.sections.find((section) => section.key === key))
+          .filter(<T,>(value: T | undefined): value is T => value !== undefined),
+      })),
+    [definition],
+  );
 
   // What this device remembers. Null on the server, so the first paint never depends on storage.
   const savedRaw = useSyncExternalStore(
@@ -134,21 +219,19 @@ export function FormView({ definition, submit }: FormViewProps) {
   const [edited, setEdited] = useState<FormAnswers | null>(null);
   const answers = edited ?? saved;
 
-  // The open step comes from the URL, so Back walks back through the sections.
+  // The open page comes from the URL, so Back walks back through the pages.
   const urlStep = useUrlStep();
-  const step = useMemo(() => {
+  const pageIndex = useMemo(() => {
     if (urlStep === null) return 0;
-    if (urlStep === REVIEW_KEY) return reviewIndex;
-    const found = sections.findIndex((section) => section.key === urlStep);
+    const found = PAGES.findIndex((page) => page.key === urlStep);
     return found === -1 ? 0 : found;
-  }, [urlStep, sections, reviewIndex]);
+  }, [urlStep]);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [visited, setVisited] = useState<ReadonlySet<string>>(new Set<string>());
   const [sent, setSent] = useState(false);
   const [failure, setFailure] = useState<string | null>(null);
   const [sending, startSending] = useTransition();
-  const stepRef = useRef<HTMLFormElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Until React has hydrated, no handler is attached: a tap would be a plain browser submit, which
   // navigates away with the answers in the query string instead of sending the brief. On a slow
@@ -178,50 +261,50 @@ export function FormView({ definition, submit }: FormViewProps) {
     [definition, saved],
   );
 
+  /** Required field keys that are still blank, on one page. */
+  function missingOnPage(index: number, from: FormAnswers): readonly string[] {
+    const group = pageSections[index];
+    if (group === undefined) return [];
+    return group.sections.flatMap((section) =>
+      section.fields
+        .filter((field) => field.required === true && isBlankAnswer(from[field.key]))
+        .map((field) => field.key),
+    );
+  }
+
   function focusFirstError(keys: readonly string[]): void {
     const first = keys[0];
     if (first === undefined) return;
-    const container = stepRef.current?.querySelector<HTMLElement>(`[data-field="${first}"]`);
+    const container = formRef.current?.querySelector<HTMLElement>(`[data-field="${first}"]`);
     container?.scrollIntoView({ block: "center", behavior: "smooth" });
     container?.querySelector<HTMLElement>("input, textarea")?.focus({ preventScroll: true });
   }
 
-  function go(index: number, options: { push?: boolean } = {}): void {
-    const key = index >= reviewIndex ? REVIEW_KEY : (sections[index]?.key ?? REVIEW_KEY);
-    openStep(key, options);
+  function goToPage(index: number): void {
+    const bounded = Math.max(0, Math.min(index, totalPages - 1));
+    const key = (PAGES[bounded] ?? PAGES[0]).key;
+    openStep(key);
     window.scrollTo({ top: 0, behavior: "smooth" });
-  }
-
-  /** Required answers missing in one section — what stops "Next". */
-  function missingIn(index: number, from: FormAnswers): readonly string[] {
-    const section = sections[index];
-    if (section === undefined) return [];
-    return section.fields
-      .filter((field) => field.required === true && isBlankAnswer(from[field.key]))
-      .map((field) => field.key);
   }
 
   function onNext(): void {
     const cleaned = normalizeAnswers(definition, answers);
-    const missing = missingIn(step, cleaned);
-    const section = sections[step];
-    if (section !== undefined) {
-      setVisited((current) => new Set(current).add(section.key));
-    }
+    const missing = missingOnPage(pageIndex, cleaned);
     if (missing.length > 0) {
       setErrors(Object.fromEntries(missing.map((key) => [key, REQUIRED_MESSAGE])));
       focusFirstError(missing);
       return;
     }
     setErrors({});
-    go(Math.min(step + 1, reviewIndex));
+    goToPage(pageIndex + 1);
   }
 
   function onSubmit(event: SyntheticEvent<HTMLFormElement>): void {
     event.preventDefault();
     if (sending) return;
-    // Enter inside a field submits the form element. Before the last step that means "next".
-    if (step < reviewIndex) {
+
+    // Enter inside a field submits the form element. On a non-final page, treat that as "next".
+    if (pageIndex < totalPages - 1) {
       onNext();
       return;
     }
@@ -229,13 +312,17 @@ export function FormView({ definition, submit }: FormViewProps) {
     const cleaned = normalizeAnswers(definition, answers);
     const missing = missingRequired(definition, cleaned);
     if (missing.length > 0) {
-      // Send them to the first section that still needs something, with the error already on it.
+      // Send the user to the first page that still has a blank required answer.
       const firstKey = missing[0]?.key;
-      const target = sections.findIndex((section) =>
-        section.fields.some((field) => field.key === firstKey),
+      const target = PAGES.findIndex((page) =>
+        page.sectionKeys.some((sectionKey) =>
+          definition.sections
+            .find((section) => section.key === sectionKey)
+            ?.fields.some((field) => field.key === firstKey),
+        ),
       );
       setErrors(Object.fromEntries(missing.map((field) => [field.key, REQUIRED_MESSAGE])));
-      if (target !== -1) go(target);
+      if (target !== -1) goToPage(target);
       return;
     }
 
@@ -257,205 +344,230 @@ export function FormView({ definition, submit }: FormViewProps) {
       const fields = invalidFields(result.error.details);
       if (fields.length > 0) {
         setErrors(Object.fromEntries(fields.map((key) => [key, REQUIRED_MESSAGE])));
-        const target = sections.findIndex((section) =>
-          section.fields.some((field) => fields.includes(field.key)),
+        const target = PAGES.findIndex((page) =>
+          page.sectionKeys.some((sectionKey) =>
+            definition.sections
+              .find((section) => section.key === sectionKey)
+              ?.fields.some((field) => fields.includes(field.key)),
+          ),
         );
-        if (target !== -1) go(target);
+        if (target !== -1) goToPage(target);
         return;
       }
       setFailure(result.error.message);
     });
   }
 
-  const brief = useMemo(() => renderBrief(definition, answers), [definition, answers]);
-
-  const ledger = useMemo<LedgerStep[]>(
+  /** Per-page completeness marks for the tab strip. */
+  const pageState = useMemo(
     () =>
-      sections.map((section) => {
-        const requiredMissing = section.fields.some(
-          (field) => field.required === true && isBlankAnswer(answers[field.key]),
+      pageSections.map((group) => {
+        const allRequiredFilled = group.sections.every((section) =>
+          section.fields.every(
+            (field) => field.required !== true || !isBlankAnswer(answers[field.key]),
+          ),
         );
-        return {
-          key: section.key,
-          title: section.title,
-          complete: section.fields.every((field) => !isBlankAnswer(answers[field.key])),
-          flagged: requiredMissing && visited.has(section.key),
-        };
+        const everyFilled = group.sections.every((section) =>
+          section.fields.every((field) => !isBlankAnswer(answers[field.key])),
+        );
+        return { allRequiredFilled, everyFilled };
       }),
-    [sections, answers, visited],
+    [pageSections, answers],
   );
 
-  const section = sections[step];
-  const onReview = step >= reviewIndex;
+  const activePageKey = (PAGES[pageIndex] ?? PAGES[0]).key;
+  const isLastPage = pageIndex === totalPages - 1;
+  const currentPage = pageSections[pageIndex];
 
   return (
-    <div className="min-h-dvh bg-background text-foreground md:grid md:grid-cols-[20rem_1fr] md:items-start">
-      <BrandRail
-        formTitle={definition.title}
-        steps={ledger}
-        current={step}
-        answered={answered}
-        total={total}
-        onOpenStep={(index) => {
-          go(index);
-        }}
-      />
+    <div className="min-h-dvh bg-background text-foreground">
+      <MobileBand answered={answered} total={total} className="md:hidden" />
 
-      <main className="px-5 py-8 sm:px-8 md:px-12 md:py-14 lg:px-20">
-        <div className="mx-auto flex w-full max-w-2xl flex-col gap-10">
-          {sent ? (
-            <Outcome
-              tone="success"
-              title={definition.closing.title}
-              body={definition.closing.body}
-              definition={definition}
-              brief={brief}
+      <div className="mx-auto flex w-full max-w-3xl flex-col gap-10 px-5 py-6 md:px-10 md:py-14">
+        {/* Desktop header: logo top-left, toggle top-right. Hidden on mobile — the navy band carries both there. */}
+        <header className="hidden items-center justify-between md:flex">
+          <span className="flex items-center gap-3">
+            <Image
+              src="/brand/futureuni-mark.png"
+              alt=""
+              width={28}
+              height={36}
+              priority
+              className="h-10 w-auto"
             />
-          ) : (
-            <>
-              {failure !== null && (
-                <Outcome
-                  tone="failure"
-                  title="We could not send that from here"
-                  body={[
-                    failure,
-                    "Nothing you wrote is lost — it is still saved on this device. Copy the brief below and send it to us, and we will take it from there.",
-                  ]}
-                  definition={definition}
-                  brief={brief}
-                />
+            <span className="font-display text-xl font-semibold tracking-[0.02em] text-heading">
+              FUTUREUNI
+            </span>
+          </span>
+          <ThemeSwitch tone="page" />
+        </header>
+
+        {sent ? (
+          <Outcome
+            tone="success"
+            title={definition.closing.title}
+            body={definition.closing.body}
+            definition={definition}
+          />
+        ) : (
+          <>
+            {failure !== null && (
+              <Outcome
+                tone="failure"
+                title="We could not send that from here"
+                body={[
+                  failure,
+                  "Nothing you wrote is lost — it is still saved on this device. Reach us on WhatsApp or by email below and we will take it from there.",
+                ]}
+                definition={definition}
+              />
+            )}
+
+            {/* The masthead sits above the tab strip, same shape on both viewports. */}
+            <header className="flex flex-col gap-4">
+              <h1 className="font-display text-[clamp(2rem,1.5rem+1.6vw,2.75rem)] leading-[1.08] font-semibold tracking-[-0.02em] text-heading">
+                {definition.title}
+              </h1>
+              {pageIndex === 0 &&
+                definition.intro.map((paragraph) => (
+                  <p key={paragraph} className="max-w-prose text-base text-muted md:text-lg">
+                    {paragraph}
+                  </p>
+                ))}
+              {pageIndex === 0 && definition.expectation !== undefined && (
+                <p className="max-w-prose rounded-md bg-zone px-4 py-3 text-sm text-foreground">
+                  {definition.expectation}
+                </p>
               )}
+            </header>
 
-              <form
-                onSubmit={onSubmit}
-                noValidate
-                className="flex flex-col gap-10"
-                ref={stepRef}
-              >
-                {onReview ? (
-                  <Review
-                    definition={definition}
-                    answers={answers}
-                    onEdit={(index) => {
-                      go(index);
-                    }}
-                  />
-                ) : section === undefined ? null : (
-                  <section className="flex flex-col gap-8" aria-labelledby="step-title">
-                    {step === 0 && (
-                      <div className="flex flex-col gap-4 md:hidden">
-                        <h2 className="font-display text-2xl font-semibold text-heading">
-                          {definition.title}
-                        </h2>
-                      </div>
+            <Tabs
+              value={activePageKey}
+              onValueChange={(value) => {
+                const index = PAGES.findIndex((page) => page.key === value);
+                if (index !== -1) goToPage(index);
+              }}
+            >
+              <TabsList className="w-full overflow-x-auto">
+                {PAGES.map((page, index) => {
+                  const state = pageState[index];
+                  const done = state?.allRequiredFilled === true && state.everyFilled;
+                  return (
+                    <TabsTrigger
+                      key={page.key}
+                      value={page.key}
+                      className="flex items-center gap-2"
+                    >
+                      <span className="font-mono text-xs text-muted tabular-nums">
+                        {String(index + 1).padStart(2, "0")}
+                      </span>
+                      <span>{page.label}</span>
+                      {done && <Check aria-hidden className="size-3.5 text-primary" />}
+                    </TabsTrigger>
+                  );
+                })}
+              </TabsList>
+            </Tabs>
+
+            <form
+              ref={formRef}
+              onSubmit={onSubmit}
+              noValidate
+              className="flex flex-col gap-12"
+              aria-labelledby="page-title"
+            >
+              <section className="flex flex-col gap-2">
+                <p className="font-mono text-xs font-semibold tracking-[0.14em] text-primary uppercase">
+                  Step {String(pageIndex + 1).padStart(2, "0")} ·{" "}
+                  {String(totalPages).padStart(2, "0")}
+                </p>
+                <h2
+                  id="page-title"
+                  className="font-display text-2xl font-semibold text-heading md:text-3xl"
+                >
+                  {PAGES[pageIndex]?.label}
+                </h2>
+              </section>
+
+              {currentPage?.sections.map((section) => (
+                <section key={section.key} className="flex flex-col gap-5">
+                  <header className="flex flex-col gap-2">
+                    <h3 className="font-display text-xl font-semibold text-heading">
+                      {section.title}
+                    </h3>
+                    {section.intro !== undefined && (
+                      <p className="max-w-prose text-muted">{section.intro}</p>
                     )}
-                    {step === 0 && (
-                      <div className="flex flex-col gap-4">
-                        {definition.intro.map((paragraph) => (
-                          <p key={paragraph} className="max-w-prose text-lg text-foreground">
-                            {paragraph}
-                          </p>
-                        ))}
-                        {definition.expectation !== undefined && (
-                          <p className="max-w-prose rounded-md bg-zone px-4 py-3 text-muted">
-                            {definition.expectation}
-                          </p>
-                        )}
-                      </div>
-                    )}
-                    <header className="flex flex-col gap-3">
-                      <p className="font-mono text-xs font-semibold tracking-[0.14em] text-primary uppercase">
-                        {String(step + 1).padStart(2, "0")} / {String(reviewIndex)}
-                      </p>
-                      <h1
-                        id="step-title"
-                        className="font-display text-[clamp(1.75rem,1.3rem+1.6vw,2.5rem)] leading-[1.08] font-semibold tracking-[-0.02em] text-heading"
-                      >
-                        {section.title}
-                      </h1>
-                      {section.intro !== undefined && (
-                        <p className="max-w-prose text-lg text-muted">{section.intro}</p>
-                      )}
-                    </header>
+                  </header>
 
-                    <div className="grid grid-cols-1 gap-7 sm:grid-cols-2">
-                      {section.fields.map((field) => (
-                        <Field
-                          key={field.key}
-                          field={field}
-                          value={answers[field.key]}
-                          error={errors[field.key] ?? null}
-                          onChange={(value) => {
-                            setAnswer(field.key, value);
-                          }}
-                        />
-                      ))}
-                    </div>
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                    {section.fields.map((field) => (
+                      <Field
+                        key={field.key}
+                        field={field}
+                        value={answers[field.key]}
+                        error={errors[field.key] ?? null}
+                        onChange={(value) => {
+                          setAnswer(field.key, value);
+                        }}
+                      />
+                    ))}
+                  </div>
 
-                    {section.note !== undefined && (
-                      <p
-                        className="reading-rule max-w-prose pl-4 text-sm text-muted"
-                        data-active="true"
-                      >
-                        {section.note}
-                      </p>
-                    )}
-                  </section>
-                )}
+                  {section.note !== undefined && (
+                    <p
+                      className="reading-rule max-w-prose pl-4 text-sm text-muted"
+                      data-active="true"
+                    >
+                      {section.note}
+                    </p>
+                  )}
+                </section>
+              ))}
 
-                <StepNav
-                  step={step}
-                  reviewIndex={reviewIndex}
-                  hydrated={hydrated}
-                  sending={sending}
-                  onBack={() => {
-                    go(Math.max(step - 1, 0));
-                  }}
-                  onNext={onNext}
-                />
-              </form>
-            </>
-          )}
-        </div>
-      </main>
+              <StepNav
+                hydrated={hydrated}
+                sending={sending}
+                showBack={pageIndex > 0}
+                isLastPage={isLastPage}
+                onBack={() => {
+                  goToPage(pageIndex - 1);
+                }}
+                onNext={onNext}
+              />
+            </form>
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
-/**
- * Never changes, so `useSyncExternalStore` returns the client snapshot once and never again. It
- * is how this file asks "has the browser taken over yet?" without setting state in an effect.
- */
-function noopSubscribe(): () => void {
-  return () => undefined;
-}
-
 function StepNav({
-  step,
-  reviewIndex,
   hydrated,
   sending,
+  showBack,
+  isLastPage,
   onBack,
   onNext,
 }: {
-  step: number;
-  reviewIndex: number;
   hydrated: boolean;
   sending: boolean;
+  showBack: boolean;
+  isLastPage: boolean;
   onBack: () => void;
   onNext: () => void;
 }) {
-  const onReview = step >= reviewIndex;
   return (
     <div className="flex flex-col gap-4 border-t border-border pt-6">
       <div className="flex flex-wrap items-center gap-3">
-        {step > 0 && (
+        {showBack && (
           <Button variant="secondary" size="lg" onClick={onBack} disabled={!hydrated}>
             <ArrowLeft aria-hidden className="size-4" />
             Back
           </Button>
         )}
-        {onReview ? (
+        {isLastPage ? (
           <Button type="submit" size="lg" loading={sending} disabled={!hydrated}>
             {sending ? "Sending" : "Finish and send"}
           </Button>
@@ -474,114 +586,35 @@ function StepNav({
   );
 }
 
-/** The last step: the whole brief, with a way back into any section. */
-function Review({
-  definition,
-  answers,
-  onEdit,
-}: {
-  definition: FormDefinition;
-  answers: FormAnswers;
-  onEdit: (index: number) => void;
-}) {
-  const groups = briefSections(definition, answers);
-  return (
-    <section className="flex flex-col gap-8" aria-labelledby="step-title">
-      <header className="flex flex-col gap-3">
-        <p className="font-mono text-xs font-semibold tracking-[0.14em] text-primary uppercase">
-          Last step
-        </p>
-        <h1
-          id="step-title"
-          className="font-display text-[clamp(1.75rem,1.3rem+1.6vw,2.5rem)] leading-[1.08] font-semibold tracking-[-0.02em] text-heading"
-        >
-          Check and send
-        </h1>
-        <p className="max-w-prose text-lg text-muted">
-          This is everything you have told us. Change anything that is not right, then send it.
-        </p>
-      </header>
-
-      <div className="flex flex-col gap-8">
-        {groups.map((group, index) => (
-          <div key={group.key} className="flex flex-col gap-3">
-            <div className="flex items-baseline justify-between gap-4">
-              <h2 className="font-display text-lg font-semibold text-heading">{group.title}</h2>
-              <button
-                type="button"
-                onClick={() => {
-                  onEdit(index);
-                }}
-                className="inline-flex items-center gap-1.5 text-sm text-primary underline-offset-4 hover:underline"
-              >
-                <Pencil aria-hidden className="size-3.5" />
-                Change
-              </button>
-            </div>
-            <dl className="flex flex-col gap-3 border-t border-border pt-3">
-              {group.rows.map((row) => (
-                <div key={row.key} className="grid gap-1 sm:grid-cols-[14rem_1fr] sm:gap-4">
-                  <dt className="text-sm text-muted">{row.label}</dt>
-                  <dd
-                    className={
-                      row.value === null
-                        ? "text-sm text-subtle italic"
-                        : "whitespace-pre-wrap text-foreground"
-                    }
-                  >
-                    {row.value ?? "Not answered"}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
-        ))}
-      </div>
-    </section>
-  );
-}
-
 function Outcome({
   tone,
   title,
   body,
   definition,
-  brief,
 }: {
   tone: "success" | "failure";
   title: string;
   body: readonly string[];
   definition: FormDefinition;
-  brief: string;
 }) {
   return (
     <div
       className={cn(
         "flex flex-col gap-6 rounded-lg border p-6 sm:p-8",
-        tone === "success" ? "border-success bg-success-soft" : "border-danger bg-danger-soft",
+        // Brand violet on success; danger on failure. The success panel sits in company colour,
+        // not green — the brief has arrived, this is a confirmation on the brand, not a system OK.
+        tone === "success"
+          ? "border-primary bg-primary-soft text-primary-soft-foreground"
+          : "border-danger bg-danger-soft",
       )}
     >
       <div className="flex flex-col gap-3">
         <h1 className="font-display text-2xl font-semibold text-heading sm:text-3xl">{title}</h1>
         {body.map((paragraph) => (
-          <p key={paragraph} className="max-w-prose text-foreground">
+          <p key={paragraph} className="max-w-prose">
             {paragraph}
           </p>
         ))}
-      </div>
-
-      <div className="flex flex-col gap-3">
-        <label htmlFor="brief-out" className="text-sm font-medium text-heading">
-          Your copy of the brief
-        </label>
-        <textarea
-          id="brief-out"
-          readOnly
-          value={brief}
-          rows={12}
-          className="w-full rounded-md border border-input bg-surface px-3 py-2 font-mono text-sm text-foreground"
-        />
-        <CopyButton text={brief} />
       </div>
 
       <Handoff definition={definition} />
@@ -589,30 +622,19 @@ function Outcome({
   );
 }
 
-function CopyButton({ text }: { text: string }) {
-  const [copied, setCopied] = useState(false);
-  return (
-    <Button
-      variant="secondary"
-      className="self-start"
-      onClick={() => {
-        void navigator.clipboard
-          .writeText(text)
-          .then(() => {
-            setCopied(true);
-            window.setTimeout(() => {
-              setCopied(false);
-            }, 2_000);
-          })
-          .catch(() => {
-            setCopied(false);
-          });
-      }}
-    >
-      {copied ? <Check aria-hidden className="size-4" /> : <Copy aria-hidden className="size-4" />}
-      {copied ? "Copied" : "Copy the brief"}
-    </Button>
-  );
+/** Digits-only, no leading `+`, for `wa.me/<number>`. "+44 7538 598770" → "447538598770". */
+function waNumber(whatsapp: string): string {
+  return whatsapp.replace(/\D+/g, "");
+}
+
+/**
+ * The click-to-chat URL (https://wa.me/<number>?text=…). Prefills a one-line greeting that names
+ * the form, so a prospect whose submit failed, or who wants to add something, lands in WhatsApp
+ * with a message they can send straight away and take over from.
+ */
+function waHref(whatsapp: string, formTitle: string): string {
+  const message = `Hi FUTUREUNI — I just filled in the ${formTitle}.`;
+  return `https://wa.me/${waNumber(whatsapp)}?text=${encodeURIComponent(message)}`;
 }
 
 function Handoff({ definition }: { definition: FormDefinition }) {
@@ -624,7 +646,16 @@ function Handoff({ definition }: { definition: FormDefinition }) {
       {whatsapp !== undefined && (
         <p className="flex items-center gap-2 text-foreground">
           <MessageCircle aria-hidden className="size-4 text-muted" />
-          WhatsApp <span className="font-mono tabular-nums">{whatsapp}</span>
+          <a
+            // Tap-to-chat: opens WhatsApp (app on mobile, web.whatsapp.com on desktop) with a
+            // greeting ready to send. The prospect takes over from there.
+            href={waHref(whatsapp, definition.title)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary underline-offset-4 hover:underline"
+          >
+            WhatsApp <span className="font-mono tabular-nums">{whatsapp}</span>
+          </a>
         </p>
       )}
       {email !== undefined && (

@@ -388,7 +388,6 @@ export const aiMusicVideoBrief: FormDefinition = {
     body: [
       "We have everything you wrote. The team is reading it now and will come back to you with a concept.",
       "If you have not sent us the song file or your photos yet, send them over on WhatsApp or by email.",
-      "Your own copy of the brief is below, if you want to keep it.",
     ],
     whatsapp: "+44 7538 598770",
     email: "info@futureuni.org",

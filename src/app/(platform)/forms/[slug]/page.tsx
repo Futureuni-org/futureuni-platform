@@ -10,6 +10,7 @@ import { answeredCount, questionCount } from "@/modules/forms/core/answers";
 import { listFormSubmissions } from "@/modules/forms/core/submissions";
 import { getForm } from "@/modules/forms/definitions";
 import { CopyFormLink } from "@/modules/forms/ui/internal/copy-link";
+import { ResponseActions } from "@/modules/forms/ui/internal/response-actions";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -33,6 +34,7 @@ export default async function FormSubmissionsPage({ params }: PageProps) {
 
   const submissions = await listFormSubmissions(slug);
   const total = questionCount(definition);
+  const canDelete = canFromUser(user, "forms.submission.delete");
 
   return (
     <>
@@ -56,26 +58,38 @@ export default async function FormSubmissionsPage({ params }: PageProps) {
       ) : (
         <ul className="flex flex-col divide-y divide-border rounded-lg border border-border bg-surface">
           {submissions.map((submission) => (
-            <li key={submission.id}>
+            <li
+              key={submission.id}
+              className="flex flex-col gap-4 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+            >
+              {/* The Link only wraps the row's reading content, so clicking Export or Delete
+                  doesn't also navigate to the brief page. */}
               <Link
                 href={`/forms/${definition.slug}/${submission.id}`}
-                className="flex flex-col gap-2 px-5 py-4 hover:bg-zone sm:flex-row sm:items-center sm:justify-between"
+                className="flex min-w-0 flex-1 items-center justify-between gap-4 rounded-md -mx-2 px-2 py-1 hover:bg-zone sm:justify-start sm:gap-6"
               >
-                <span className="flex flex-col gap-1">
-                  <span className="font-medium text-heading">
+                <span className="flex min-w-0 flex-col gap-1">
+                  <span className="truncate font-medium text-heading">
                     {submission.contactName ?? "Someone"}
                   </span>
-                  <span className="text-sm text-muted">
+                  <span className="truncate text-sm text-muted">
                     {submission.contactEmail ?? "No email"}
                   </span>
                 </span>
-                <span className="flex items-center gap-4 text-sm text-muted">
+                <span className="flex shrink-0 items-center gap-4 text-sm text-muted">
                   <span className="font-mono tabular-nums">
                     {answeredCount(definition, submission.answers)}/{total}
                   </span>
                   <RelativeTime value={submission.submittedAt} timezone={user.timezone} />
                 </span>
               </Link>
+
+              <ResponseActions
+                slug={definition.slug}
+                submissionId={submission.id}
+                canDelete={canDelete}
+                size="sm"
+              />
             </li>
           ))}
         </ul>

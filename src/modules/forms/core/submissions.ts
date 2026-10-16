@@ -22,7 +22,7 @@ import { notify } from "@/platform/notifications";
 import { getPublishedForm } from "../definitions";
 import { answerToText, answersByteLength, missingRequired, normalizeAnswers } from "./answers";
 import { FORM_NOTIFICATION_TYPES } from "./notifications";
-import { createSubmission, getSubmission, listSubmissions } from "./submissions.repo";
+import { createSubmission, deleteSubmission, getSubmission, listSubmissions } from "./submissions.repo";
 
 /** Six briefs per hour from one caller: generous for a real prospect, useless for a script. */
 const SUBMIT_LIMIT = { bucket: "forms.submit", windowMs: 60 * 60 * 1000, max: 6 } as const;
@@ -129,4 +129,17 @@ export async function getFormSubmission(
   const record = await getSubmission(id);
   // A brief is only reachable under the form it belongs to, so a guessed id can't cross forms.
   return record !== null && record.formSlug === slug ? record : null;
+}
+
+
+/**
+ * Delete one brief for good. The caller must hold `forms.submission.delete` (ADMIN only, per the
+ * manifest); the HTTP action enforces that and this service just performs the delete. Deleting a
+ * submission for a slug it does not belong to is a `NOT_FOUND`, so a guessed id cannot cross
+ * forms.
+ */
+export async function removeFormSubmission(slug: string, id: string): Promise<void> {
+  const existing = await getFormSubmission(slug, id);
+  if (existing === null) throw new AppError("NOT_FOUND");
+  await deleteSubmission(id);
 }
