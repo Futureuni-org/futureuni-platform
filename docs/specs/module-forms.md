@@ -137,16 +137,43 @@ client.
 
 ## 6. Screens and their states
 
-**Public form (`/f/<slug>`)**
+**Public form (`/f/<slug>`) — one section per step**
+
+Thirty questions on one page reads as homework, so the form is a wizard: one section per step,
+plus a final "Check and send". The step lives in the URL (`?step=<section key>`), so Back walks
+back through the sections, a refresh returns to the same step, and the server renders step one
+without guessing.
+
+*Art direction — Editorial Ledger (phases/04/SUMMARY.md), not a white page with inputs.* A
+prospect must see at a glance that FUTUREUNI built this:
+
+- A deep-navy brand rail (`bg-heading`) carries the FUTUREUNI mark and wordmark — the same plane,
+  lockup and display type as the platform's own sign-in. Full height beside the step on desktop, a
+  band across the top on a phone.
+- The rail lists every section as a numbered ledger and marks the open one exactly as the
+  platform's sidebar marks the open page: the 2px violet reading rule plus a 10% white fill. Each
+  row shows a tick when the section is complete, or a dot when a required answer is still missing
+  and the prospect has already been past it.
+- Mono tabular numerals for every count and step number ("03 / 13", "9 of 30 answered"), the
+  platform's data face.
+- Display type for the step heading; no cards anywhere — spacing and hairlines only.
+- A violet progress rail in the brand plane that fills as answers land.
+
 - *Loading*: server-rendered; no spinner. The definition is static.
-- *Filling*: numbered sections, each with its own intro. Answered-count in a sticky-free header
-  line ("8 of 30 done"). Answers save to the device on change (`localStorage`, one key per slug),
-  with the same guarantee the first prototype made: close the tab, come back, nothing is lost.
-- *Invalid*: on submit, the first unanswered required field scrolls into view and is described by
-  its error text. Errors are never colour-only.
-- *Submitted*: a confirmation panel, the brief rendered as plain text, a copy button, and the
-  WhatsApp and email handoff — so the prospect can still reach us if anything went wrong.
+- *Filling*: the open section's questions only. Answers save to the device on change
+  (`localStorage`, one key per slug): close the tab, come back, nothing is lost.
+- *Appearance*: light / dark / device, switched from the rail and stored under the platform's own
+  theme key.
+- *Moving on*: "Next" stops on a required question that is still empty, scrolls to it and names
+  what is missing. Everything else may be left blank and returned to from the ledger.
+- *Invalid*: errors are never colour-only; each is text tied to its field with `aria-describedby`.
+- *Check and send*: the last step shows the whole brief, section by section, with "Change" back
+  into any section.
+- *Submitted*: a confirmation panel, the brief as plain text, a copy button, and the WhatsApp and
+  email handoff — so the prospect can still reach us if anything went wrong.
 - *Failed*: the error message, the same copyable brief, and the handoff. Never a dead end.
+- *Before hydration*: the buttons are disabled. Without that, a tap before React attaches its
+  handler is a plain browser submit, which navigates away with the answers in the query string.
 - *Unknown or unpublished slug*: `notFound()`.
 
 **Internal forms list (`/forms`)**
