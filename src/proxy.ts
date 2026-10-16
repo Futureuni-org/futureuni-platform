@@ -74,6 +74,9 @@ const PUBLIC_PREFIXES = [
   "/reset",
   "/signed-out",
   "/u/",
+  // Client Forms: the form a prospect fills in (docs/specs/module-forms.md §5). No session, and
+  // the page itself is noindex — the link is given to one client, not published.
+  "/f/",
   "/api/auth/",
   "/api/health",
   "/api/cron/",

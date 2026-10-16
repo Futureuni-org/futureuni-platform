@@ -76,6 +76,7 @@ export const MODEL_COUNTERS: Record<Prisma.ModelName, Counter> = {
   Deal: (client) => client.deal.count(),
   Handoff: (client) => client.handoff.count(),
   HandoffAssignment: (client) => client.handoffAssignment.count(),
+  FormSubmission: (client) => client.formSubmission.count(),
 };
 
 /** Counts every model (soft-deleted rows included when given the unscoped client). */

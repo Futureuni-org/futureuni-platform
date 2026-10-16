@@ -46,3 +46,21 @@ describe("security headers (SEC-2)", () => {
     expect(first).not.toBe(second);
   });
 });
+
+/**
+ * Client Forms (docs/specs/module-forms.md §5): a prospect reaches `/f/<slug>` with no session
+ * cookie. If `/f/` ever falls out of PUBLIC_PREFIXES the form silently redirects to `/login` and
+ * the client sees a sign-in page instead of their brief — the same way the PWA assets once broke.
+ */
+describe("public paths", () => {
+  it("serves a client form with no session", () => {
+    const response = proxy(new NextRequest(new URL("http://localhost/f/ai-music-video-brief")));
+    expect(response.headers.get("location")).toBeNull();
+    expect(response.status).toBe(200);
+  });
+
+  it("still sends an anonymous visitor on a platform route to the login page", () => {
+    const response = proxy(new NextRequest(new URL("http://localhost/forms")));
+    expect(response.headers.get("location")).toContain("/login");
+  });
+});

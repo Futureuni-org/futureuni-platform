@@ -37,6 +37,18 @@ const PUBLIC_ROUTES = new Set([
 /** Pre-session action files (login/reset/invite) — authorization is the flow itself. */
 const PUBLIC_ACTION_DIRS = ["src/app/(auth)/"];
 
+/**
+ * Actions an anonymous caller is meant to reach, listed one file at a time so a later action in
+ * the same folder still has to authorize.
+ *
+ * `(forms)/f/[slug]/actions.ts` is the public client form (docs/specs/module-forms.md §3, §5): a
+ * prospect fills it in with no account. It has no session to check, and defends itself instead —
+ * it serves PUBLISHED forms only, validates every answer against the form definition server-side,
+ * caps the payload, and rate-limits by caller address before the insert. It reads nothing and
+ * returns only the new submission's id.
+ */
+const PUBLIC_ACTION_FILES = new Set(["src/app/(forms)/f/[slug]/actions.ts"]);
+
 function listRouteHandlers(): string[] {
   return globSync("src/app/**/route.ts", { cwd: ROOT }).map((p) => join(ROOT, p));
 }
@@ -70,6 +82,7 @@ describe("authorization coverage (SEC-1)", () => {
     for (const file of listServerActionFiles()) {
       const path = rel(file);
       if (PUBLIC_ACTION_DIRS.some((dir) => path.startsWith(dir))) continue;
+      if (PUBLIC_ACTION_FILES.has(path)) continue;
       if (!GATE.test(readFileSync(file, "utf8"))) unguarded.push(path);
     }
     expect(unguarded, `server-action files missing an auth gate:\n${unguarded.join("\n")}`).toEqual(

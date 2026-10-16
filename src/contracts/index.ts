@@ -16,3 +16,4 @@ export * from "./enrichment";
 export * from "./audit-agent";
 export * from "./outreach-channel";
 export * from "./acquisition-records";
+export * from "./forms";

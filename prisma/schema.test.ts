@@ -127,13 +127,13 @@ const doc = parseDataModel();
 
 describe("the Prisma schema matches docs/specs/data-model.md", () => {
   it("defines every enum with exactly the documented values, in order", () => {
-    expect(doc.enums.size).toBe(70);
+    expect(doc.enums.size).toBe(71);
     for (const [name, values] of doc.enums) expect(prisma.enums.get(name), name).toEqual(values);
     expect([...prisma.enums.keys()].sort()).toEqual([...doc.enums.keys()].sort());
   });
 
   it("has one model per entity, mapped to the documented table", () => {
-    expect(doc.entities.size).toBe(63);
+    expect(doc.entities.size).toBe(64);
     for (const [name, entity] of doc.entities) {
       expect(prisma.models.get(name)?.table, name).toBe(entity.table);
     }

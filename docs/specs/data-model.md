@@ -127,6 +127,7 @@ All enums live in `prisma/schema/enums.prisma`. `src/contracts/common.ts` re-exp
 | `DealOutcome` | WON, LOST | Deal |
 | `LostReason` | PRICE, TIMING, NO_RESPONSE, CHOSE_COMPETITOR, IN_HOUSE, NOT_A_FIT, SCOPE_CHANGED, OTHER | Deal |
 | `HandoffStatus` | NEW, ACKNOWLEDGED | Handoff |
+| `FormSubmissionStatus` | COMPLETE | FormSubmission |
 
 ---
 
@@ -1642,6 +1643,29 @@ Per-lead inbox state: assignment, snooze and unread count.
 
 - **Indexes:** unique(`handoffId`, `serviceLine`); (`assignedUserId`, `active`); (`suggestedUserId`); (`assignedById`).
 - **Owned by:** Phase 14. **Used by:** Phase 3's `recalculateLoad`, Phase 11 (throttle), Phase 18 (team capacity).
+
+### 5.3 Client Forms (`frm_`)
+
+See `docs/specs/module-forms.md` §4. F1 stores submissions only: a form's questions are typed
+TypeScript validated against the `FormDefinition` contract, so there is no definitions table until
+F2. Forms tables may reference core tables; core never references these.
+
+#### FormSubmission → `frm_form_submissions`
+
+| Field | Type | Null | Default | Notes |
+|---|---|---|---|---|
+| id | String | no | cuid() | PK |
+| formSlug | String | no | — | The definition's slug. No FK in F1 — definitions are code, not rows |
+| formVersion | Int | no | — | The definition version the prospect answered |
+| formTitle | String | no | — | Snapshot, so renaming a form keeps old briefs readable |
+| status | FormSubmissionStatus | no | COMPLETE | |
+| answers | Json | no | — | `FormAnswers` (`src/contracts/forms.ts`), validated against the definition on write |
+| contactName | String | yes | — | Denormalised from the answers via the definition's `role` fields, for the list view |
+| contactEmail | String | yes | — | Denormalised the same way |
+| submittedAt | DateTime | no | now() | |
+
+- **Indexes:** (`formSlug`, `submittedAt`).
+- **Owned by:** Phase 22 (Client Forms F1). **Used by:** the public form at `/f/<slug>` and the internal `/forms` screens. F2 adds `frm_form_definitions` and a nullable `formId` here.
 
 ---
 

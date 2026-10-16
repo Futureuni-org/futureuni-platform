@@ -506,3 +506,15 @@ Every decision that shapes the build, with its reason. ADR-001 to ADR-012 are fi
   - **pnpm 11.3** with `allowBuilds` in `pnpm-workspace.yaml`: every dependency with an install script must be listed, or the install fails.
   - **pnpm's 24-hour release-age guard:** never add `minimumReleaseAgeExclude`; pick the previous version instead.
 - **Reason:** these were the newest versions that work together on 2026-09-26. Upgrade them together when the blockers clear (typescript-eslint for TypeScript 6.1 or 7, Next's lint plugins for ESLint 10, jest-dom for Vitest 5).
+
+### ADR-036: Client Forms is the platform's second module, and its forms start as code
+- **Status:** Accepted, 2026-10-16 (Client Forms F1).
+- **Context:** FUTUREUNI needs to send a prospect a link, ask them the questions that make the first concept close, and read the answers as a brief. The first prospect form was needed within the hour, and the long-term goal is a form builder a manager can use without a developer.
+- **Decision:**
+  - **A module, not a page.** Client Forms is `src/modules/forms/` with its own manifest, permissions and navigation, registered through `@/platform/registry` exactly like Client Acquisition. It uses the platform core and never edits it (`docs/prompts/wave-5/adding-a-new-module.md`). Spec: `docs/specs/module-forms.md`.
+  - **One shape for a form, everywhere.** `FormDefinition` in `src/contracts/forms.ts` is what the renderer builds fields from, what the server validates answers against, and what F2's builder will persist in `frm_form_definitions.definition`. The builder is a new *writer* for an existing contract, so nothing built in F1 is rewritten.
+  - **Definitions are TypeScript in F1.** `src/modules/forms/definitions/` holds them, validated against the contract on first read. No database table, no builder UI, no seed script until F2 — a definitions table with no editor would be a second source of truth with no way to fill it.
+  - **Submissions are rows from the start.** A brief is the business record, so `frm_form_submissions` exists in F1. The prospect's answers never live only in a WhatsApp message.
+  - **Its own public route group.** `/f/<slug>` renders in `src/app/(forms)/`, allowlisted in `src/proxy.ts` and `noindex`. `(public)` stays the narrow card the unsubscribe page needs.
+  - **The platform's design system, not a client-facing skin.** The prototype used a pink-and-navy palette; F1 renders on `src/styles/tokens.css` so there is one design system to maintain. A distinct client-facing theme, if FUTUREUNI wants one, is a token decision in Phase 4's territory, not per-form CSS.
+- **Reason:** the hour-long deadline was met with a complete narrow slice instead of a broad half-built one, and every line of it is on the path to the builder rather than beside it.

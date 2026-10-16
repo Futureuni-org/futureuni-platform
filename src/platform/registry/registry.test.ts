@@ -52,7 +52,11 @@ const allEnabled = { readSettings: () => Promise.resolve(new Map<string, unknown
 
 describe("registry", () => {
   it("lists the core manifest first, then every module codegen found", () => {
-    expect(getAllModules().map((module) => module.id)).toEqual(["platform", "acquisition"]);
+    expect(getAllModules().map((module) => module.id)).toEqual([
+      "platform",
+      "acquisition",
+      "forms",
+    ]);
   });
 
   it("shows an ADMIN the core navigation and all 4 acquisition lines with their 7 sections", async () => {
@@ -66,7 +70,7 @@ describe("registry", () => {
       { can: admin },
       { modules: await getEnabledModules(allEnabled) },
     );
-    expect(nav.map((entry) => entry.module)).toEqual(["platform", "acquisition"]);
+    expect(nav.map((entry) => entry.module)).toEqual(["platform", "acquisition", "forms"]);
     expect(ids(nav[0]?.items ?? [])).toEqual(["home", "settings", "admin"]);
     const acquisition = nav[1]?.items ?? [];
     expect(acquisition.map((item) => item.id)).toEqual([
@@ -156,9 +160,11 @@ describe("registry", () => {
       readSettings: () =>
         Promise.resolve(new Map<string, unknown>([["module.acquisition.enabled", false]])),
     });
-    expect(modules.map((module) => module.id)).toEqual(["platform"]);
+    // The disabled module disappears; its sibling (Client Forms) is untouched.
+    expect(modules.map((module) => module.id)).toEqual(["platform", "forms"]);
     const nav = await getNavigation({ can: admin }, { modules });
-    expect(nav.map((entry) => entry.module)).toEqual(["platform"]);
+    expect(nav.map((entry) => entry.module)).toEqual(["platform", "forms"]);
+    // Acquisition declares the only home widgets, so disabling it empties the home page.
     expect(getHomeWidgets(modules)).toEqual([]);
   });
 
@@ -229,7 +235,7 @@ function projectRulesMatrix(): Map<string, Record<Role, PermissionScope>> {
 describe("the manifests register exactly the project-rules permission matrix", () => {
   it("has every action with the matrix's scopes, and nothing else", () => {
     const matrix = projectRulesMatrix();
-    expect(matrix.size).toBe(94);
+    expect(matrix.size).toBe(100);
     const registered = new Map(
       getAllPermissions().map((definition) => [definition.action, definition.scopes]),
     );

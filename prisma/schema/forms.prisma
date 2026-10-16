@@ -1,0 +1,35 @@
+// Client Forms (docs/specs/module-forms.md §4). Every table is prefixed frm_. Forms tables may
+// reference core tables; core never references these. JSON columns name the contract type that
+// validates them on write.
+//
+// F1 stores submissions only: form definitions are typed TypeScript in
+// src/modules/forms/definitions/. F2 adds frm_form_definitions, holding the same
+// FormDefinition JSON shape, plus a nullable formId here.
+
+enum FormSubmissionStatus {
+  COMPLETE
+}
+
+/// One brief a prospect filled in on a public form (`/f/<slug>`). No session: the row is created
+/// by the public submit action after the answers are validated against the definition.
+model FormSubmission {
+  id          String               @id @default(cuid())
+  /// The definition's slug. Not a foreign key in F1 (definitions are code, not rows).
+  formSlug    String
+  /// The definition version the prospect actually answered.
+  formVersion Int
+  /// Snapshot of the title, so renaming a form keeps old briefs readable.
+  formTitle   String
+  status      FormSubmissionStatus @default(COMPLETE)
+  /// FormAnswers (src/contracts/forms.ts), validated against the definition on every write.
+  answers     Json
+  /// Denormalised from the answers via the definition's `role` fields, for the list view.
+  contactName String?
+  contactEmail String?
+  submittedAt DateTime             @default(now()) @db.Timestamptz(3)
+  createdAt   DateTime             @default(now()) @db.Timestamptz(3)
+  updatedAt   DateTime             @updatedAt @db.Timestamptz(3)
+
+  @@index([formSlug, submittedAt])
+  @@map("frm_form_submissions")
+}

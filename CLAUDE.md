@@ -79,6 +79,7 @@ Each path has exactly one owner phase. `scripts/ownership/ownership.json` is the
 | 19 | `M/manifest.ts`, `M/README.md`, `M/workflows/**` (pipeline orchestration), `M/ui/widgets/**` (platform-home widgets for acquisition), `tests/e2e/**`, `tests/integration/**`, `prisma/seed/staging/**`, `docs/architecture.md`, `docs/schedules.md` |
 | 20 | `docs/hardening-report.md`, `docs/cost-model.md`, `evals/_redteam/**`, `tests/chaos/**` (plus hardening fixes anywhere; see the grants below) |
 | 21 | `docs/runbook.md`, `docs/onboarding.md`, `docs/launch-checklist.md`, `docs/go-live-log.md`, `docs/handover/**` (plus deploy config; see the grants below) |
+| 22 | **Client Forms F1** (`docs/specs/module-forms.md`): `src/contracts/forms.ts`, `src/contracts/forms.test.ts`, `prisma/schema/forms.prisma`, `src/modules/forms/**`, `src/app/(forms)/**`, `src/app/(platform)/forms/**`, `docs/specs/module-forms.md` |
 
 **Created by one phase, owned by another, and other grants.** These become `alsoAllow` grants in `ownership.json`; they never create a second owner.
 
@@ -96,7 +97,7 @@ Each path has exactly one owner phase. `scripts/ownership/ownership.json` is the
 | Hardening fixes anywhere (`alsoAllow: **`), each change recorded against a finding ID | — | 20 |
 | Deploy config: `vercel.json`, `.github/workflows/**`, `scripts/bootstrap-*` (`alsoAllow`) | 1 | 1; 21 edits |
 
-A future module (for example `src/modules/marketing/`) gets its own rows when its spec is written (`docs/prompts/wave-5/adding-a-new-module.md`).
+The second module, **Client Forms** (`src/modules/forms/`), is phase 22 above; its later phases (F2–F5 in `docs/specs/module-forms.md` §8) take sub-paths of those rows as they start. Any further module (for example `src/modules/marketing/`) gets its own rows when its spec is written (`docs/prompts/wave-5/adding-a-new-module.md`).
 
 ## Conventions
 

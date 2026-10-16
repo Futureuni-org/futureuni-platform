@@ -150,6 +150,12 @@ async function main(): Promise<void> {
   );
 }
 
+// `pnpm registry:gen` runs codegen.entry.mjs, which loads .env.local and then imports this file,
+// so argv[1] is the entry point, not this module. Without the second check, the script exits 0
+// having done nothing — a new module never reaches generated.ts and `--check` never fails in CI.
+const entry = process.argv[1];
+const entryUrl = entry === undefined ? undefined : pathToFileURL(entry).href;
 const invokedDirectly =
-  process.argv[1] !== undefined && import.meta.url === pathToFileURL(process.argv[1]).href;
+  entryUrl !== undefined &&
+  (entryUrl === import.meta.url || entryUrl.endsWith("/registry/codegen.entry.mjs"));
 if (invokedDirectly) await main();

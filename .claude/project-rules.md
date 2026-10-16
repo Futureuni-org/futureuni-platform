@@ -358,6 +358,12 @@ Actions are named `module.resource.verb`. The matrix is data: a typed table in `
 | `acquisition.mailbox.manage` | ALL | — | — | — |
 | `acquisition.domain.checkDns` | ALL | ALL | — | — |
 | `acquisition.outreach.globalPause` | ALL | — | — | — |
+| `forms.module.access` (Client Forms, `docs/specs/module-forms.md`) | ALL | ALL | ALL | ALL |
+| `forms.form.read` (forms and their public links) | ALL | ALL | ALL | ALL |
+| `forms.submission.read` (submitted briefs) | ALL | ALL | ALL | ALL |
+| `forms.submission.export` | ALL | ALL | ALL | — |
+| `forms.form.manage` (create and edit forms; the F2 builder) | ALL | ALL | LINES | — |
+| `forms.submission.delete` | ALL | — | — | — |
 
 A module adds actions through its manifest (`docs/contracts/module-manifest.md`), and they must be added to this table in the same change. Phase 19 tests that the acquisition manifest and this table are identical.
 

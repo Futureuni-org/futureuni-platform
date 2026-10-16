@@ -5,5 +5,6 @@
 import type { ModuleManifest } from "@/contracts/module-manifest";
 
 import acquisitionManifest from "@/modules/acquisition/manifest";
+import formsManifest from "@/modules/forms/manifest";
 
-export const moduleManifests: readonly ModuleManifest[] = [acquisitionManifest];
+export const moduleManifests: readonly ModuleManifest[] = [acquisitionManifest, formsManifest];
