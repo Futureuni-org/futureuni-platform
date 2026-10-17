@@ -31,15 +31,7 @@
  */
 
 import Image from "next/image";
-import {
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-  useSyncExternalStore,
-  useTransition,
-  type SyntheticEvent,
-} from "react";
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { ArrowLeft, ArrowRight, Check, Mail, MessageCircle } from "lucide-react";
 
 import {
@@ -299,15 +291,15 @@ export function FormView({ definition, submit }: FormViewProps) {
     goToPage(pageIndex + 1);
   }
 
-  function onSubmit(event: SyntheticEvent<HTMLFormElement>): void {
-    event.preventDefault();
+  /**
+   * The final submit. Only the Finish-and-send button calls this — the <form> onSubmit is a
+   * no-op (see below). That matters because when the user clicks Next on page 2, React reuses
+   * the Next button's DOM node to render the Finish button after goToPage() flips `isLastPage`,
+   * and in that millisecond the browser can see a `type="submit"` button and submit the form
+   * before the user ever sees page 3. Keeping submit explicit, with its own onClick, fixes it.
+   */
+  function onFinalSubmit(): void {
     if (sending) return;
-
-    // Enter inside a field submits the form element. On a non-final page, treat that as "next".
-    if (pageIndex < totalPages - 1) {
-      onNext();
-      return;
-    }
 
     const cleaned = normalizeAnswers(definition, answers);
     const missing = missingRequired(definition, cleaned);
@@ -471,7 +463,11 @@ export function FormView({ definition, submit }: FormViewProps) {
 
             <form
               ref={formRef}
-              onSubmit={onSubmit}
+              onSubmit={(event) => {
+                // Enter inside a field would otherwise fire the browser's default form submit.
+                // The wizard's actions live on the Next and Finish buttons; this just blocks it.
+                event.preventDefault();
+              }}
               noValidate
               className="flex flex-col gap-12"
               aria-labelledby="page-title"
@@ -534,6 +530,7 @@ export function FormView({ definition, submit }: FormViewProps) {
                   goToPage(pageIndex - 1);
                 }}
                 onNext={onNext}
+                onFinalSubmit={onFinalSubmit}
               />
             </form>
           </>
@@ -550,6 +547,7 @@ function StepNav({
   isLastPage,
   onBack,
   onNext,
+  onFinalSubmit,
 }: {
   hydrated: boolean;
   sending: boolean;
@@ -557,6 +555,7 @@ function StepNav({
   isLastPage: boolean;
   onBack: () => void;
   onNext: () => void;
+  onFinalSubmit: () => void;
 }) {
   return (
     <div className="flex flex-col gap-4 border-t border-border pt-6">
@@ -568,11 +567,18 @@ function StepNav({
           </Button>
         )}
         {isLastPage ? (
-          <Button type="submit" size="lg" loading={sending} disabled={!hydrated}>
+          <Button
+            key="finish"
+            type="button"
+            size="lg"
+            loading={sending}
+            disabled={!hydrated}
+            onClick={onFinalSubmit}
+          >
             {sending ? "Sending" : "Finish and send"}
           </Button>
         ) : (
-          <Button size="lg" onClick={onNext} disabled={!hydrated}>
+          <Button key="next" type="button" size="lg" onClick={onNext} disabled={!hydrated}>
             Next
             <ArrowRight aria-hidden className="size-4" />
           </Button>
