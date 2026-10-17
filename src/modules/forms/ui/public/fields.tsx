@@ -20,6 +20,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/cn";
 
+import { InternationalPhoneInput } from "./phone-input";
+
 export interface FieldProps {
   field: FormField;
   value: FormAnswer | undefined;
@@ -105,6 +107,19 @@ export function Field({ field, value, error, onChange }: FieldProps) {
               onChange={(event) => {
                 onChange(event.target.value);
               }}
+            />
+          ) : field.kind === "phone" ? (
+            // International phone input: country dropdown with flag + dial code on the left, the
+            // local number on the right. The stored value is E.164 (e.g. "+447538598770"), which
+            // is what the brief and the Excel export already handle as a plain string.
+            <InternationalPhoneInput
+              id={id}
+              name={field.key}
+              value={asText(value)}
+              onChange={onChange}
+              describedBy={describedBy}
+              invalid={error !== null}
+              autoComplete={field.role !== undefined ? AUTOCOMPLETE[field.role] : undefined}
             />
           ) : (
             <Input

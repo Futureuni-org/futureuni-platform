@@ -1,0 +1,92 @@
+/*
+ * Style overrides for `react-phone-number-input` so the country selector reads as part of the
+ * platform's own Input (same height, border, focus ring, light + dark). The library's base styles
+ * come from `react-phone-number-input/style.css`; everything below is on top of those.
+ */
+
+/* The outer flex container the library emits. */
+.phone-input-shell .PhoneInput {
+  --PhoneInputCountryFlag-borderColor: var(--border);
+  --PhoneInputCountryFlag-borderColor--focus: var(--ring);
+  --PhoneInputCountrySelectArrow-color: var(--muted);
+  --PhoneInputCountrySelectArrow-opacity: 0.85;
+  --PhoneInputCountrySelectArrow-marginLeft: 0.5rem;
+  --PhoneInputCountrySelectArrow-borderWidth: 1.5px;
+  --PhoneInput-color--focus: var(--ring);
+
+  /* The library sets the overall container; let flex do the width distribution. */
+  display: flex;
+  align-items: stretch;
+  width: 100%;
+}
+
+/* The country select sits on the left as a 48px chip matching the Input's height. */
+.phone-input-shell .PhoneInputCountry {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 0.75rem;
+  min-height: 3rem; /* match h-12 on the Input */
+  border: 1px solid var(--input);
+  border-right: 0;
+  border-top-left-radius: var(--radius);
+  border-bottom-left-radius: var(--radius);
+  background-color: var(--surface);
+  color: var(--foreground);
+  cursor: pointer;
+  transition: background-color var(--duration-fast) var(--motion-ease-standard);
+}
+
+.phone-input-shell .PhoneInputCountry:hover {
+  background-color: var(--zone);
+}
+
+/* The native <select> is overlaid on the chip — invisible, keeps keyboard accessibility. */
+.phone-input-shell .PhoneInputCountrySelect {
+  position: absolute;
+  opacity: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+/* When the hidden select has keyboard focus, show the ring on the whole chip. */
+.phone-input-shell .PhoneInputCountrySelect:focus-visible + .PhoneInputCountryIcon,
+.phone-input-shell .PhoneInputCountry:focus-within {
+  outline: 2px solid var(--ring);
+  outline-offset: -2px;
+}
+
+/* The flag itself: fixed size, slightly rounded so it sits nicely beside the dial code. */
+.phone-input-shell .PhoneInputCountryIcon {
+  width: 1.5rem;
+  height: 1.125rem;
+  box-shadow: none;
+  border-radius: 2px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.phone-input-shell .PhoneInputCountryIcon--border {
+  box-shadow: none;
+  background: transparent;
+}
+
+.phone-input-shell .PhoneInputCountryIcon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* The country flag's small down-arrow — recoloured through the CSS variable above. */
+.phone-input-shell .PhoneInputCountrySelectArrow {
+  color: var(--PhoneInputCountrySelectArrow-color);
+}
+
+/* When the whole shell is marked invalid, draw the chip in danger-red to match the Input ring. */
+.phone-input-shell[data-invalid="true"] .PhoneInputCountry {
+  border-color: var(--danger);
+}
+
+/* Dark mode: the flag chip surface switches with the theme — same tokens, nothing to do here. */

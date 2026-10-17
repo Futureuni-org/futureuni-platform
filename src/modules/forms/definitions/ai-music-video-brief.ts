@@ -59,7 +59,6 @@ export const aiMusicVideoBrief: FormDefinition = {
           label: "Phone or WhatsApp",
           required: true,
           width: "half",
-          placeholder: "+234",
           role: "contactPhone",
         },
       ],
