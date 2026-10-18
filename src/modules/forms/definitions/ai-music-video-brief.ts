@@ -354,7 +354,7 @@ export const aiMusicVideoBrief: FormDefinition = {
           key: "budget",
           kind: "shortText",
           label: "Budget range",
-          placeholder: "Amount and currency",
+          placeholder: "$",
           width: "half",
           briefLabel: "Budget",
         },
