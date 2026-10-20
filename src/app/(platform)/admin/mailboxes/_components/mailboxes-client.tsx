@@ -20,7 +20,14 @@ import {
 import { Field, Select } from "@/components/admin";
 import { NumberField } from "@/modules/acquisition/ui/settings/editor-fields";
 import { RelativeTime } from "@/components/ui/relative-time";
-import { addMailboxAction, checkDnsAction, setMailboxStatusAction, updateMailboxCapsAction } from "../actions";
+import {
+  addMailboxAction,
+  checkDnsAction,
+  saveMailboxSmtpAction,
+  setMailboxStatusAction,
+  testMailboxSmtpAction,
+  updateMailboxCapsAction,
+} from "../actions";
 import type { MailboxRow, SendingDomainRow } from "../mailboxes.repo";
 
 const DNS_TONE: Record<string, "success" | "danger" | "neutral"> = {
@@ -45,7 +52,9 @@ function CopyButton({ value }: { value: string }) {
       onClick={() => {
         void navigator.clipboard.writeText(value).then(() => {
           setCopied(true);
-          setTimeout(() => { setCopied(false); }, 1500);
+          setTimeout(() => {
+            setCopied(false);
+          }, 1500);
         });
       }}
     >
@@ -55,9 +64,19 @@ function CopyButton({ value }: { value: string }) {
   );
 }
 
-export function DomainCard({ domain, timezone, canCheck }: { domain: SendingDomainRow; timezone: string; canCheck: boolean }) {
+export function DomainCard({
+  domain,
+  timezone,
+  canCheck,
+}: {
+  domain: SendingDomainRow;
+  timezone: string;
+  canCheck: boolean;
+}) {
   const [records, setRecords] = useState(domain.fixes);
-  const [lastChecked, setLastChecked] = useState<string | null>(domain.lastCheckedAt?.toISOString() ?? null);
+  const [lastChecked, setLastChecked] = useState<string | null>(
+    domain.lastCheckedAt?.toISOString() ?? null,
+  );
   const [pending, startTransition] = useTransition();
 
   function recheck() {
@@ -90,7 +109,13 @@ export function DomainCard({ domain, timezone, canCheck }: { domain: SendingDoma
             </span>
           )}
           {canCheck && (
-            <Button variant="secondary" size="sm" className="gap-1" onClick={recheck} loading={pending}>
+            <Button
+              variant="secondary"
+              size="sm"
+              className="gap-1"
+              onClick={recheck}
+              loading={pending}
+            >
               <RefreshCw aria-hidden className="size-4" />
               Re-check
             </Button>
@@ -108,7 +133,7 @@ export function DomainCard({ domain, timezone, canCheck }: { domain: SendingDoma
               {rec.fix !== null && rec.status !== "PASS" && <CopyButton value={rec.fix} />}
             </div>
             {rec.fix !== null && rec.status !== "PASS" && (
-              <code className="break-all font-mono text-xs text-muted">{rec.fix}</code>
+              <code className="font-mono text-xs break-all text-muted">{rec.fix}</code>
             )}
           </li>
         ))}
@@ -120,6 +145,7 @@ export function DomainCard({ domain, timezone, canCheck }: { domain: SendingDoma
 export function MailboxCard({ mailbox, canManage }: { mailbox: MailboxRow; canManage: boolean }) {
   const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
+  const [smtpOpen, setSmtpOpen] = useState(false);
   const [pending, startTransition] = useTransition();
 
   function toggle() {
@@ -149,26 +175,210 @@ export function MailboxCard({ mailbox, canManage }: { mailbox: MailboxRow; canMa
                 {mailbox.status === "PAUSED" ? "Resume" : "Pause"}
               </Button>
             )}
-            <Button variant="ghost" size="sm" onClick={() => { setEditOpen(true); }}>Edit caps</Button>
+            {mailbox.provider === "smtp" && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSmtpOpen(true);
+                }}
+              >
+                SMTP creds
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setEditOpen(true);
+              }}
+            >
+              Edit caps
+            </Button>
           </div>
         )}
       </div>
       <div className="grid gap-x-6 gap-y-1 text-sm text-muted sm:grid-cols-2">
-        <span>{mailbox.domain} · {mailbox.provider}</span>
-        <span>Warm-up day <span className="font-mono text-foreground">{mailbox.warmupDay}</span> · cap {mailbox.todaysCap}/{mailbox.dailyCapTarget}</span>
-        <span>Sent today <span className="font-mono text-foreground">{mailbox.sentToday}</span>/{mailbox.todaysCap}</span>
-        <span>Bounces {mailbox.hardBouncesToday} · replies {mailbox.repliesToday}</span>
-        <span>Window {mailbox.sendWindowStart}–{mailbox.sendWindowEnd}</span>
+        <span>
+          {mailbox.domain} · {mailbox.provider}
+        </span>
+        <span>
+          Warm-up day <span className="font-mono text-foreground">{mailbox.warmupDay}</span> · cap{" "}
+          {mailbox.todaysCap}/{mailbox.dailyCapTarget}
+        </span>
+        <span>
+          Sent today <span className="font-mono text-foreground">{mailbox.sentToday}</span>/
+          {mailbox.todaysCap}
+        </span>
+        <span>
+          Bounces {mailbox.hardBouncesToday} · replies {mailbox.repliesToday}
+        </span>
+        <span>
+          Window {mailbox.sendWindowStart}–{mailbox.sendWindowEnd}
+        </span>
       </div>
       {mailbox.status === "PAUSED" && mailbox.pausedReason !== null && (
         <p className="text-sm text-danger">Paused: {mailbox.pausedReason}</p>
       )}
       {canManage && <EditCapsDialog mailbox={mailbox} open={editOpen} onOpenChange={setEditOpen} />}
+      {canManage && mailbox.provider === "smtp" && (
+        <SmtpCredentialsDialog mailbox={mailbox} open={smtpOpen} onOpenChange={setSmtpOpen} />
+      )}
     </div>
   );
 }
 
-function EditCapsDialog({ mailbox, open, onOpenChange }: { mailbox: MailboxRow; open: boolean; onOpenChange: (o: boolean) => void }) {
+function SmtpCredentialsDialog({
+  mailbox,
+  open,
+  onOpenChange,
+}: {
+  mailbox: MailboxRow;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
+  const [host, setHost] = useState("");
+  const [port, setPort] = useState(465);
+  const [user, setUser] = useState(mailbox.address);
+  const [pass, setPass] = useState("");
+  const [secure, setSecure] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [saving, startSaving] = useTransition();
+  const [testing, startTesting] = useTransition();
+
+  function save() {
+    setError(null);
+    startSaving(async () => {
+      const result = await saveMailboxSmtpAction({
+        mailboxId: mailbox.id,
+        host,
+        port,
+        user,
+        pass,
+        secure,
+      });
+      if (result.ok) {
+        toast.success("SMTP credentials saved. Test the connection below.");
+        setPass("");
+      } else {
+        setError(result.error.message);
+      }
+    });
+  }
+
+  function test() {
+    setError(null);
+    startTesting(async () => {
+      const result = await testMailboxSmtpAction(mailbox.id);
+      if (!result.ok) {
+        setError(result.error.message);
+      } else if (result.data.status === "OK") {
+        toast.success("SMTP connection succeeded.");
+      } else {
+        toast.error(result.data.lastError ?? "SMTP test failed.");
+      }
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>SMTP credentials — {mailbox.address}</DialogTitle>
+          <DialogDescription>
+            Encrypted at rest and never shown again. Save, then test the connection.
+          </DialogDescription>
+        </DialogHeader>
+        <Field label="SMTP host">
+          {({ id }) => (
+            <Input
+              id={id}
+              value={host}
+              onChange={(e) => {
+                setHost(e.target.value);
+              }}
+              placeholder="smtp.zoho.com"
+            />
+          )}
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <NumberField
+            label="Port"
+            value={port}
+            min={1}
+            max={65535}
+            onChange={(v) => {
+              setPort(v ?? 465);
+            }}
+          />
+          <label className="flex items-center gap-2 self-end pb-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={secure}
+              onChange={(e) => {
+                setSecure(e.target.checked);
+              }}
+              className="size-4"
+            />
+            Implicit TLS (port 465)
+          </label>
+        </div>
+        <Field label="Username">
+          {({ id }) => (
+            <Input
+              id={id}
+              value={user}
+              onChange={(e) => {
+                setUser(e.target.value);
+              }}
+              placeholder="hello@go.futureuni.org"
+            />
+          )}
+        </Field>
+        <Field label="Password">
+          {({ id }) => (
+            <Input
+              id={id}
+              type="password"
+              autoComplete="off"
+              value={pass}
+              onChange={(e) => {
+                setPass(e.target.value);
+              }}
+            />
+          )}
+        </Field>
+        {error != null && (
+          <p role="alert" aria-live="polite" className="text-sm text-danger">
+            {error}
+          </p>
+        )}
+        <DialogFooter>
+          <Button variant="secondary" onClick={test} loading={testing} disabled={saving}>
+            Test connection
+          </Button>
+          <Button
+            onClick={save}
+            loading={saving}
+            disabled={testing || host.trim() === "" || user.trim() === "" || pass === ""}
+          >
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditCapsDialog({
+  mailbox,
+  open,
+  onOpenChange,
+}: {
+  mailbox: MailboxRow;
+  open: boolean;
+  onOpenChange: (o: boolean) => void;
+}) {
   const router = useRouter();
   const [dailyCapTarget, setDailyCapTarget] = useState(mailbox.dailyCapTarget);
   const [warmupRampDays, setWarmupRampDays] = useState(mailbox.warmupRampDays);
@@ -186,8 +396,11 @@ function EditCapsDialog({ mailbox, open, onOpenChange }: { mailbox: MailboxRow; 
         sendWindowStart: start,
         sendWindowEnd: end,
       });
-      if (result.ok) { toast.success("Mailbox updated."); onOpenChange(false); router.refresh(); }
-      else setError(result.error.message);
+      if (result.ok) {
+        toast.success("Mailbox updated.");
+        onOpenChange(false);
+        router.refresh();
+      } else setError(result.error.message);
     });
   }
 
@@ -198,20 +411,68 @@ function EditCapsDialog({ mailbox, open, onOpenChange }: { mailbox: MailboxRow; 
           <DialogTitle>Edit {mailbox.address}</DialogTitle>
           <DialogDescription>Daily cap, warm-up ramp and send window.</DialogDescription>
         </DialogHeader>
-        <NumberField label="Daily cap target" value={dailyCapTarget} min={1} max={2000} onChange={(v) => { setDailyCapTarget(v ?? 1); }} />
-        <NumberField label="Warm-up ramp (days)" value={warmupRampDays} min={0} max={90} onChange={(v) => { setWarmupRampDays(v ?? 0); }} />
+        <NumberField
+          label="Daily cap target"
+          value={dailyCapTarget}
+          min={1}
+          max={2000}
+          onChange={(v) => {
+            setDailyCapTarget(v ?? 1);
+          }}
+        />
+        <NumberField
+          label="Warm-up ramp (days)"
+          value={warmupRampDays}
+          min={0}
+          max={90}
+          onChange={(v) => {
+            setWarmupRampDays(v ?? 0);
+          }}
+        />
         <div className="grid grid-cols-2 gap-3">
           <Field label="Window start">
-            {({ id }) => <Input id={id} value={start} onChange={(e) => { setStart(e.target.value); }} placeholder="09:00" />}
+            {({ id }) => (
+              <Input
+                id={id}
+                value={start}
+                onChange={(e) => {
+                  setStart(e.target.value);
+                }}
+                placeholder="09:00"
+              />
+            )}
           </Field>
           <Field label="Window end">
-            {({ id }) => <Input id={id} value={end} onChange={(e) => { setEnd(e.target.value); }} placeholder="17:00" />}
+            {({ id }) => (
+              <Input
+                id={id}
+                value={end}
+                onChange={(e) => {
+                  setEnd(e.target.value);
+                }}
+                placeholder="17:00"
+              />
+            )}
           </Field>
         </div>
-        {error != null && <p role="alert" aria-live="polite" className="text-sm text-danger">{error}</p>}
+        {error != null && (
+          <p role="alert" aria-live="polite" className="text-sm text-danger">
+            {error}
+          </p>
+        )}
         <DialogFooter>
-          <Button variant="secondary" onClick={() => { onOpenChange(false); }} disabled={pending}>Cancel</Button>
-          <Button onClick={submit} loading={pending}>Save</Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              onOpenChange(false);
+            }}
+            disabled={pending}
+          >
+            Cancel
+          </Button>
+          <Button onClick={submit} loading={pending}>
+            Save
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
@@ -231,10 +492,17 @@ export function AddMailboxDialog() {
   function submit() {
     setError(null);
     startTransition(async () => {
-      const result = await addMailboxAction({ address, displayName, sendingDomain, provider: provider as "gmail-api" | "smtp" | "mock" });
+      const result = await addMailboxAction({
+        address,
+        displayName,
+        sendingDomain,
+        provider: provider as "gmail-api" | "smtp" | "mock",
+      });
       if (result.ok) {
         toast.success("Mailbox added (warming).");
-        setAddress(""); setDisplayName(""); setSendingDomain("");
+        setAddress("");
+        setDisplayName("");
+        setSendingDomain("");
         setOpen(false);
         router.refresh();
       } else {
@@ -246,36 +514,92 @@ export function AddMailboxDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="gap-2"><Plus aria-hidden className="size-4" />Add mailbox</Button>
+        <Button size="sm" className="gap-2">
+          <Plus aria-hidden className="size-4" />
+          Add mailbox
+        </Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add a mailbox</DialogTitle>
-          <DialogDescription>Starts in warm-up. Connect its credential in Integrations.</DialogDescription>
+          <DialogDescription>
+            Starts in warm-up. Connect its credential in Integrations.
+          </DialogDescription>
         </DialogHeader>
         <Field label="Address">
-          {({ id }) => <Input id={id} type="email" value={address} onChange={(e) => { setAddress(e.target.value); }} placeholder="outreach@send.example.com" />}
+          {({ id }) => (
+            <Input
+              id={id}
+              type="email"
+              value={address}
+              onChange={(e) => {
+                setAddress(e.target.value);
+              }}
+              placeholder="outreach@send.example.com"
+            />
+          )}
         </Field>
         <Field label="Display name">
-          {({ id }) => <Input id={id} value={displayName} onChange={(e) => { setDisplayName(e.target.value); }} />}
+          {({ id }) => (
+            <Input
+              id={id}
+              value={displayName}
+              onChange={(e) => {
+                setDisplayName(e.target.value);
+              }}
+            />
+          )}
         </Field>
         <Field label="Sending domain">
-          {({ id }) => <Input id={id} value={sendingDomain} onChange={(e) => { setSendingDomain(e.target.value); }} placeholder="send.example.com" />}
+          {({ id }) => (
+            <Input
+              id={id}
+              value={sendingDomain}
+              onChange={(e) => {
+                setSendingDomain(e.target.value);
+              }}
+              placeholder="send.example.com"
+            />
+          )}
         </Field>
         <Field label="Provider">
           {({ id }) => (
             <Select
               id={id}
               value={provider}
-              options={[{ value: "mock", label: "Mock" }, { value: "gmail-api", label: "Gmail API" }, { value: "smtp", label: "SMTP" }]}
-              onChange={(e) => { setProvider(e.target.value); }}
+              options={[
+                { value: "mock", label: "Mock" },
+                { value: "gmail-api", label: "Gmail API" },
+                { value: "smtp", label: "SMTP" },
+              ]}
+              onChange={(e) => {
+                setProvider(e.target.value);
+              }}
             />
           )}
         </Field>
-        {error != null && <p role="alert" aria-live="polite" className="text-sm text-danger">{error}</p>}
+        {error != null && (
+          <p role="alert" aria-live="polite" className="text-sm text-danger">
+            {error}
+          </p>
+        )}
         <DialogFooter>
-          <Button variant="secondary" onClick={() => { setOpen(false); }} disabled={pending}>Cancel</Button>
-          <Button onClick={submit} loading={pending} disabled={address.trim() === "" || sendingDomain.trim() === ""}>Add</Button>
+          <Button
+            variant="secondary"
+            onClick={() => {
+              setOpen(false);
+            }}
+            disabled={pending}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={submit}
+            loading={pending}
+            disabled={address.trim() === "" || sendingDomain.trim() === ""}
+          >
+            Add
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

@@ -26,9 +26,22 @@ export const OAuthSchema = z.object({
   clientSecret: z.string().min(4).max(2048),
   refreshToken: z.string().min(4).max(4096).optional(),
 });
+/** SMTP mailbox credentials (an outreach mailbox on Zoho, Hostinger or any SMTP host). */
+export const SmtpSchema = z.object({
+  host: z.string().trim().min(1).max(255),
+  port: z.coerce.number().int().min(1).max(65535),
+  user: z.string().trim().min(1).max(320),
+  pass: z.string().min(1).max(1024),
+  secure: z.boolean().optional(),
+});
+/** What a mailbox's vault entry (`outreach-mailbox:<id>`) can hold: SMTP creds or Gmail OAuth. */
+export const MailboxCredentialSchema = z.union([SmtpSchema, OAuthSchema]);
 
 export type CredentialPayload =
-  z.infer<typeof ApiKeySchema> | z.infer<typeof AppIdSecretSchema> | z.infer<typeof OAuthSchema>;
+  | z.infer<typeof ApiKeySchema>
+  | z.infer<typeof AppIdSecretSchema>
+  | z.infer<typeof OAuthSchema>
+  | z.infer<typeof SmtpSchema>;
 
 export interface ProviderDefinition {
   id: ProviderId;
@@ -43,7 +56,8 @@ export interface ProviderDefinition {
   hintFrom:
     | keyof z.infer<typeof ApiKeySchema>
     | keyof z.infer<typeof AppIdSecretSchema>
-    | keyof z.infer<typeof OAuthSchema>;
+    | keyof z.infer<typeof OAuthSchema>
+    | keyof z.infer<typeof SmtpSchema>;
 }
 
 const mockOk = (): Promise<{ ok: true }> => Promise.resolve({ ok: true });
@@ -160,8 +174,56 @@ export function listProviders(): readonly ProviderDefinition[] {
   return PROVIDERS;
 }
 
+const MAILBOX_PROVIDER = /^outreach-mailbox:[a-z0-9]{20,32}$/;
+
+/**
+ * Verifies a mailbox credential. For SMTP it opens a real connection and authenticates (the "test
+ * connection" button), but only when live: in mock mode it returns success without touching the
+ * network, matching the static providers. OAuth mailboxes have no cheap offline check here.
+ */
+async function testMailboxCredential(
+  payload: CredentialPayload,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  if (!("host" in payload)) return { ok: true };
+  if (env.MOCKS) return { ok: true };
+  const smtp = payload;
+  try {
+    const { default: nodemailer } = await import("nodemailer");
+    const transport = nodemailer.createTransport({
+      host: smtp.host,
+      port: smtp.port,
+      secure: smtp.secure ?? smtp.port === 465,
+      auth: { user: smtp.user, pass: smtp.pass },
+      connectionTimeout: 15_000,
+      greetingTimeout: 10_000,
+    });
+    await transport.verify();
+    return { ok: true };
+  } catch (error) {
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message.slice(0, 300) : "SMTP verification failed",
+    };
+  }
+}
+
+/** The dynamic definition for an outreach mailbox's vault entry (`outreach-mailbox:<id>`). */
+function mailboxProvider(id: ProviderId): ProviderDefinition {
+  return {
+    id,
+    label: "Outreach mailbox",
+    category: "outreach",
+    schema: MailboxCredentialSchema,
+    docsUrl: "https://nodemailer.com/smtp/",
+    test: testMailboxCredential,
+    hintFrom: "user",
+  };
+}
+
 export function getProvider(id: ProviderId): ProviderDefinition | null {
-  return BY_ID.get(id) ?? null;
+  const stat = BY_ID.get(id);
+  if (stat !== undefined) return stat;
+  return MAILBOX_PROVIDER.test(id) ? mailboxProvider(id) : null;
 }
 
 /**
