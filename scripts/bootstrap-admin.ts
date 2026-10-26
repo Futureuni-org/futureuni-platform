@@ -47,14 +47,20 @@ const SAFETY_DEFAULTS: SafetyDefault[] = [
   // The kill switch stays ON until the launch checklist is green (project-rules §Launch gates).
   { key: "acquisition.outreach.globalPause", scope: "MODULE", module: "acquisition", value: true },
   // A conservative first-touch cap for the first two weeks (profiles stay in ALWAYS_REVIEW).
-  { key: "acquisition.firstTouchDailyCapPerLine", scope: "MODULE", module: "acquisition", value: 10 },
+  {
+    key: "acquisition.firstTouchDailyCapPerLine",
+    scope: "MODULE",
+    module: "acquisition",
+    value: 10,
+  },
 ];
 
 async function main(): Promise<void> {
   assertAllowed();
 
-  const { db } = await import("@/platform/db");
+  const { db, withTransaction } = await import("@/platform/db");
   const { getSettingDefinitions } = await import("@/platform/registry");
+  const { ensureDefaultProfiles } = await import("@/modules/acquisition/profiles/ensure-defaults");
   const definitions = new Map(getSettingDefinitions().map((d) => [d.key, d]));
 
   for (const setting of SAFETY_DEFAULTS) {
@@ -79,10 +85,23 @@ async function main(): Promise<void> {
         },
       });
     } else {
-      await db.setting.update({ where: { id: existing.id }, data: { value: parsed.data as never } });
+      await db.setting.update({
+        where: { id: existing.id },
+        data: { value: parsed.data as never },
+      });
     }
     process.stdout.write(`ok set ${setting.key} = ${JSON.stringify(parsed.data)}\n`);
   }
+
+  // Publish the default service-line profiles for any line that has none. Without an active
+  // profile the pipeline cannot qualify, audit, score or draft, and the dev seed never runs in
+  // production. Idempotent: lines that already have real versions are left untouched.
+  process.stdout.write("\n");
+  await withTransaction((tx) =>
+    ensureDefaultProfiles(tx, (message) => {
+      process.stdout.write(`ok ${message}\n`);
+    }),
+  );
 
   const adminCount = await db.user.count({ where: { role: "ADMIN", status: "ACTIVE" } });
   if (adminCount === 0) {
