@@ -1,0 +1,42 @@
+name: Pipeline cron tick
+
+# Drives the job dispatcher. Hobby plan can't run Vercel Cron every 5 minutes, and the
+# dispatcher (src/platform/jobs/dispatcher.ts) is per-5-minute-slot, so we ping the live
+# endpoint every 5 minutes from GitHub Actions (free + unlimited on a public repo).
+# The endpoint authenticates with Authorization: Bearer ${CRON_SECRET}
+# (src/app/api/cron/tick/route.ts); set CRON_SECRET as a repo Actions secret.
+
+on:
+  schedule:
+    - cron: "*/5 * * * *" # every 5 minutes (GitHub Actions minimum); matches the dispatcher slots
+  workflow_dispatch: {} # manual trigger for testing
+
+concurrency:
+  group: cron-tick
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Hit /api/cron/tick
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          TICK_URL: https://futureuni-platform.vercel.app/api/cron/tick
+        run: |
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::error::CRON_SECRET repo secret is not set. Add it in Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+          code=$(curl -sS -m 60 -o /tmp/tick-body.txt -w '%{http_code}' \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${TICK_URL}")
+          echo "HTTP ${code}"
+          echo "--- response body ---"
+          cat /tmp/tick-body.txt || true
+          echo ""
+          test "${code}" = "200"
