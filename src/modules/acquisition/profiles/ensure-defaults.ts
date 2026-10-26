@@ -28,10 +28,10 @@ const CODE_DEFAULT_NOTE = "seed:code-default";
 
 const LINES: ServiceLine[] = ["WEB_DEVELOPMENT", "UI_UX_DESIGN", "GRAPHIC_DESIGN", "VIDEO_EDITING"];
 
-/** Publishes the default profiles that are missing. `log` is optional (defaults to a no-op). */
+/** Publishes the default profiles that are missing. `log` is optional; omit it to run quietly. */
 export async function ensureDefaultProfiles(
   tx: Tx,
-  log: (message: string) => void = () => {},
+  log?: (message: string) => void,
 ): Promise<void> {
   const admin = await tx.user.findFirst({
     where: { role: "ADMIN", status: "ACTIVE" },
@@ -39,7 +39,7 @@ export async function ensureDefaultProfiles(
     orderBy: { createdAt: "asc" },
   });
   if (admin === null) {
-    log("acquisition.profiles: no ADMIN user found; skipping (create the first admin first).");
+    log?.("acquisition.profiles: no ADMIN user found; skipping (create the first admin first).");
     return;
   }
 
@@ -52,7 +52,7 @@ export async function ensureDefaultProfiles(
 
     if (rows.length === 0) {
       await publishCodeDefault(tx, line, admin.id, 1);
-      log(`acquisition.profiles: seeded v1 for ${line}.`);
+      log?.(`acquisition.profiles: seeded v1 for ${line}.`);
       continue;
     }
     const first = rows[0];
@@ -67,11 +67,11 @@ export async function ensureDefaultProfiles(
         data: { isActive: false, status: "ARCHIVED" },
       });
       await publishCodeDefault(tx, line, admin.id, 2);
-      log(
+      log?.(
         `acquisition.profiles: superseded placeholder v${String(first.version)} with v2 for ${line}.`,
       );
     } else {
-      log(`acquisition.profiles: ${line} has real versions; leaving untouched.`);
+      log?.(`acquisition.profiles: ${line} has real versions; leaving untouched.`);
     }
   }
 }
