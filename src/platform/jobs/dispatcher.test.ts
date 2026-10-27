@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { isScheduleDue, slotIso } from "./dispatcher";
+import { isScheduleDue, mostRecentDueSlot, slotIso } from "./dispatcher";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 describe("cron dispatcher slot math", () => {
   it("floors to a 5-minute boundary", () => {
@@ -28,5 +30,36 @@ describe("cron dispatcher slot math", () => {
     expect(isScheduleDue(schedule, new Date("2026-06-15T08:00:00Z"))).toBe(true);
     // 2026-12-15 is GMT, so 09:00 London = 09:00 UTC.
     expect(isScheduleDue(schedule, new Date("2026-12-15T09:00:00Z"))).toBe(true);
+  });
+});
+
+describe("cron dispatcher catch-up (mostRecentDueSlot)", () => {
+  it("returns the current slot for an every-5-minutes schedule (no behaviour change)", () => {
+    const s = { cron: "*/5 * * * *", timezone: "UTC" };
+    expect(mostRecentDueSlot(s, new Date("2026-10-27T11:17:20Z"), DAY_MS)).toBe(
+      "2026-10-27T11:15:00.000Z",
+    );
+  });
+
+  it("catches up a daily 09:00 Lagos slot whose tick was missed hours earlier", () => {
+    const s = { cron: "0 9 * * 1-5", timezone: "Africa/Lagos" }; // 08:00 UTC on weekdays
+    // Tuesday 11:17 UTC: no tick landed at 08:00 UTC, but the slot is still returned.
+    expect(mostRecentDueSlot(s, new Date("2026-10-27T11:17:20Z"), DAY_MS)).toBe(
+      "2026-10-27T08:00:00.000Z",
+    );
+  });
+
+  it("returns null when the last fire is older than the lookback window", () => {
+    const s = { cron: "0 9 * * 1-5", timezone: "Africa/Lagos" };
+    // Sunday noon: the last weekday fire was Friday 08:00 UTC, more than 24h earlier.
+    expect(mostRecentDueSlot(s, new Date("2026-11-01T12:00:00Z"), DAY_MS)).toBeNull();
+  });
+
+  it("never backfills more than the most recent slot for a frequent job", () => {
+    const s = { cron: "*/5 * * * *", timezone: "UTC" };
+    // Even a tiny lookback resolves to the current slot, never a run per missed slot.
+    expect(mostRecentDueSlot(s, new Date("2026-10-27T11:17:20Z"), 5 * 60 * 1000)).toBe(
+      "2026-10-27T11:15:00.000Z",
+    );
   });
 });
