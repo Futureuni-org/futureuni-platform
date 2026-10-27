@@ -15,6 +15,10 @@ name: Deploy migrations (production)
 on:
   push:
     branches: [main]
+  # Manual re-deploy of whatever `main` currently holds. A local `vercel deploy --prod` uploads the
+  # working directory, so it ships uncommitted work by accident; this always deploys the committed
+  # tree, and runs the same migrate → deploy → verify steps a push does.
+  workflow_dispatch: {}
 
 concurrency:
   group: deploy-migrations
