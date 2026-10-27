@@ -31,6 +31,7 @@ import type {
 import { AppError } from "@/lib/errors";
 import { db } from "@/platform/db";
 
+import { companyLabel } from "./company-label";
 import { safeHttpUrl } from "./safe-url";
 
 export interface LeadContactView {
@@ -202,7 +203,9 @@ export async function getLeadHeader(leadId: string): Promise<LeadHeaderView | nu
     primaryContactId: lead.primaryContactId,
     company: {
       id: lead.company.id,
-      name: lead.company.name,
+      // A Google Places placeholder ("Place <id>") becomes a readable "Industry · City" label; the
+      // real name stays one click away on the "First source" Google Maps link (ToS: never stored).
+      name: companyLabel(lead.company),
       // Websites, source links and profile links are scraped or imported text. Only http(s) URLs
       // reach an `href` (`safeHttpUrl`); anything else is dropped.
       website: safeHttpUrl(lead.company.website),

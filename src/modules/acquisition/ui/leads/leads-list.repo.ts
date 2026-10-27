@@ -32,6 +32,7 @@ import {
   type Prisma,
 } from "@/platform/db";
 
+import { companyLabel } from "./company-label";
 import { STATUS_GROUPS, type LeadListFilter } from "./lead-filters";
 
 export interface LeadListRow {
@@ -131,7 +132,7 @@ const LIST_SELECT = {
   needsHumanReview: true,
   complianceReview: true,
   crossSellGroupId: true,
-  company: { select: { name: true, city: true, country: true, firstSource: true } },
+  company: { select: { name: true, city: true, country: true, firstSource: true, industry: true } },
   owner: { select: { id: true, name: true, image: true } },
 } satisfies Prisma.LeadSelect;
 
@@ -187,7 +188,7 @@ export async function listLeads(
   const items: LeadListRow[] = page.items.map((lead) => ({
     id: lead.id,
     createdAt: lead.createdAt,
-    companyName: lead.company.name,
+    companyName: companyLabel(lead.company),
     city: lead.company.city,
     country: lead.country ?? lead.company.country,
     market: lead.market,
@@ -324,13 +325,21 @@ export async function listLeadsForExport(
       scoreBand: true,
       nextActionAt: true,
       createdAt: true,
-      company: { select: { name: true, normalizedDomain: true, firstSource: true } },
+      company: {
+        select: {
+          name: true,
+          normalizedDomain: true,
+          firstSource: true,
+          city: true,
+          industry: true,
+        },
+      },
       owner: { select: { name: true } },
     },
   });
   const rows = found.slice(0, EXPORT_ROW_LIMIT).map((lead) => ({
     id: lead.id,
-    company: lead.company.name,
+    company: companyLabel(lead.company),
     domain: lead.company.normalizedDomain,
     market: lead.market,
     status: lead.status,
