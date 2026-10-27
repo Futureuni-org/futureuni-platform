@@ -43,7 +43,8 @@ export const webDevelopmentDefaultProfile: ServiceLineProfile = {
         "Only a Places, Instagram, Facebook or Jiji listing — no proper website URL on record.",
       weight: 30,
       markets: ["NIGERIA", "INTERNATIONAL"],
-      evidenceRequired: "Places listing with no website field, or website resolves to a social page.",
+      evidenceRequired:
+        "Places listing with no website field, or website resolves to a social page.",
       detectingSources: ["google-places"],
       confirmedBy: ["web.no_website"],
       future: false,
@@ -51,7 +52,8 @@ export const webDevelopmentDefaultProfile: ServiceLineProfile = {
     {
       id: "ecommerce_on_social_only",
       label: "Selling through DMs",
-      description: "Business sells products through Instagram/Facebook DMs rather than a storefront.",
+      description:
+        "Business sells products through Instagram/Facebook DMs rather than a storefront.",
       weight: 15,
       markets: ["NIGERIA", "INTERNATIONAL"],
       evidenceRequired: "Places listing shows an Instagram/Facebook link and no checkout page.",
@@ -139,6 +141,22 @@ export const webDevelopmentDefaultProfile: ServiceLineProfile = {
       markets: ["NIGERIA", "INTERNATIONAL"],
       evidenceRequired: "Job title matches /web developer/i on a job board.",
       detectingSources: ["jobs-serpapi", "jobs-adzuna", "myjobmag"],
+      confirmedBy: [],
+      future: false,
+    },
+    {
+      // The only google-places signal that also fires for a business that HAS a website
+      // (the adapter yields it on review count alone). Without it this line only ever sees
+      // no-website listings, which have no page for the crawler to read a contact address
+      // from and nothing for the audit to judge — so the six audit signals above, and the
+      // PageSpeed checks behind them, never get a single lead to run on.
+      id: "new_business",
+      label: "New business",
+      description: "Recently opened business with very few reviews; it may already have a site.",
+      weight: 10,
+      markets: ["NIGERIA", "INTERNATIONAL"],
+      evidenceRequired: "Places listing shows a low review count for a recently opened business.",
+      detectingSources: ["google-places"],
       confirmedBy: [],
       future: false,
     },
@@ -266,6 +284,36 @@ export const webDevelopmentDefaultProfile: ServiceLineProfile = {
         },
         points: 10,
       },
+      // A lead whose site exists but is bad could previously only earn points from
+      // `slow_mobile_high_severity` (20) and `ssl_missing` (25, and modern hosts ship TLS by
+      // default). With `reachable_owner` (10) and `legal_form_known` (3) that tops out around
+      // 33 for a typical international lead — far below the 61 qualify threshold, so a genuinely
+      // poor site could never qualify for outreach. These four signals were declared and
+      // detected but scored nothing; each now carries the weight its signal already declares.
+      {
+        id: "not_mobile_friendly_site",
+        label: "Not usable on a phone",
+        condition: { all: [{ kind: "signal", signalId: "not_mobile_friendly", negate: false }] },
+        points: 20,
+      },
+      {
+        id: "site_outdated",
+        label: "Outdated site",
+        condition: { all: [{ kind: "signal", signalId: "outdated_site", negate: false }] },
+        points: 10,
+      },
+      {
+        id: "site_broken_pages",
+        label: "Broken pages",
+        condition: { all: [{ kind: "signal", signalId: "broken_pages", negate: false }] },
+        points: 15,
+      },
+      {
+        id: "site_weak_seo",
+        label: "Weak SEO basics",
+        condition: { all: [{ kind: "signal", signalId: "weak_seo_basics", negate: false }] },
+        points: 10,
+      },
     ],
     ...DEFAULT_SCORING_BASELINE,
   },
@@ -290,7 +338,10 @@ export const webDevelopmentDefaultProfile: ServiceLineProfile = {
       {
         id: "safe_and_modern",
         hook: "A modern, secured site sends the signal that you're open for business.",
-        whenToUse: { signals: ["no_ssl", "outdated_site"], findingChecks: ["web.ssl", "web.outdated"] },
+        whenToUse: {
+          signals: ["no_ssl", "outdated_site"],
+          findingChecks: ["web.ssl", "web.outdated"],
+        },
         proofTags: ["security"],
         avoidPhrases: [],
       },
