@@ -2,13 +2,21 @@ name: Pipeline cron tick
 
 # Drives the job dispatcher. Hobby plan can't run Vercel Cron every 5 minutes, and the
 # dispatcher (src/platform/jobs/dispatcher.ts) is per-5-minute-slot, so we ping the live
-# endpoint every 5 minutes from GitHub Actions (free + unlimited on a public repo).
+# endpoint from GitHub Actions (free + unlimited on a public repo).
 # The endpoint authenticates with Authorization: Bearer ${CRON_SECRET}
 # (src/app/api/cron/tick/route.ts); set CRON_SECRET as a repo Actions secret.
+#
+# Why an hourly job that loops instead of `cron: "*/5 * * * *"`:
+# GitHub's scheduled workflows are best-effort and it silently drops most high-frequency
+# ticks. On this repo a `*/5` schedule actually fired about five times a DAY (12:54, 06:53,
+# 01:50, 22:55, 18:51) instead of 288 times, so every 5-minute job — outreach dispatch,
+# inbox polling — ran hours late or not at all. Hourly schedules are honoured far more
+# reliably, so one hourly run now ticks every 5 minutes for the whole hour from inside the
+# job. Per-slot idempotency (`<job>:<slot>`) makes an overlapping or duplicated tick a no-op.
 
 on:
   schedule:
-    - cron: "*/5 * * * *" # every 5 minutes (GitHub Actions minimum); matches the dispatcher slots
+    - cron: "2 * * * *" # hourly; the run then ticks every 5 minutes for ~55 minutes
   workflow_dispatch: {} # manual trigger for testing
 
 concurrency:
@@ -21,22 +29,47 @@ permissions:
 jobs:
   tick:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    # 12 ticks, 5 minutes apart, plus headroom for a slow request.
+    timeout-minutes: 70
     steps:
-      - name: Hit /api/cron/tick
+      - name: Tick /api/cron/tick every 5 minutes for the hour
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
           TICK_URL: https://futureuni-platform.vercel.app/api/cron/tick
+          TICKS: "12"
+          INTERVAL_SECONDS: "300"
         run: |
           if [ -z "${CRON_SECRET}" ]; then
             echo "::error::CRON_SECRET repo secret is not set. Add it in Settings → Secrets and variables → Actions."
             exit 1
           fi
-          code=$(curl -sS -m 60 -o /tmp/tick-body.txt -w '%{http_code}' \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            "${TICK_URL}")
-          echo "HTTP ${code}"
-          echo "--- response body ---"
-          cat /tmp/tick-body.txt || true
-          echo ""
-          test "${code}" = "200"
+
+          ok=0
+          fail=0
+          for i in $(seq 1 "${TICKS}"); do
+            echo "--- tick ${i}/${TICKS} at $(date -u +%H:%M:%SZ) ---"
+            code=$(curl -sS -m 120 -o /tmp/tick-body.txt -w '%{http_code}' \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              "${TICK_URL}") || code="000"
+            echo "HTTP ${code}"
+            # Trim the body: a tick enqueues dozens of jobs and the full JSON buries the log.
+            head -c 1200 /tmp/tick-body.txt || true
+            echo ""
+            if [ "${code}" = "200" ]; then
+              ok=$((ok + 1))
+            else
+              fail=$((fail + 1))
+              echo "::warning::tick ${i} returned HTTP ${code}"
+            fi
+            # No sleep after the last tick: the next hourly run takes over from there.
+            if [ "${i}" -lt "${TICKS}" ]; then
+              sleep "${INTERVAL_SECONDS}"
+            fi
+          done
+
+          echo "ticks ok=${ok} failed=${fail}"
+          # A single blip must not fail the run; a run where nothing got through must.
+          if [ "${ok}" -eq 0 ]; then
+            echo "::error::every tick failed (${fail}/${TICKS})"
+            exit 1
+          fi

@@ -13,6 +13,7 @@ import "server-only";
 
 import { Cron } from "croner";
 
+import type { Actor } from "@/contracts/common";
 import type { CronSchedule, DynamicSchedule, JobName } from "@/contracts/jobs";
 import {
   getCronSchedules,
@@ -36,6 +37,20 @@ const SLOT_MS = 5 * 60 * 1000;
  * and only the *most recent* due slot is caught up — a 5-minute job is never backfilled 288×.
  */
 const CATCHUP_LOOKBACK_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * The SYSTEM actor a cron-dispatched run acts as.
+ *
+ * `actor.job` MUST be the bare registered job name: `assertActorCan` resolves a SYSTEM actor by
+ * looking `actor.job` up in the job/subscriber registry and allowing only that entry's
+ * `systemActions` (permissions.md rule 10). A decorated name — this used to be `cron.<job>` —
+ * matches nothing in the registry, so every cron-triggered job that asserts a system action was
+ * denied with FORBIDDEN while the same job succeeded when a user ran it from the UI. That silently
+ * broke all autonomous sourcing, compliance and analytics runs.
+ */
+export function cronActor(job: JobName): Extract<Actor, { type: "SYSTEM" }> {
+  return { type: "SYSTEM", job };
+}
 
 /** Returns the ISO string for the 5-minute slot containing `now`, floored. */
 export function slotIso(now: Date): string {
@@ -119,7 +134,7 @@ export async function runDispatch(now: Date): Promise<DispatchResult> {
     }
     const key = `${schedule.job}:${dueSlot}`;
     const { deduplicated } = await enqueueJob(schedule.job, schedule.input ?? {}, {
-      actor: { type: "SYSTEM", job: `cron.${schedule.job}` },
+      actor: cronActor(schedule.job),
       idempotencyKey: key,
     });
     enqueued.push({ job: schedule.job, idempotencyKey: key, deduplicated, kind: "static" });
@@ -140,7 +155,7 @@ export async function runDispatch(now: Date): Promise<DispatchResult> {
       }
       const key = `${schedule.job}:${schedule.id}:${dueSlot}`;
       const { deduplicated } = await enqueueJob(schedule.job, schedule.input, {
-        actor: { type: "SYSTEM", job: `cron.${schedule.job}` },
+        actor: cronActor(schedule.job),
         idempotencyKey: key,
       });
       enqueued.push({ job: schedule.job, idempotencyKey: key, deduplicated, kind: "dynamic" });
