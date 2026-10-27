@@ -1,0 +1,66 @@
+name: Publish line profile (production)
+
+# Publishes a service line's CODE-DEFAULT profile as a new active version in production.
+#
+# Why this is a separate, manual workflow and not part of deploy.yml:
+# editing src/modules/acquisition/profiles/defaults/*.ts and redeploying does NOT change what the
+# live pipeline uses. `ensureDefaultProfiles` deliberately leaves a line alone once it has a real
+# published version, so a deploy can never silently discard an edit someone made in
+# /acquisition/<line>/settings. Running this on every push would reintroduce exactly that risk, so
+# it is workflow_dispatch only: somebody chooses to publish, and the line's History tab records it.
+#
+# The current active version is archived, not deleted — roll back from History at any time.
+
+on:
+  workflow_dispatch:
+    inputs:
+      line:
+        description: Service line to publish
+        required: true
+        default: WEB_DEVELOPMENT
+        type: choice
+        options:
+          - WEB_DEVELOPMENT
+          - UI_UX_DESIGN
+          - GRAPHIC_DESIGN
+          - VIDEO_EDITING
+      dry_run:
+        description: Report what would change and write nothing
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: publish-line-profile
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: profiles:publish (production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Secrets live only in GitHub Actions; PRODUCTION_DIRECT_URL is the unpooled Neon URL.
+    environment: production
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Publish the code-default profile
+        env:
+          DATABASE_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          DIRECT_URL: ${{ secrets.PRODUCTION_DIRECT_URL }}
+          SKIP_ENV_VALIDATION: "1"
+        run: |
+          if [ "${{ inputs.dry_run }}" = "true" ]; then
+            pnpm profiles:publish "${{ inputs.line }}" --dry-run
+          else
+            pnpm profiles:publish "${{ inputs.line }}"
+          fi
