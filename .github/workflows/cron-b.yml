@@ -1,0 +1,70 @@
+name: Pipeline cron tick (B)
+
+# Second, offset copy of "Pipeline cron tick" (cron.yml). Same endpoint, same loop — the only
+# differences are the schedule (:32 instead of :02) and the concurrency group, so the two runs
+# overlap instead of queueing behind each other.
+#
+# Why a duplicate workflow: GitHub's scheduled workflows are best-effort and this repo loses a lot
+# of them. The `*/5` schedule used to fire about five times a DAY; after moving to an hourly run
+# that ticks internally, ticks still stopped for three hours at a stretch (29 Oct). One dropped
+# hourly run is a one-hour hole in outreach dispatch and inbox polling. Two independent schedules
+# half an hour apart mean a hole needs BOTH to be dropped, which is far less likely.
+#
+# Overlapping ticks are harmless: the dispatcher is per-5-minute-slot and the job idempotency key
+# is `<job>:<slot>`, so a duplicate tick in the same slot is deduplicated and does nothing.
+
+on:
+  schedule:
+    - cron: "32 * * * *" # offset half an hour from cron.yml's ":02"
+  workflow_dispatch: {}
+
+concurrency:
+  group: cron-tick-b # deliberately NOT cron-tick, so this never waits on the primary run
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - name: Tick /api/cron/tick every 5 minutes for the hour
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          TICK_URL: https://futureuni-platform.vercel.app/api/cron/tick
+          TICKS: "12"
+          INTERVAL_SECONDS: "300"
+        run: |
+          if [ -z "${CRON_SECRET}" ]; then
+            echo "::error::CRON_SECRET repo secret is not set. Add it in Settings → Secrets and variables → Actions."
+            exit 1
+          fi
+
+          ok=0
+          fail=0
+          for i in $(seq 1 "${TICKS}"); do
+            echo "--- tick ${i}/${TICKS} at $(date -u +%H:%M:%SZ) ---"
+            code=$(curl -sS -m 120 -o /tmp/tick-body.txt -w '%{http_code}' \
+              -H "Authorization: Bearer ${CRON_SECRET}" \
+              "${TICK_URL}") || code="000"
+            echo "HTTP ${code}"
+            head -c 600 /tmp/tick-body.txt || true
+            echo ""
+            if [ "${code}" = "200" ]; then
+              ok=$((ok + 1))
+            else
+              fail=$((fail + 1))
+              echo "::warning::tick ${i} returned HTTP ${code}"
+            fi
+            if [ "${i}" -lt "${TICKS}" ]; then
+              sleep "${INTERVAL_SECONDS}"
+            fi
+          done
+
+          echo "ticks ok=${ok} failed=${fail}"
+          if [ "${ok}" -eq 0 ]; then
+            echo "::error::every tick failed (${fail}/${TICKS})"
+            exit 1
+          fi
