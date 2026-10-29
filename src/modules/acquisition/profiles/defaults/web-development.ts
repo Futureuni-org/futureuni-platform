@@ -175,7 +175,20 @@ export const webDevelopmentDefaultProfile: ServiceLineProfile = {
           cities: ["Lagos", "Abuja", "Port Harcourt", "Warri", "Benin City"],
         },
         INTERNATIONAL: {
-          placeTypes: ["restaurant", "clinic", "boutique"],
+          // These go into the Places text query verbatim ("<keyword> in <location>"), so they are
+          // phrases, not Google place types. Restaurants, clinics and boutiques are mostly
+          // listings with no website at all: nothing for the crawler to read a contact address
+          // from, and nothing for the audit to fault, so they can only ever score the
+          // no-website signal and stall. Regulated professional services almost always have a
+          // site, and it is usually the kind that is slow on mobile, not responsive, or years
+          // out of date — which is both the reason to contact them and the evidence to cite.
+          placeTypes: [
+            "dental practice",
+            "law firm",
+            "accountancy firm",
+            "estate agent",
+            "veterinary clinic",
+          ],
           cities: ["London", "Manchester", "Bristol", "Austin", "Chicago"],
         },
       },
