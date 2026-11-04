@@ -1,9 +1,11 @@
 import "server-only";
 
 /**
- * Per-model capability table (verified against docs.claude.com 2026-09-29).
+ * Per-model capability table (verified against docs.claude.com 2026-11-04).
  *
- * Some Claude models reject `temperature` and `top_p`; some accept `effort`; Opus 5.5 and
+ * The whole Claude 5 family (Opus 5/5.5, Sonnet 5/5.5, Fable 5/5.1) rejects non-default
+ * `temperature` and `top_p` with a 400 ("`temperature` is deprecated for this model");
+ * only the 4.x models still accept them. The 5 family takes `effort` instead. Opus 5.5 and
  * Fable 5.1 have adaptive extended-thinking permanently on and reject `thinking: { type:
  * "disabled" }` with a 400. The Anthropic adapter uses this table to build request params
  * that the model accepts. Unknown models fall back to the conservative "sampling only".
@@ -47,28 +49,40 @@ const CAPS: Record<string, ModelCapabilities> = {
     supportsExtendedThinkingConfig: true,
   },
   "claude-sonnet-5-5": {
-    acceptsTemperature: true,
-    acceptsTopP: true,
+    acceptsTemperature: false,
+    acceptsTopP: false,
     acceptsEffort: true,
     adaptiveThinkingAlwaysOn: false,
     supportsExtendedThinkingConfig: false,
   },
   "claude-opus-5-5": {
-    acceptsTemperature: true,
-    acceptsTopP: true,
+    acceptsTemperature: false,
+    acceptsTopP: false,
     acceptsEffort: true,
     adaptiveThinkingAlwaysOn: true,
     supportsExtendedThinkingConfig: false,
   },
   "claude-fable-5-1": {
-    acceptsTemperature: true,
-    acceptsTopP: true,
+    acceptsTemperature: false,
+    acceptsTopP: false,
     acceptsEffort: true,
     adaptiveThinkingAlwaysOn: true,
     supportsExtendedThinkingConfig: false,
   },
-  "claude-opus-5": DEFAULT_CAPS,
-  "claude-sonnet-5": DEFAULT_CAPS,
+  "claude-opus-5": {
+    acceptsTemperature: false,
+    acceptsTopP: false,
+    acceptsEffort: true,
+    adaptiveThinkingAlwaysOn: false,
+    supportsExtendedThinkingConfig: false,
+  },
+  "claude-sonnet-5": {
+    acceptsTemperature: false,
+    acceptsTopP: false,
+    acceptsEffort: true,
+    adaptiveThinkingAlwaysOn: false,
+    supportsExtendedThinkingConfig: false,
+  },
 };
 
 export function getCapabilities(model: string): ModelCapabilities {

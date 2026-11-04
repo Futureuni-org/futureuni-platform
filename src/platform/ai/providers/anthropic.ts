@@ -63,11 +63,7 @@ export function createAnthropicProvider(opts: AnthropicOptions): AiProvider {
         }),
       }));
 
-      // `effort` is a newer, model-specific parameter surfaced by the API; the exact SDK
-      // typing for it varies across minor releases (see @anthropic-ai/sdk 0.128 vs 0.129).
-      // We attach it via a narrow cast so a version bump does not force a rewrite here.
-      const params: Parameters<typeof client.messages.parse>[0] &
-        Record<string, unknown> = {
+      const params: Parameters<typeof client.messages.parse>[0] & Record<string, unknown> = {
         model: input.model,
         max_tokens: input.maxTokens,
         system,
@@ -76,13 +72,13 @@ export function createAnthropicProvider(opts: AnthropicOptions): AiProvider {
       };
 
       if (caps.acceptsTemperature && input.temperature !== undefined) {
-        // The SDK marks `temperature` deprecated for models newer than Opus 4.6, but the
-        // API still accepts it and our capability table only sets `acceptsTemperature`
-        // when the model verifies as supporting it (see model-capabilities.ts).
+        // Claude 5-family models reject `temperature` with a 400; the capability table
+        // (model-capabilities.ts) says which models still accept it.
         (params as { temperature?: number }).temperature = input.temperature;
       }
       if (caps.acceptsEffort && input.effort !== undefined) {
-        params.effort = input.effort;
+        // `effort` lives inside `output_config`, not at the top level of the request.
+        params.output_config = { ...params.output_config, effort: input.effort };
       }
 
       const start = Date.now();
