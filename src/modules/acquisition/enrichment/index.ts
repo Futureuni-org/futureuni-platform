@@ -13,4 +13,5 @@ export { getEmailVerifier, hunterVerifier, mockVerifier } from "./providers/veri
 export { enrichmentJobs, enrichLeadJob, enrichBatchJob, enrichRefreshJob } from "./jobs";
 export { enrichmentSettings } from "./settings";
 export { enrichmentTasks, extractPeopleTask, pickContactTask } from "./tasks";
+export { ensurePrimaryContact, pickDeterministic } from "./pick-contact";
 export { getActiveProfile, listActiveProfiles } from "@/modules/acquisition/profiles";

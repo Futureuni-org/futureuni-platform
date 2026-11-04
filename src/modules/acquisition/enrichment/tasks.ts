@@ -16,13 +16,16 @@ const ExtractPeopleInput = z.object({
   companyName: z.string().min(1).max(200),
   serviceLine: ServiceLineSchema,
   market: MarketSchema,
-  pages: z.array(
-    z.object({
-      url: z.url(),
-      title: z.string().max(200).optional(),
-      text: z.string().max(30_000),
-    }),
-  ).min(1).max(6),
+  pages: z
+    .array(
+      z.object({
+        url: z.url(),
+        title: z.string().max(200).optional(),
+        text: z.string().max(30_000),
+      }),
+    )
+    .min(1)
+    .max(6),
 });
 
 const ExtractPeopleOutput = z.object({
@@ -39,10 +42,13 @@ const ExtractPeopleOutput = z.object({
 export const extractPeopleTask = defineTask({
   id: "acquisition.enrich-extract-people",
   module: "acquisition",
-  description: "Extract people (name, role, seniority) from team and about pages, quoting evidence.",
+  description:
+    "Extract people (name, role, seniority) from team and about pages, quoting evidence.",
   skillPath: "acquisition/enrich-extract-people",
   sharedSkills: ["_shared/futureuni-voice"],
-  references: (input: z.infer<typeof ExtractPeopleInput>): { path: string; optional?: boolean }[] => [
+  references: (
+    input: z.infer<typeof ExtractPeopleInput>,
+  ): { path: string; optional?: boolean }[] => [
     { path: `acquisition/_references/lines/${lineFile(input.serviceLine)}`, optional: true },
     { path: `acquisition/_references/markets/${marketFile(input.market)}`, optional: true },
   ],
@@ -65,17 +71,28 @@ export const extractPeopleTask = defineTask({
 const PickContactInput = z.object({
   serviceLine: ServiceLineSchema,
   market: MarketSchema,
-  size: z.enum(["SOLO", "SIZE_2_10", "SIZE_11_50", "SIZE_51_200", "SIZE_201_1000", "SIZE_1000_PLUS", "UNKNOWN"]),
-  candidates: z.array(
-    z.object({
-      id: z.string(),
-      name: z.string().max(120).nullable(),
-      role: z.string().max(120).nullable(),
-      emailStatus: z.enum(["UNVERIFIED", "VALID", "RISKY", "INVALID", "UNKNOWN"]).nullable(),
-      emailKind: z.enum(["PERSONAL", "ROLE"]).nullable(),
-      source: z.string(),
-    }),
-  ).min(1).max(20),
+  size: z.enum([
+    "SOLO",
+    "SIZE_2_10",
+    "SIZE_11_50",
+    "SIZE_51_200",
+    "SIZE_201_1000",
+    "SIZE_1000_PLUS",
+    "UNKNOWN",
+  ]),
+  candidates: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string().max(120).nullable(),
+        role: z.string().max(120).nullable(),
+        emailStatus: z.enum(["UNVERIFIED", "VALID", "RISKY", "INVALID", "UNKNOWN"]).nullable(),
+        emailKind: z.enum(["PERSONAL", "ROLE"]).nullable(),
+        source: z.string(),
+      }),
+    )
+    .min(1)
+    .max(20),
   rolePriority: z.array(z.string().min(1).max(60)).min(1),
 });
 
@@ -85,10 +102,14 @@ const PickContactOutput = z.object({
   reason: z.string().min(3).max(280),
 });
 
+export type PickContactTaskInput = z.infer<typeof PickContactInput>;
+export type PickContactTaskOutput = z.infer<typeof PickContactOutput>;
+
 export const pickContactTask = defineTask({
   id: "acquisition.enrich-pick-contact",
   module: "acquisition",
-  description: "Choose the best contact for the service line, following the profile's role priorities.",
+  description:
+    "Choose the best contact for the service line, following the profile's role priorities.",
   skillPath: "acquisition/enrich-pick-contact",
   sharedSkills: ["_shared/futureuni-voice"],
   references: (input: z.infer<typeof PickContactInput>): { path: string; optional?: boolean }[] => [

@@ -16,6 +16,7 @@ import { publishAfterCommit } from "@/platform/events";
 import { safeFetch } from "@/platform/http";
 
 import { crawlCompany } from "./crawler";
+import { ensurePrimaryContact } from "./pick-contact";
 
 export interface EnrichLeadInput {
   leadId: string;
@@ -36,24 +37,51 @@ export interface EnrichLeadResult {
 export async function enrichLead(input: EnrichLeadInput): Promise<EnrichLeadResult> {
   const lead = await db.lead.findUnique({
     where: { id: input.leadId },
-    select: { id: true, status: true, companyId: true, primaryContactId: true, serviceLine: true, market: true, country: true },
+    select: {
+      id: true,
+      status: true,
+      companyId: true,
+      primaryContactId: true,
+      serviceLine: true,
+      market: true,
+      country: true,
+    },
   });
   if (lead === null) throw new AppError("NOT_FOUND", `Lead ${input.leadId} not found.`);
 
   // Only NEW → ENRICHING here. A lead in another state is a no-op (idempotent retry-safe).
-  if (lead.status === "ENRICHED" || lead.status === "SUPPRESSED" || lead.status === "DISQUALIFIED") {
+  if (
+    lead.status === "ENRICHED" ||
+    lead.status === "SUPPRESSED" ||
+    lead.status === "DISQUALIFIED"
+  ) {
     return await buildFinalResult(input.leadId);
   }
 
   await withTransaction(async (tx) => {
     if (lead.status === "NEW") {
-      await transitionLead(tx, { leadId: input.leadId, to: "ENRICHING", actor: input.actor, reason: "enrichment:start" });
+      await transitionLead(tx, {
+        leadId: input.leadId,
+        to: "ENRICHING",
+        actor: input.actor,
+        reason: "enrichment:start",
+      });
     }
   });
 
   const company = await db.company.findUniqueOrThrow({
     where: { id: lead.companyId },
-    select: { id: true, name: true, website: true, normalizedDomain: true, country: true, city: true, postcode: true, primaryPhone: true, legalForm: true },
+    select: {
+      id: true,
+      name: true,
+      website: true,
+      normalizedDomain: true,
+      country: true,
+      city: true,
+      postcode: true,
+      primaryPhone: true,
+      legalForm: true,
+    },
   });
 
   // 1. Crawl
@@ -71,7 +99,13 @@ export async function enrichLead(input: EnrichLeadInput): Promise<EnrichLeadResu
     budget: { tryCharge: () => true },
   };
   const crawlResult = await crawlCompany(
-    { id: company.id, name: company.name, website: company.website, normalizedDomain: company.normalizedDomain, country: company.country },
+    {
+      id: company.id,
+      name: company.name,
+      website: company.website,
+      normalizedDomain: company.normalizedDomain,
+      country: company.country,
+    },
     context,
   );
 
@@ -95,13 +129,17 @@ export async function enrichLead(input: EnrichLeadInput): Promise<EnrichLeadResu
         lastCrawledAt: new Date(),
         lastEnrichedAt: new Date(),
         ...(crawlResult.socials !== undefined ? { socials: toJsonInput(crawlResult.socials) } : {}),
-        ...(crawlResult.techHints !== undefined ? { techHints: toJsonInput(crawlResult.techHints) } : {}),
+        ...(crawlResult.techHints !== undefined
+          ? { techHints: toJsonInput(crawlResult.techHints) }
+          : {}),
         ...(legalFormDetection !== null
           ? {
               legalForm: legalFormDetection.legalForm,
               legalFormSource: legalFormDetection.source,
               legalFormConfidence: legalFormDetection.confidence,
-              ...(legalFormDetection.companyNumber === undefined ? {} : { companyNumber: legalFormDetection.companyNumber }),
+              ...(legalFormDetection.companyNumber === undefined
+                ? {}
+                : { companyNumber: legalFormDetection.companyNumber }),
             }
           : {}),
       },
@@ -130,27 +168,35 @@ export async function enrichLead(input: EnrichLeadInput): Promise<EnrichLeadResu
     // If the crawl found phone numbers but no contacts had them, store them on the company.
     if (crawlResult.phones.length > 0) {
       const seen = new Set(company.primaryPhone === null ? [] : [company.primaryPhone]);
-      const phones = crawlResult.phones.map((p) => p.e164).filter((p) => {
-        if (seen.has(p)) return false;
-        seen.add(p);
-        return true;
-      });
+      const phones = crawlResult.phones
+        .map((p) => p.e164)
+        .filter((p) => {
+          if (seen.has(p)) return false;
+          seen.add(p);
+          return true;
+        });
       if (phones.length > 0 || company.primaryPhone === null) {
         await tx.company.update({
           where: { id: company.id },
           data: {
             phones: phones,
-            ...(company.primaryPhone === null && phones[0] !== undefined ? { primaryPhone: phones[0] } : {}),
+            ...(company.primaryPhone === null && phones[0] !== undefined
+              ? { primaryPhone: phones[0] }
+              : {}),
           },
         });
       }
     }
   });
 
+  // 2.5 Pick the primary contact among the crawled emails (spec §435; the draft step needs one).
+  const primaryContactId =
+    lead.primaryContactId ?? (await ensurePrimaryContact(input.leadId, input.actor));
+
   // 3. Contactability + terminal transition.
   const verdict = await getContactability(null, {
     companyId: company.id,
-    ...(lead.primaryContactId === null ? {} : { contactId: lead.primaryContactId }),
+    ...(primaryContactId === null ? {} : { contactId: primaryContactId }),
   });
 
   const suppressions = await findSuppressions(null, {
@@ -158,7 +204,8 @@ export async function enrichLead(input: EnrichLeadInput): Promise<EnrichLeadResu
   });
   const suppressed = suppressions.length > 0;
 
-  const complianceReview = verdict.email.status === "CONSENT_REQUIRED" || verdict.email.status === "REVIEW";
+  const complianceReview =
+    verdict.email.status === "CONSENT_REQUIRED" || verdict.email.status === "REVIEW";
 
   let finalStatus: "ENRICHED" | "SUPPRESSED" | "DISQUALIFIED" = "ENRICHED";
 
@@ -173,9 +220,17 @@ export async function enrichLead(input: EnrichLeadInput): Promise<EnrichLeadResu
     });
 
     if (suppressed) {
-      await transitionLead(tx, { leadId: input.leadId, to: "SUPPRESSED", actor: input.actor, reason: "compliance:suppressed" });
+      await transitionLead(tx, {
+        leadId: input.leadId,
+        to: "SUPPRESSED",
+        actor: input.actor,
+        reason: "compliance:suppressed",
+      });
       finalStatus = "SUPPRESSED";
-    } else if (verdict.email.status === "BLOCKED" && verdict.email.ruleId?.endsWith(".prohibited") === true) {
+    } else if (
+      verdict.email.status === "BLOCKED" &&
+      verdict.email.ruleId?.endsWith(".prohibited") === true
+    ) {
       await transitionLead(tx, {
         leadId: input.leadId,
         to: "DISQUALIFIED",
@@ -184,7 +239,12 @@ export async function enrichLead(input: EnrichLeadInput): Promise<EnrichLeadResu
       });
       finalStatus = "DISQUALIFIED";
     } else {
-      await transitionLead(tx, { leadId: input.leadId, to: "ENRICHED", actor: input.actor, reason: "enrichment:done" });
+      await transitionLead(tx, {
+        leadId: input.leadId,
+        to: "ENRICHED",
+        actor: input.actor,
+        reason: "enrichment:done",
+      });
     }
 
     await publishAfterCommit(tx, {
@@ -193,7 +253,7 @@ export async function enrichLead(input: EnrichLeadInput): Promise<EnrichLeadResu
       payload: {
         leadId: input.leadId,
         companyId: company.id,
-        contactId: lead.primaryContactId,
+        contactId: primaryContactId,
         emailFrom: null,
         emailTo: verdict.email.status,
       },
@@ -214,12 +274,17 @@ export async function enrichLead(input: EnrichLeadInput): Promise<EnrichLeadResu
 async function buildFinalResult(leadId: string): Promise<EnrichLeadResult> {
   const lead = await db.lead.findUniqueOrThrow({
     where: { id: leadId },
-    select: { id: true, status: true, company: { select: { legalForm: true } }, contactability: true },
+    select: {
+      id: true,
+      status: true,
+      company: { select: { legalForm: true } },
+      contactability: true,
+    },
   });
   const contactability = lead.contactability as { email?: { status: string } } | null;
   return {
     leadId,
-    status: (lead.status as "ENRICHED" | "SUPPRESSED" | "DISQUALIFIED"),
+    status: lead.status as "ENRICHED" | "SUPPRESSED" | "DISQUALIFIED",
     pagesFetched: 0,
     emailsFound: 0,
     phonesFound: 0,

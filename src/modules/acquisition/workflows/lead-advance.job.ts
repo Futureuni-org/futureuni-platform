@@ -81,6 +81,11 @@ async function entry(input: LeadAdvanceInput, ctx: JobContext): Promise<JobResul
     const { getOutreachThrottle } = await import("@/modules/acquisition/scoring");
     const throttle = await getOutreachThrottle(lead.serviceLine);
     if (throttle.mode === "PAUSED") return;
+    // Leads enriched before the pick-contact step existed have no primary contact yet;
+    // drafting requires one, so settle it here before the draft (idempotent when already set).
+    const { ensurePrimaryContact } = await import("@/modules/acquisition/enrichment");
+    const contactId = await ensurePrimaryContact(leadId, ctx.actor);
+    if (contactId === null) return; // no emailable contact: nothing to draft to
     // createDraft re-checks the cross-sell lead and transitions SCORED → IN_REVIEW (INV-9).
     const { createDraft } = await import("@/modules/acquisition/outreach");
     await createDraft(ctx.actor, { leadId, stepIndex: 0, system: true });
