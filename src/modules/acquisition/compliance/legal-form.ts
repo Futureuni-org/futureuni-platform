@@ -11,7 +11,11 @@ import "server-only";
 
 import type { z } from "zod";
 
-import { COMPANIES_HOUSE_TYPE_MAP, type LegalFormHintSchema, type LegalFormDetection } from "@/contracts/enrichment";
+import {
+  COMPANIES_HOUSE_TYPE_MAP,
+  type LegalFormHintSchema,
+  type LegalFormDetection,
+} from "@/contracts/enrichment";
 type LegalFormHint = z.infer<typeof LegalFormHintSchema>;
 import type { LegalForm } from "@/contracts/common";
 import { resolveProviderKey } from "@/platform/credentials";
@@ -25,11 +29,14 @@ type CompaniesHouseType = keyof typeof COMPANIES_HOUSE_TYPE_MAP;
  * Try Companies House first by hinted number, then by name + city; failing both, use crawl
  * suffix hints; last resort `UNKNOWN`.
  */
-export async function detectUkLegalForm(company: {
-  name: string;
-  city?: string | null;
-  postcode?: string | null;
-}, hints: readonly LegalFormHint[]): Promise<LegalFormDetection | null> {
+export async function detectUkLegalForm(
+  company: {
+    name: string;
+    city?: string | null;
+    postcode?: string | null;
+  },
+  hints: readonly LegalFormHint[],
+): Promise<LegalFormDetection | null> {
   const numberHint = hints.find((h) => h.kind === "uk-company-number");
   if (numberHint !== undefined) {
     const detection = await lookupByNumber(numberHint.value);
@@ -63,24 +70,84 @@ export async function detectUkLegalForm(company: {
 export function detectNgLegalForm(hints: readonly LegalFormHint[]): LegalFormDetection | null {
   const rc = hints.find((h) => h.kind === "ng-rc");
   if (rc !== undefined) {
-    return { legalForm: "NG_REGISTERED_COMPANY", source: "cac-hint", confidence: 0.9, companyNumber: rc.value, evidence: rc.value };
+    return {
+      legalForm: "NG_REGISTERED_COMPANY",
+      source: "cac-hint",
+      confidence: 0.9,
+      companyNumber: rc.value,
+      evidence: rc.value,
+    };
   }
   const bn = hints.find((h) => h.kind === "ng-bn");
   if (bn !== undefined) {
-    return { legalForm: "NG_BUSINESS_NAME", source: "cac-hint", confidence: 0.9, companyNumber: bn.value, evidence: bn.value };
+    return {
+      legalForm: "NG_BUSINESS_NAME",
+      source: "cac-hint",
+      confidence: 0.9,
+      companyNumber: bn.value,
+      evidence: bn.value,
+    };
   }
   return null;
+}
+
+/**
+ * One retry on a failed Companies House call: a transient 429/5xx during a big enrichment batch
+ * otherwise leaves the company UNKNOWN forever (detection has no later pass of its own).
+ */
+async function chFetch(url: string, apiKey: string): Promise<{ ok: boolean; body: string | null }> {
+  const options = {
+    respectRobots: false,
+    timeoutMs: 15_000,
+    headers: { authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}` },
+  };
+  let res = await safeFetch(url, options);
+  if (!res.ok || res.body === null) {
+    await new Promise((resolve) => setTimeout(resolve, 1_000));
+    res = await safeFetch(url, options);
+  }
+  return { ok: res.ok, body: res.body };
+}
+
+/** Normalised token-set similarity between a company name and a register title (0–1). */
+export function nameSimilarity(name: string, registeredTitle: string): number {
+  return similarity(normalise(name), normalise(registeredTitle));
+}
+
+/**
+ * Re-detects the legal form of a GB company still UNKNOWN (a transient Companies House failure
+ * during enrichment otherwise parks it forever in the INV-6 review hold). No-op for any other
+ * company. Returns the detected form, or null when nothing better was found.
+ */
+export async function redetectCompanyLegalForm(companyId: string): Promise<LegalForm | null> {
+  const { db } = await import("@/platform/db");
+  const company = await db.company.findUnique({
+    where: { id: companyId },
+    select: { id: true, name: true, city: true, postcode: true, country: true, legalForm: true },
+  });
+  if (company === null || company.country !== "GB" || company.legalForm !== "UNKNOWN") return null;
+  const detection = await detectUkLegalForm(
+    { name: company.name, city: company.city, postcode: company.postcode },
+    [],
+  );
+  if (detection === null || detection.legalForm === "UNKNOWN") return null;
+  await db.company.update({
+    where: { id: company.id },
+    data: {
+      legalForm: detection.legalForm,
+      legalFormSource: detection.source,
+      legalFormConfidence: detection.confidence,
+      ...(detection.companyNumber === undefined ? {} : { companyNumber: detection.companyNumber }),
+    },
+  });
+  return detection.legalForm;
 }
 
 async function lookupByNumber(number: string): Promise<LegalFormDetection | null> {
   const apiKey = await resolveProviderKey("companies-house");
   if (apiKey === null) return null;
   const url = `${CH_BASE}/company/${encodeURIComponent(number)}`;
-  const res = await safeFetch(url, {
-    respectRobots: false,
-    timeoutMs: 15_000,
-    headers: { authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}` },
-  });
+  const res = await chFetch(url, apiKey);
   if (!res.ok || res.body === null) return null;
   const body = safeJson(res.body) as { company_type?: string; company_name?: string } | null;
   if (body === null) return null;
@@ -94,18 +161,24 @@ async function lookupByNumber(number: string): Promise<LegalFormDetection | null
   };
 }
 
-async function lookupByName(name: string, cityOrPostcode: string | null): Promise<LegalFormDetection | null> {
+async function lookupByName(
+  name: string,
+  cityOrPostcode: string | null,
+): Promise<LegalFormDetection | null> {
   const apiKey = await resolveProviderKey("companies-house");
   if (apiKey === null) return null;
   const query = cityOrPostcode !== null ? `${name} ${cityOrPostcode}` : name;
   const url = `${CH_BASE}/search/companies?q=${encodeURIComponent(query)}&items_per_page=5`;
-  const res = await safeFetch(url, {
-    respectRobots: false,
-    timeoutMs: 15_000,
-    headers: { authorization: `Basic ${Buffer.from(`${apiKey}:`).toString("base64")}` },
-  });
+  const res = await chFetch(url, apiKey);
   if (!res.ok || res.body === null) return null;
-  const body = safeJson(res.body) as { items?: { title?: string; company_number?: string; company_type?: string; company_status?: string }[] } | null;
+  const body = safeJson(res.body) as {
+    items?: {
+      title?: string;
+      company_number?: string;
+      company_type?: string;
+      company_status?: string;
+    }[];
+  } | null;
   const items = body?.items ?? [];
   const target = normalise(name);
   const best = items
@@ -140,7 +213,14 @@ function mapSuffix(suffix: string): LegalForm {
 }
 
 function normalise(input: string): string {
-  return input.toLowerCase().replace(/\b(limited|ltd|plc|llp|inc|llc|the)\b/g, "").replace(/[^a-z0-9]+/g, " ").trim();
+  // Apostrophes are removed (not split) so "Papa John's" tokenises as "johns", matching the
+  // trading name; "uk"/"gb" markers like "(UK) LIMITED" are suffix noise, never identity.
+  return input
+    .toLowerCase()
+    .replace(/['’]/g, "")
+    .replace(/\b(limited|ltd|plc|llp|inc|llc|the|uk|gb)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
 }
 
 /** Very simple token-set similarity. Zero-cost dependency; good enough for name matching. */

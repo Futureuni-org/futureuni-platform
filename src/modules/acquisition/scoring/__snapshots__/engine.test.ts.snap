@@ -224,6 +224,11 @@ exports[`scoreLead — golden snapshots per line > WEB_DEVELOPMENT: a strong lea
       "ruleId": "ssl_missing",
     },
     {
+      "label": "Not usable on a phone",
+      "points": 20,
+      "ruleId": "not_mobile_friendly_site",
+    },
+    {
       "label": "Slow on mobile (measured)",
       "points": 20,
       "ruleId": "slow_mobile_high_severity",
@@ -234,6 +239,11 @@ exports[`scoreLead — golden snapshots per line > WEB_DEVELOPMENT: a strong lea
       "ruleId": "hiring_developer",
     },
     {
+      "label": "Broken pages",
+      "points": 15,
+      "ruleId": "site_broken_pages",
+    },
+    {
       "label": "Selling through DMs",
       "points": 10,
       "ruleId": "ecommerce_dms",
@@ -242,6 +252,16 @@ exports[`scoreLead — golden snapshots per line > WEB_DEVELOPMENT: a strong lea
       "label": "Reachable primary contact",
       "points": 10,
       "ruleId": "reachable_owner",
+    },
+    {
+      "label": "Outdated site",
+      "points": 10,
+      "ruleId": "site_outdated",
+    },
+    {
+      "label": "Weak SEO basics",
+      "points": 10,
+      "ruleId": "site_weak_seo",
     },
     {
       "label": "Nigeria with a WhatsApp channel",

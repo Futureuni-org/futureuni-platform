@@ -71,7 +71,11 @@ function userIdOf(actor: Actor): string {
 async function applyDecision(
   actor: Actor,
   leadId: string,
-  decision: { humanDecision: ReviewRecommendation; decisionType: "ACCEPTED" | "OVERRIDDEN"; note: string | null },
+  decision: {
+    humanDecision: ReviewRecommendation;
+    decisionType: "ACCEPTED" | "OVERRIDDEN";
+    note: string | null;
+  },
   clock: Clock,
 ): Promise<void> {
   const lead = await getLead(leadId);
@@ -96,7 +100,10 @@ async function applyDecision(
       overrideNote: decision.note,
     });
 
-    if (decision.humanDecision === "DISQUALIFY" && canTransition(lead.status, "DISQUALIFIED", lead)) {
+    if (
+      decision.humanDecision === "DISQUALIFY" &&
+      canTransition(lead.status, "DISQUALIFIED", lead)
+    ) {
       const reason = decision.decisionType === "OVERRIDDEN" ? "review:override" : "review:accept";
       const { event } = await transitionLead(tx, {
         leadId,
@@ -145,6 +152,14 @@ export async function acceptReview(
 ): Promise<void> {
   const review = await getLatestReview(leadId);
   if (review === null) throw new AppError("NOT_FOUND", "This lead has no review to decide on.");
+  // A NEEDS_HUMAN recommendation cannot be "accepted" — the human IS the decision. The DB
+  // check constraint (acq_score_reviews_decision_check) only allows QUALIFY/DISQUALIFY here.
+  if (review.recommendation === "NEEDS_HUMAN") {
+    throw new AppError(
+      "VALIDATION_FAILED",
+      "Claude asked for a human decision here: choose Qualify or Disqualify (Override) instead of Accept.",
+    );
+  }
   await applyDecision(
     actor,
     leadId,

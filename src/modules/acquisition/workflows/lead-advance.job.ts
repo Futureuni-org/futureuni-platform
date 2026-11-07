@@ -67,6 +67,13 @@ async function entry(input: LeadAdvanceInput, ctx: JobContext): Promise<JobResul
 
   await inlineStep(ctx, "score", async () => {
     if ((await status()) !== "AUDITED") return;
+    // A GB company whose Companies House lookup failed during enrichment would be held for
+    // review on legal form (INV-6); give detection one more chance before qualification.
+    const lead = await db.lead.findUnique({ where: { id: leadId }, select: { companyId: true } });
+    if (lead !== null) {
+      const { redetectCompanyLegalForm } = await import("@/modules/acquisition/compliance");
+      await redetectCompanyLegalForm(lead.companyId);
+    }
     const { qualifyLead } = await import("@/modules/acquisition/scoring");
     await qualifyLead(leadId, { actor: ctx.actor, jobRunId: ctx.jobRunId, clock: ctx.clock });
   });
