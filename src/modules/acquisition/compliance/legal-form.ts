@@ -125,7 +125,7 @@ export async function redetectCompanyLegalForm(companyId: string): Promise<Legal
     where: { id: companyId },
     select: { id: true, name: true, city: true, postcode: true, country: true, legalForm: true },
   });
-  if (company === null || company.country !== "GB" || company.legalForm !== "UNKNOWN") return null;
+  if (company?.country !== "GB" || company.legalForm !== "UNKNOWN") return null;
   const detection = await detectUkLegalForm(
     { name: company.name, city: company.city, postcode: company.postcode },
     [],
